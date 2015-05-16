@@ -12,8 +12,8 @@ class Metastore(object):
 
     # create new User
     def createUser(self, data):
-        name = data[config.db_table_users_name].strip() if config.db_table_users_name in data else None
-        created = data[config.db_table_users_created] if config.db_table_users_created in data else None
+        name = data[config.db_table_users_name]
+        created = data[config.db_table_users_created]
         # validate fields
         if not name or name == "": raise StandardError("User name is incorrect")
         if not created: created = datetime.now()
@@ -28,26 +28,31 @@ class Metastore(object):
                 confg.db_table_users_deleted: 0
             }
         }
-        self.connector.insert(execdata)
-        return True
+        return self.connector.insert(execdata)
 
     # get user
     def getUser(self, data):
-        name = data[config.db_table_users_name].strip() if config.db_table_users_name in data else None
+        name = data[config.db_table_users_name]
         if name:
             execdata = {
+                "type": "select",
                 "schema": config.db_schema,
                 "table": config.db_table_users,
                 "data": {
                     config.db_table_users_name: name
-                }
+                },
+                "assets": [
+                    config.db_table_users_name,
+                    config.db_table_users_created,
+                    config.db_table_users_deleted
+                ]
             }
             return self.connector.select(execdata)
         return None
 
     # delete user
     def deleteUser(self, data):
-        name = data[config.db_table_users_name].strip() if config.db_table_users_name in data else None
+        name = data[config.db_table_users_name]
         if not name: raise StandardError("User name is undefined")
         execdata = {
             "schema": config.db_schema,
@@ -57,8 +62,7 @@ class Metastore(object):
                 config.db_table_users_deleted: 1
             }
         }
-        self.connector.update(execdata)
-        return True
+        return self.connector.update(execdata)
 
     # create new project
     def createProject(self, data):

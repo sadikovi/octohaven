@@ -1,47 +1,146 @@
 import src.config as config
 import mysql.connector
+from mysql.connector import errorcode
+import uuid
+from types import DictType
 
+# create connection
 cnx = mysql.connector.connect(user=config.mysql_user, password=config.mysql_pass, host=config.mysql_host, database=config.db_schema)
 
-def _insert(cursor, payload):
-    schema, table = payload.schema, payload.table
-    keys, values = [], []
-    for key, value in payload.data.items():
-        keys.append("%s" %(key))
-        values.append("%(%s)s" %(key))
-    metaquery = "insert into %s.%s (%s) values (%s)" % (schema, table, ", ".join(keys), ", ".join(values))
-    cursor.execute(metaquery, payload.data)
+# design payload template
+"""
+template = {
+    "type": "select | delete | update | insert"
+    "schema": "",
+    "table": "",
+    "body": {
+        "key": "value",
+        "key": "value"
+    },
+    "predicate": {
+        "key": "value",
+        "key": "value"
+    }
+}
+"""
 
-def _delete(cursor, data):
-    schema, table = payload.schema, payload.table
-    pairs = []
-    for key, value in payload.data.items():
-        pairs.append("%s = %(%s)s" %(key, key))
-    metaquery = "delete from %s.%s where (%s)" % (schema, table, " and ".join(pairs))
-    cursor.execute(metaquery, payload.data)
+class QuerySource(object):
+    def __init__(self, schema, table):
+        self.schema = "%s" %(schema)
+        self.table = "%s" %(table)
+    def source(self):
+        return "%s.%s" %(self.schema, self.table)
 
-def _select(cursor, data):
-    pass
+class QueryValues(object):
+    def __init__(self, dict):
+        self.metavalues = []
+        self.mapvalues = []
+        if not dict or type(dict) is not DictType:
+            return False
+        for key, value in dict.items():
+            # init key and pairs
+            generatedkey = uuid.uuid4().hex
+            metapair, mappair = {}, {}
+            # add keys to pairs
+            metapair[key] = generatedkey
+            mappair[generatedkey] = value
+            # inset values
+            self.metavalues.append(metapair)
+            self.mapvalues.append(mappair)
 
-def insert(payload):
-    cnx.connect()
-    cursor = cnx.cursor()
-    # run command
-    _insert(cursor, payload)
-    # commit
-    cnx.commit()
-    cursor.close()
-    cnx.close()
+class Query(object):
+    def __init__(self, type, schema, table, body, predicate):
+        self.type = ("%s"%(type)).lower()
+        self.source = QuerySource(schema, table)
+        self.body = QueryValues(body)
+        self.data = QueryValues(predicate)
+    def metaquery(self):
+        if self.type == "select":
+            bdy = ["%s"%(key) for t in self.body.metavalues for key, value in t.items()]
+            src = self.source.source()
+            prd = [("%s"%(key) + "=%" + "(%s)"%(value) + "s") for t in self.data.metavalues for key, value in t.items()]
+            query = "select %s from %s where (%s)" %(", ".join(bdy), src, " and ".join(prd))
+            return query
+        elif self.type == "insert":
+            src = self.source.source()
+            cols = ["%s"%(key) for t in self.data.metavalues for key, value in t.items()]
+            vals = [("%" + "(%s)"%(value) + "s") for t in self.data.metavalues for key, value in t.items()]
+            query = "insert into %s (%s) values (%s)" %(src, ", ".join(cols), ", ".join(vals))
+            return query
+        elif self.type == "delete":
+            src = self.source.source()
+            prd = [("%s"%(key) + "=%" + "(%s)"%(value) + "s") for t in self.data.metavalues for key, value in t.items()]
+            query = "delete from %s where (%s)" %(src, " and ".join(prd))
+            return query
+        elif self.type == "update":
+            bdy = [("%s"%(key) + "=%" + "(%s)"%(value) + "s") for t in self.body.metavalues for key, value in t.items()]
+            src = self.source.source()
+            prd = [("%s"%(key) + "=%" + "(%s)"%(value) + "s") for t in self.data.metavalues for key, value in t.items()]
+            query = "update %s set %s where (%s)" %(src, ", ".join(bdy), " and ".join(prd))
+            return query
+        else:
+            return None
+    def mapdict(self):
+        mapvalues = {}
+        # insert body
+        pairs = self.body.mapvalues + self.data.mapvalues
+        for t in pairs:
+            for key, value in t.items():
+                mapvalues[key] = value
+        return mapvalues
 
-def delete(payload):
-    cnx.connect()
-    cursor = cnx.cursor()
-    # run command
-    _delete(cursor, payload)
-    # commit
-    cnx.commit()
-    cursor.close()
-    cnx.close()
+def processPayload(payload):
+    query = Query(payload["type"], payload["schema"], payload["table"], payload["body"], payload["predicate"])
+    return query
 
-def select(payload):
-    pass
+# internal insert
+def _executeStatement(operation, cursor, payload):
+    res = processPayload(payload)
+    if operation == "sql" and res.type == "select":
+        """sql - select"""
+    elif operation == "dml" and res.type in ["insert", "delete", "update"]:
+        """dml operation is found"""
+    else:
+        raise StandardError("wrong use of %s command, use matched method for SQL/DML operation" %(res.type))
+    # operation matches type - execute query
+    cursor.execute(res.metaquery(), res.mapdict())
+
+def dml(payload, commit=True):
+    # otherwise open connection
+    if not cnx.is_connected():
+        cnx.connect()
+    # get cursor
+    try:
+        cursor = cnx.cursor()
+        # run command
+        _executeStatement("dml", cursor, payload)
+        # commit
+        if commit: cnx.commit()
+        return True
+    except BaseException as e:
+        # error happened
+        if commit: cnx.rollback()
+        return False
+    finally:
+        cursor.close()
+
+def sql(payload, fetchone=True, atomic=True):
+    # otherwise open connection
+    if not cnx.is_connected():
+        cnx.connect()
+    result = None
+    cursor = cnx.cursor(dictionary=True, buffered=True)
+    try:
+        _executeStatement("sql", cursor, payload)
+        if fetchone:
+            result = cursor.fetchone()
+        else:
+            result = cursor.fetchall()
+    except BaseException as e:
+        raise e
+    finally:
+        if cnx.in_transaction and atomic:
+            cnx.rollback()
+        cursor.close()
+    # return result
+    return result
