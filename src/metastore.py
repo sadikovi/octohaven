@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import src.config as config
 from datetime import datetime
+from types import StringType
 
 class Metastore(object):
     def __init__(self, config):
@@ -15,62 +16,137 @@ class Metastore(object):
         name = data[config.db_table_users_name]
         created = data[config.db_table_users_created]
         # validate fields
-        if not name or name == "": raise StandardError("User name is incorrect")
-        if not created: created = datetime.now()
-        if self.getUser({"name": name}): raise StandardError("User name is taken")
+        if not name or name == "":
+            raise StandardError("User name is incorrect")
+        name = name.strip()
+        created = datetime.now() if not created else created
+        if self.userExists(name):
+            raise StandardError("User name is taken")
         # prepare exec data
         execdata = {
+            "type": "insert",
             "schema": config.db_schema,
             "table": config.db_table_users,
-            "data": {
-                config.db_table_users_name: name,
+            "body": {},
+            "predicate": {
+                config.db_table_users_name: name.strip(),
                 config.db_table_users_created: created,
                 confg.db_table_users_deleted: 0
             }
         }
-        return self.connector.insert(execdata)
+        return self.connector.dml(execdata)
 
     # get user
-    def getUser(self, data):
-        name = data[config.db_table_users_name]
-        if name:
-            execdata = {
-                "type": "select",
-                "schema": config.db_schema,
-                "table": config.db_table_users,
-                "data": {
-                    config.db_table_users_name: name
-                },
-                "assets": [
-                    config.db_table_users_name,
-                    config.db_table_users_created,
-                    config.db_table_users_deleted
-                ]
-            }
-            return self.connector.select(execdata)
-        return None
+    def getUser(self, name, checkexistsonly=False):
+        name = name.strip() if name and type(name) is StringType else None
+        if not name:
+            return None
 
-    # delete user
-    def deleteUser(self, data):
-        name = data[config.db_table_users_name]
-        if not name: raise StandardError("User name is undefined")
+        if checkexistsonly:
+            body = {config.db_table_users_name: None}
+        else:
+            body = {
+                config.db_table_users_name: None,
+                config.db_table_users_created: None,
+                config.db_table_users_deleted: None
+            }
+        # prepare execdata
         execdata = {
+            "type": "select",
             "schema": config.db_schema,
             "table": config.db_table_users,
-            "data": {
-                config.db_table_users_name: name,
-                config.db_table_users_deleted: 1
+            "body": body
+            "predicate": {
+                config.db_table_users_name: name
             }
         }
-        return self.connector.update(execdata)
+        return self.connector.sql(execdata)
+
+    # check if user exists
+    def userExists(self, name):
+        return True and self.getUser(name, True)
+
+    # delete user
+    def deleteUser(self, name):
+        name = name.strip() if name and type(name) is StringType else None
+        if not name:
+            raise StandardError("User name is undefined")
+        # prepare execdata
+        execdata = {
+            "type": "update"
+            "schema": config.db_schema,
+            "table": config.db_table_users,
+            "body": {
+                config.db_table_users_deleted: 1
+            },
+            "predicate": {
+                config.db_table_users_name: name
+            }
+        }
+        return self.connector.dml(execdata)
 
     # create new project
-    def createProject(self, data):
-        pass
+    def createProject(self, name, ownerid):
+        # create project
+        execdata = {
+            "type": "insert",
+            "schema": config.db_schema,
+            "table": config.db_table_projects,
+            "body": {},
+            "predicate": {
+                config.db_table_projects_name: name,
+                config.db_table_projects_created: datetime.now(),
+                config.db_table_projects_owner: ownerid,
+                config.db_table_projects_deleted: 0
+            }
+        }
+        projectid = self.connector.dml(execdata, lastrowid=True)
+        # get project
+        branchid = self.createMasterBranch(projectid)
+        # create branch
+        self.updateMainBranch(projectid, branchid)
+        return projectid
 
     # get project
-    def getProject(self, data):
+    def getProject(self, id):
+        if not id:
+            return None
+        execdata = {
+            "type": "select",
+            "schema": config.db_schema,
+            "table": config.db_table_projects,
+            "body": {
+                config.db_table_projects_id: None,
+                config.db_table_projects_name: None,
+                config.db_table_projects_created: None,
+                config.db_table_projects_branch: None,
+                config.db_table_projects_owner: None,
+                config.db_table_projects_deleted: None
+            },
+            "predicate": {
+                config.db_table_projects_id: id
+            }
+        }
+        return self.connector.sql(execdata)
+
+    def deleteProject(self, id):
+        if not id:
+            raise StandardError("Project id is undefined")
+        execdata = {
+            "type": "update",
+            "schema": config.db_schema,
+            "table": config.db_table_projects,
+            "body": {
+                config.db_table_projects_deleted: 1
+            },
+            "predicate": {
+                config.db_table_projects_id: id
+            }
+        }
+        return self.connector.dml(execdata)
+
+    def createMasterBranch(self, projectid):
         pass
 
-    def deleteProject(self, data):
+    def updateMainBranch(self, projectid, branchid):
         pass

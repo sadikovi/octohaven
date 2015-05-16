@@ -35,8 +35,8 @@ class QueryValues(object):
     def __init__(self, dict):
         self.metavalues = []
         self.mapvalues = []
-        if not dict or type(dict) is not DictType:
-            return False
+        if type(dict) is not DictType:
+            raise StandardError("Not a dict")
         for key, value in dict.items():
             # init key and pairs
             generatedkey = uuid.uuid4().hex
@@ -101,28 +101,33 @@ def _executeStatement(operation, cursor, payload):
     elif operation == "dml" and res.type in ["insert", "delete", "update"]:
         """dml operation is found"""
     else:
-        raise StandardError("wrong use of %s command, use matched method for SQL/DML operation" %(res.type))
+        raise StandardError("Wrong use of %s command, use matched method for SQL/DML operation" %(res.type))
     # operation matches type - execute query
     cursor.execute(res.metaquery(), res.mapdict())
 
-def dml(payload, commit=True):
+def dml(payload, commit=True, lastrowid=False):
     # otherwise open connection
     if not cnx.is_connected():
         cnx.connect()
     # get cursor
+    result = False
     try:
         cursor = cnx.cursor()
         # run command
         _executeStatement("dml", cursor, payload)
+        # get last row id, if feature is on
+        result = cursor.lastrowid if lastrowid else True
         # commit
-        if commit: cnx.commit()
-        return True
+        if commit:
+            cnx.commit()
     except BaseException as e:
-        # error happened
+        # TODO: log error
         if commit: cnx.rollback()
-        return False
+        print e
     finally:
         cursor.close()
+    # return result
+    return result
 
 def sql(payload, fetchone=True, atomic=True):
     # otherwise open connection
@@ -137,7 +142,9 @@ def sql(payload, fetchone=True, atomic=True):
         else:
             result = cursor.fetchall()
     except BaseException as e:
-        raise e
+        # TODO: log error
+        # raise e
+        print e
     finally:
         if cnx.in_transaction and atomic:
             cnx.rollback()
