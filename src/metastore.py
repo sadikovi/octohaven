@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+
 import src.config as config
 from datetime import datetime
 from types import StringType
