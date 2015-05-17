@@ -55,6 +55,7 @@ class UserMetaStore(MetaStore):
             "schema": config.db_schema,
             "table": config.db_table_users,
             "body": {
+                config.db_table_users_uniqueid: None,
                 config.db_table_users_id: None,
                 config.db_table_users_created: None
             }
@@ -84,7 +85,7 @@ class UserMetaStore(MetaStore):
         return self.connector.dml(execdata)
 
 class ProjectMetaStore(MetaStore):
-    def createProject(self, projectid, userid):
+    def createProject(self, userid, projectid):
         projectid, userid = Util.unifyid(projectid), Util.unifyid(userid)
         # validation
         if not Util.checkid(userid):
@@ -97,18 +98,18 @@ class ProjectMetaStore(MetaStore):
             "schema": config.db_schema,
             "table": config.db_table_projects,
             "body": {
-                config.db_table_projects_id: projectid,
                 config.db_table_projects_userid: userid,
+                config.db_table_projects_id: projectid,
                 config.db_table_projects_created: datetime.now()
             },
             "predicate": {}
         }
         return self.connector.dml(execdata)
 
-    def getProject(self, projectid, userid):
-        projectid, userid = Util.unifyid(projectid), Util.unifyid(userid)
+    def getProject(self, userid, projectid):
+        projectid = Util.unifyid(projectid)
         # validation
-        if not Util.checkid(userid) or not Util.checkid(projectid):
+        if not Util.checknumericid(userid) or not Util.checkid(projectid):
             return None
         # everything is ok, return project
         execdata = {
@@ -116,21 +117,22 @@ class ProjectMetaStore(MetaStore):
             "schema": config.db_schema,
             "table": config.db_table_projects,
             "body": {
-                config.db_table_projects_id: None,
+                config.db_table_projects_uniqueid: None,
                 config.db_table_projects_userid: None,
+                config.db_table_projects_id: None,
                 config.db_table_projects_created: None
             },
             "predicate": {
-                config.db_table_projects_id: projectid,
-                config.db_table_projects_userid: userid
+                config.db_table_projects_userid: userid,
+                config.db_table_projects_id: projectid
             }
         }
         return self.connector.sql(execdata)
 
-    def deleteProject(self, projectid, userid):
-        projectid, userid = Util.unifyid(projectid), Util.unifyid(userid)
+    def deleteProject(self, userid, projectid):
+        projectid = Util.unifyid(projectid)
         # validation
-        if not Util.checkid(userid):
+        if not Util.checknumericid(userid):
             raise StandardError("User id is incorrect")
         if not Util.checkid(projectid):
             raise StandardError("Project id is incorrect")
@@ -140,21 +142,19 @@ class ProjectMetaStore(MetaStore):
             "table": config.db_table_projects,
             "body": {},
             "predicate": {
-                config.db_table_projects_id: projectid,
-                config.db_table_projects_userid: userid
+                config.db_table_projects_userid: userid,
+                config.db_table_projects_id: projectid
             }
         }
         return self.connector.dml(execdata)
 
 class BranchMetaStore(MetaStore):
-    def createBranch(self, projectid, userid, branchid):
-        projectid = Util.unifyid(projectid)
-        userid = Util.unifyid(userid)
+    def createBranch(self, userid, projectid, branchid):
         branchid = Util.unifyid(branchid)
         # validation
-        if not Util.checkid(projectid):
+        if not Util.checknumericid(projectid):
             raise StandardError("Project id is incorrect")
-        if not Util.checkid(userid):
+        if not Util.checknumericid(userid):
             raise StandardError("User id is incorrect")
         if not Util.checkid(branchid):
             raise StandardError("Branch id is incorrect")
@@ -164,8 +164,8 @@ class BranchMetaStore(MetaStore):
             "schema": config.db_schema,
             "table": config.db_table_branches,
             "body": {
-                config.db_table_branches_projectid: projectid,
                 config.db_table_branches_userid: userid,
+                config.db_table_branches_projectid: projectid,
                 config.db_table_branches_id: branchid,
                 config.db_table_branches_created: datetime.now()
             },
@@ -173,12 +173,10 @@ class BranchMetaStore(MetaStore):
         }
         return self.connector.dml(execdata)
 
-    def getBranch(self, projectid, userid, branchid):
-        projectid = Util.unifyid(projectid)
-        userid = Util.unifyid(userid)
+    def getBranch(self, userid, projectid, branchid):
         branchid = Util.unifyid(branchid)
         # validation
-        if not (Util.checkid(userid) and Util.checkid(projectid)
+        if not (Util.checknumericid(userid) and Util.checknumericid(projectid)
                 and Util.checkid(branchid)):
             return None
         # everything is ok, return branch
@@ -187,15 +185,15 @@ class BranchMetaStore(MetaStore):
             "schema": config.db_schema,
             "table": config.db_table_branches,
             "body": {
-                config.db_table_branches_branchid: None,
-                config.db_table_branches_projectid: None,
+                config.db_table_branches_uniqueid: None,
                 config.db_table_branches_userid: None,
+                config.db_table_branches_projectid: None,
                 config.db_table_branches_id: None,
                 config.db_table_branches_created: None
             },
             "predicate": {
-                config.db_table_branches_projectid: projectid,
                 config.db_table_branches_userid: userid,
+                config.db_table_branches_projectid: projectid,
                 config.db_table_branches_id: branchid
             }
         }
@@ -210,26 +208,24 @@ class BranchMetaStore(MetaStore):
             "schema": config.db_schema,
             "table": config.db_table_branches,
             "body": {
-                config.db_table_branches_branchid: None,
-                config.db_table_branches_projectid: None,
+                config.db_table_branches_uniqueid: None,
                 config.db_table_branches_userid: None,
+                config.db_table_branches_projectid: None,
                 config.db_table_branches_id: None,
                 config.db_table_branches_created: None
             },
             "predicate": {
-                config.db_table_branches_branchid: uniquebranchid
+                config.db_table_branches_uniqueid: uniquebranchid
             }
         }
         return self.connector.sql(execdata)
 
-    def deleteBranch(self, projectid, userid, branchid):
-        projectid = Util.unifyid(projectid)
-        userid = Util.unifyid(userid)
+    def deleteBranch(self, userid, projectid, branchid):
         branchid = Util.unifyid(branchid)
         # validation
-        if not Util.checkid(userid):
+        if not Util.checknumericid(userid):
             raise StandardError("User id is incorrect")
-        if not Util.checkid(projectid):
+        if not Util.checknumericid(projectid):
             raise StandardError("Project id is incorrect")
         if not Util.checkid(branchid):
             raise StandardError("Branch id is incorrect")
@@ -239,8 +235,8 @@ class BranchMetaStore(MetaStore):
             "table": config.db_table_branches,
             "body": {},
             "predicate": {
-                config.db_table_branches_projectid: projectid,
                 config.db_table_branches_userid: userid,
+                config.db_table_branches_projectid: projectid,
                 config.db_table_branches_id: branchid
             }
         }
@@ -255,7 +251,7 @@ class BranchMetaStore(MetaStore):
             "table": config.db_table_branches,
             "body": {},
             "predicate": {
-                db_table_branches_branchid: uniquebranchid
+                db_table_branches_uniqueid: uniquebranchid
             }
         }
         return self.connector.dml(execdata)

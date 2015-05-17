@@ -14,6 +14,6 @@ create table octohaven.components (
 SELECT '<Components table is created>' AS ' ';
 
 -- create unique index on component name
-create unique index UIX_COMPONENT_NAME on octohaven.components(revision_id);
+create unique index UIX_COMPONENT_NAME on octohaven.components(name);
 -- done comment
 SELECT '<Unique index for components table is created>' AS ' ';
