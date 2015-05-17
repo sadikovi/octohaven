@@ -3,7 +3,6 @@ drop table if exists octohaven.users;
 create table octohaven.users (
     id varchar(255),
     created datetime,
-    is_deleted tinyint(1) default 0,
     primary key (id)
 ) engine = InnoDB, comment = 'Users global info';
 

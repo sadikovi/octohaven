@@ -6,8 +6,7 @@ create table octohaven.branches (
     projectid varchar(255),
     userid varchar(255),
     id varchar(255),
-    created datetime,
-    is_deleted tinyint(1) default 0
+    created datetime
 ) engine = InnoDB, comment = 'Branches global info';
 -- done comment
 SELECT '<Branches table is created>' AS ' ';
@@ -15,4 +14,4 @@ SELECT '<Branches table is created>' AS ' ';
 -- create index for projectid, userid, id
 create unique index UIX_PROJECT_USER_BRANCH on octohaven.branches(projectid, userid, id);
 -- done comment
-SELECT '<Unique index on branches table is created>' AS ' ';
+SELECT '<Unique index for branches table is created>' AS ' ';

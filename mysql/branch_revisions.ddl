@@ -14,4 +14,4 @@ SELECT '<Branch revisions table is created>' AS ' ';
 -- create index on branch id
 create index IX_BRANCHID on octohaven.branch_revisions (branchid);
 -- done comment
-SELECT '<Index on branch revisions table is created>' AS ' ';
+SELECT '<Index for branch revisions table is created>' AS ' ';
