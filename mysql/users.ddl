@@ -1,9 +1,10 @@
 -- Users table
 drop table if exists octohaven.users;
 create table octohaven.users (
-    name varchar(255) primary key,
+    id varchar(255),
     created datetime,
-    is_deleted tinyint(1) default 0
+    is_deleted tinyint(1) default 0,
+    primary key (id)
 ) engine = InnoDB, comment = 'Users global info';
 
 -- done comment

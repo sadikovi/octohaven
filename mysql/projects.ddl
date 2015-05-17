@@ -1,12 +1,11 @@
 -- Projects table
 drop table if exists octohaven.projects;
 create table octohaven.projects (
-    id int(8) unsigned auto_increment primary key,
-    name varchar(255),
+    id varchar(255),
+    userid varchar(255),
     created datetime,
-    branch int(8) unsigned,
-    owner varchar(255),
-    is_deleted tinyint(1) default 0
+    is_deleted tinyint(1) default 0,
+    primary key (id, userid)
 ) engine = InnoDB, comment = 'Projects global info';
 
 -- done comment

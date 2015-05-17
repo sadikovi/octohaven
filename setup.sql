@@ -1,12 +1,14 @@
 -- run: mysql -u root -p < setup.sql
 -- global
-\. mysql/global.sql
+\. mysql/global.ddl
 -- tables
-\. mysql/users.sql
-\. mysql/projects.sql
-\. mysql/branches.sql
-\. mysql/modules.sql
-\. mysql/components.sql
+\. mysql/users.ddl
+\. mysql/projects.ddl
+\. mysql/branches.ddl
+\. mysql/modules.ddl
+\. mysql/components.ddl
 -- revisions
-\. mysql/branch_revisions.sql
-\. mysql/module_revisions.sql
+\. mysql/branch_revisions.ddl
+\. mysql/module_revisions.ddl
+-- connections
+\. mysql/branch_module.ddl
