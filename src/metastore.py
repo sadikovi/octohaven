@@ -199,7 +199,7 @@ class BranchMetaStore(MetaStore):
         }
         return self.connector.sql(execdata)
 
-    def getBranch(self, uniquebranchid):
+    def getBranchByUniqueId(self, uniquebranchid):
         if not Util.checknumericid(uniquebranchid):
             return None
         # everything is ok, return branch
@@ -242,7 +242,7 @@ class BranchMetaStore(MetaStore):
         }
         return self.connector.dml(execdata)
 
-    def deleteBranch(self, uniquebranchid):
+    def deleteBranchByUniqueId(self, uniquebranchid):
         if not Util.checknumericid(uniquebranchid):
             return None
         execdata = {
@@ -288,62 +288,105 @@ class ModuleMetaStore(MetaStore):
 
 # TODO: check components module
 class ComponentMetaStore(MetaStore):
-    def createComponent(self, name, type, fileurl, extension, desc):
+    def createComponent(self, userid, id, type, fileurl):
         # prepare input data
-        name = name.strip()
-        type = type.strip()
-        fileurl = fileurl.strip()
-        extension = extension.strip()
-        desc = desc.strip()
+        id, type, fileurl = Util.unifyid(id), type.strip(), fileurl.strip()
+        if not Util.checknumericid(userid):
+            raise StandardError("User id is incorrect")
+        if not Util.checkid(id):
+            raise StandardError("Component id is incorrect")
         # prepare execdata
         execdata = {
             "type": "insert",
             "schema": config.db_schema,
             "table": config.db_table_components,
             "body": {
-                config.db_table_components_name: name,
+                config.db_table_components_userid: userid,
+                config.db_table_components_id: id,
                 config.db_table_components_type: type,
                 config.db_table_components_fileurl: fileurl,
-                config.db_table_components_extension: extension,
-                config.db_table_components_description: desc,
-                config.db_table_components_created: datetime.now(),
+                config.db_table_components_created: datetime.now()
             },
             "predicate": {}
         }
         return self.connector.dml(execdata)
 
-    def getComponentVersions(self, name, onlylatest=True):
-        name = name.strip()
+    def getComponent(self, userid, id, type):
+        id, type = Util.unifyid(id), type.strip()
+        if not Util.checknumericid(userid) or not Util.checkid(id) or not type:
+            return None
         execdata = {
             "type": "select",
             "schema": config.db_schema,
             "table": config.db_table_components,
             "body": {
-                config.db_table_components_revision_id: None,
-                config.db_table_components_name: None,
+                config.db_table_components_unuqueid: None,
+                config.db_table_components_userid: None,
+                config.db_table_components_id: None,
                 config.db_table_components_type: None,
                 config.db_table_components_fileurl: None,
-                config.db_table_components_extension: None,
-                config.db_table_components_description: None,
-                config.db_table_components_created: None,
-                config.db_table_components_latest: None
+                config.db_table_components_created: None
             },
             "predicate": {
-                config.db_table_components_name: name,
-                config.db_table_components_latest: 1
+                config.db_table_components_userid: userid,
+                config.db_table_components_id: id,
+                config.db_table_components_type: type
             }
         }
-        return self.connector.sql(execdata, fetchone=onlylatest)
+        return self.connector.sql(execdata)
 
-    def deleteComponent(self, name):
-        name = name.strip()
+    def getComponentByUniqueId(self, componentid):
+        if not Util.checknumericid(componentid):
+            return None
+        execdata = {
+            "type": "select",
+            "schema": config.db_schema,
+            "table": config.db_table_components,
+            "body": {
+                config.db_table_components_unuqueid: None,
+                config.db_table_components_userid: None,
+                config.db_table_components_id: None,
+                config.db_table_components_type: None,
+                config.db_table_components_fileurl: None,
+                config.db_table_components_created: None
+            },
+            "predicate": {
+                config.db_table_components_uniqueid: componentid
+            }
+        }
+        return self.connector.sql(execdata)
+
+    def deleteComponent(self, userid, id, type):
+        id, type = Util.unifyid(id), type.strip()
+        if not Util.checknumericid(userid):
+            raise StandardError("User id is incorrect")
+        if not Util.checkid(id):
+            raise StandardError("Component id is incorrect")
+        # prepare execdata
         execdata = {
             "type": "delete",
             "schema": config.db_schema,
             "table": config.db_table_components,
             "body": {},
             "predicate": {
-                db_table_components_name: name
+                config.db_table_components_userid: userid,
+                config.db_table_components_id: id,
+                config.db_table_components_type: type
+            }
+        }
+        return self.connector.dml(execdata)
+
+    def deleteComponentByUniqueId(self, componentid):
+        if not Util.checknumericid(componentid):
+            return None
+        # prepare execdata
+        execdata = {
+            "type": "delete",
+            "schema": config.db_schema,
+            "table": config.db_table_components,
+            "body": {},
+            "predicate": {
+                config.db_table_components_uniqueid: componentid
             }
         }
         return self.connector.dml(execdata)
@@ -356,4 +399,7 @@ class RevisionMaster(MetaStore):
         pass
 
     def createBranchModuleChain(self, branchid, moduleid):
+        pass
+
+    def createComponentRevision(self):
         pass

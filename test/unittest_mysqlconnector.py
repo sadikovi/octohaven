@@ -4,7 +4,8 @@ import unittest
 import src.config as config
 import src.connector.mysqlconnector as mysqlconnector
 from src.connector.mysqlconnector import QuerySource, QueryValues, Query, MySqlConnector
-from types import DictType, IntType
+from types import DictType, IntType, ListType
+import uuid
 
 class QuerySource_TS(unittest.TestCase):
     def test_querysource(self):
@@ -47,6 +48,7 @@ class MySqlConnector_UT(unittest.TestCase):
         return config.db_schema
 
     def table(self):
+        #return uuid.uuid4().hex
         return "test_connector"
 
     def ddl_create(self):
@@ -89,8 +91,7 @@ class MySqlConnector_UT(unittest.TestCase):
             print "TearDown: Connector is in transaction state"
             connector.cnx.rollback()
         cursor.close()
-        self.connector.cnx.close()
-        self.connector = None
+        self.connector.disconnect()
 
     def test_mysqlconnector(self):
         print ""
@@ -234,6 +235,207 @@ class MySqlConnector_UT(unittest.TestCase):
         with self.assertRaises(StandardError):
             self.connector.dml(payload)
         print ":Failure to use payload without body and predicate - OK"
+
+    def test_transactions(self):
+        self.assertEqual(self.connector.cnx.in_transaction, False)
+        # payload
+        def payload(name, marked=1):
+            payload = {
+                "type": "insert",
+                "schema": self.schema(),
+                "table": self.table(),
+                "body": { "name": name, "marked": marked },
+                "predicate": {}
+            }
+            return payload
+        print ""
+
+        ###############################################
+        # start transaction 1
+        self.connector.begin_transaction()
+        # insert couple of records
+        self.connector.dml(payload("test-record-1", 0), atomic=False)
+        self.connector.dml(payload("test-record-2", 1), atomic=False)
+        # select those records
+        result = self.connector.sql({
+            "type": "select",
+            "schema": self.schema(),
+            "table": self.table(),
+            "body": { "name": None, "marked": None },
+            "predicate": {}
+        }, atomic=False, fetchone=False)
+        self.assertEqual(type(result), ListType)
+        self.assertEqual(len(result), 2)
+        marked_all = 0
+        for obj in result:
+            marked_all += obj[unicode("marked")]
+        self.assertEqual(marked_all, 1)
+        # update one record
+        self.connector.dml({
+            "type": "update",
+            "schema": self.schema(),
+            "table": self.table(),
+            "body": { "marked": 1 },
+            "predicate": { "marked": 0 }
+        }, atomic=False)
+        # close transaction 1
+        self.connector.commit()
+        # check transaction 1 state
+        self.assertEqual(self.connector.cnx.in_transaction, False)
+        # check those records
+        result = self.connector.sql({
+            "type": "select",
+            "schema": self.schema(),
+            "table": self.table(),
+            "body": { "name": None, "marked": None },
+            "predicate": { "marked": 1 }
+        }, atomic=True, fetchone=False)
+        self.assertEqual(type(result), ListType)
+        self.assertEqual(len(result), 2)
+        marked_all = 0
+        for obj in result:
+            marked_all += obj[unicode("marked")]
+        self.assertEqual(marked_all, 2)
+        print ":Transaction 1 [insert/update commit] - OK"
+
+        ###############################################
+        # start transaction 2
+        self.connector.begin_transaction()
+        # select records
+        result = self.connector.sql({
+            "type": "select",
+            "schema": self.schema(),
+            "table": self.table(),
+            "body": { "name": None, "marked": None },
+            "predicate": {}
+        }, atomic=False, fetchone=False)
+        self.assertEqual(type(result), ListType)
+        self.assertEqual(len(result), 2)
+        marked_all = 0
+        for obj in result:
+            marked_all += obj[unicode("marked")]
+        self.assertEqual(marked_all, 2)
+        # delete records
+        self.connector.dml({
+            "type": "delete",
+            "schema": self.schema(),
+            "table": self.table(),
+            "body": {},
+            "predicate": { "marked": 1 }
+        }, atomic=False)
+        # close transaction 2
+        self.connector.commit()
+        # check transaction 2 state
+        self.assertEqual(self.connector.cnx.in_transaction, False)
+        # check records
+        result = self.connector.sql({
+            "type": "select",
+            "schema": self.schema(),
+            "table": self.table(),
+            "body": { "name": None, "marked": None },
+            "predicate": {}
+        }, atomic=True, fetchone=False)
+        self.assertEqual(result, [])
+        print ":Transaction 2 [delete commit] - OK"
+
+        ###############################################
+        # start transaction 3
+        self.connector.begin_transaction()
+        try:
+            # insert couple of records
+            self.connector.dml(payload("test-record-3", 0), atomic=False)
+            self.connector.dml(payload("test-record-4", 1), atomic=False)
+            # update records
+            self.connector.dml({
+                "type": "update",
+                "schema": self.schema(),
+                "table": self.table(),
+                "body": { "marked": 1 },
+                "predicate": { "marked": 0 }
+            }, atomic=False)
+            # raise error
+            raise KeyError("Test error")
+        # close transaction 3
+        except KeyError as e:
+            self.connector.rollback()
+        else:
+            self.connector.commit()
+        # check transaction 3 state
+        self.assertEqual(self.connector.cnx.in_transaction, False)
+        # check that there is no records in table
+        result = self.connector.sql({
+            "type": "select",
+            "schema": self.schema(),
+            "table": self.table(),
+            "body": { "name": None, "marked": None },
+            "predicate": {}
+        }, atomic=True, fetchone=False)
+        self.assertEqual(result, [])
+        print ":Transaction 3 [insert/update rollback] - OK"
+
+    def test_select_fetch(self):
+        # insert couple of records
+        self.connector.dml({
+            "type": "insert",
+            "schema": self.schema(),
+            "table": self.table(),
+            "body": { "name": "test-record-10", "marked": 0 },
+            "predicate": {}
+        })
+        self.connector.dml({
+            "type": "insert",
+            "schema": self.schema(),
+            "table": self.table(),
+            "body": { "name": "test-record-11", "marked": 1 },
+            "predicate": {}
+        })
+        print ""
+        # fetch one record
+        result = self.connector.sql({
+            "type": "select",
+            "schema": self.schema(),
+            "table": self.table(),
+            "body": { "name": None, "marked": None },
+            "predicate": {}
+        })
+        self.assertEqual(type(result), DictType)
+        for key in result.keys():
+            self.assertNotEqual(result[key], None)
+        print ":Select one record - OK"
+        # fetch all records
+        result = self.connector.sql({
+            "type": "select",
+            "schema": self.schema(),
+            "table": self.table(),
+            "body": { "name": None, "marked": None },
+            "predicate": {}
+        }, fetchone=False)
+        self.assertEqual(type(result), ListType)
+        for obj in result:
+            for key in obj:
+                self.assertNotEqual(obj[key], None)
+        print ":Select many records - OK"
+        # fetch empty result
+        result = self.connector.sql({
+            "type": "select",
+            "schema": self.schema(),
+            "table": self.table(),
+            "body": { "name": None, "marked": None },
+            "predicate": {"id": None}
+        })
+        self.assertEqual(result, None)
+        print ":Select empty record - OK"
+        # fetch empty results list
+        result = self.connector.sql({
+            "type": "select",
+            "schema": self.schema(),
+            "table": self.table(),
+            "body": { "name": None, "marked": None },
+            "predicate": {"id": None}
+        }, fetchone=False)
+        self.assertEqual(result, [])
+        print ":Select empty records list - OK"
+        self.assertEqual(self.connector.cnx.in_transaction, False)
 
 # Load test suites
 def _suites():

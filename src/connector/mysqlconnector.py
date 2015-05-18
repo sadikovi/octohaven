@@ -114,13 +114,47 @@ class MySqlConnector(object):
     def __init__(self, settings):
         if not settings or type(settings) is not DictType:
             raise StandardError("Settings are undefined")
+        self.settings = settings
+        # connector
+        self.cnx = None
         # connect to the server
-        self.cnx = mysql.connector.connect(
-            user=settings["user"],
-            password=settings["pass"],
-            host=settings["host"],
-            database=settings["schema"]
-        )
+        self.reconnect()
+
+    # connection and reconnection to the server
+    def reconnect(self, settings=None, forced=False):
+        settings = settings or self.settings
+        # not sure about this, maybe we should disconnect
+        if self.cnx and self.cnx.is_connected() and forced:
+            self.disconnect()
+        # connection
+        if not self.cnx:
+            self.cnx = mysql.connector.connect(
+                user=settings["user"],
+                password=settings["pass"],
+                host=settings["host"],
+                database=settings["schema"]
+            )
+        # if it is not connected - reconnect
+        if not self.cnx.is_connected():
+            self.cnx.connect()
+
+    # disconnect
+    def disconnect(self):
+        if self.cnx:
+            self.cnx.disconnect()
+            self.cnx = None
+
+    # checks if connector is in transaction state and rollbacks in atomic mode
+    def isatomic(self, atomic):
+        if atomic and self.cnx.in_transaction:
+            # discard previous transaction
+            self.cnx.rollback()
+
+    def commit(self):
+        self.cnx.commit()
+
+    def rollback(self):
+        self.cnx.rollback()
 
     # process payload and return query
     def _processPayload(self, payload):
@@ -147,9 +181,10 @@ class MySqlConnector(object):
             raise StandardError("Wrong use of %s command, use method for SQL/DML operation" %(res.type))
 
     # call dml operation
-    def dml(self, payload, commit=True, lastrowid=False):
-        if not self.cnx.is_connected():
-            self.cnx.connect()
+    def dml(self, payload, atomic=True, lastrowid=False):
+        self.reconnect()
+        # if operation is atomic it is performed in its own transaction.
+        self.isatomic(atomic)
         result = False
         try:
             cursor = self.cnx.cursor()
@@ -158,11 +193,12 @@ class MySqlConnector(object):
             # get last row id, if feature is on
             result = cursor.lastrowid if lastrowid else True
             # commit
-            if commit:
+            if atomic:
                 self.cnx.commit()
         except BaseException as e:
             # TODO: log error
-            if commit: self.cnx.rollback()
+            if atomic:
+                self.cnx.rollback()
             raise e
         finally:
             cursor.close()
@@ -171,8 +207,10 @@ class MySqlConnector(object):
 
     # execute sql operation
     def sql(self, payload, fetchone=True, atomic=True):
-        if not self.cnx.is_connected():
-            self.cnx.connect()
+        self.reconnect()
+        # if operation is atomic it is performed in its own transaction.
+        self.isatomic(atomic)
+        # execute statement
         result = None
         cursor = self.cnx.cursor(dictionary=True, buffered=True)
         try:
@@ -185,8 +223,20 @@ class MySqlConnector(object):
             # TODO: log error
             raise e
         finally:
-            if self.cnx.in_transaction and atomic:
-                self.cnx.rollback()
+            self.isatomic(atomic)
             cursor.close()
         # return result
         return result
+
+    # call begin transaction
+    def begin_transaction(self, ignoreprevious=False, consistent_snapshot=True, isolation_level="SERIALIZABLE"):
+        self.reconnect()
+        # check if cnx is already in transaction state
+        # if True we rollback any previous transactions
+        if self.cnx.in_transaction:
+            if ignoreprevious:
+                self.cnx.rollback()
+            else:
+                raise StandardError("Transaction is in progress")
+        # open transaction
+        self.cnx.start_transaction(consistent_snapshot, isolation_level, readonly=False)
