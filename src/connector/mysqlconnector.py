@@ -19,17 +19,13 @@ template = {
     "predicate": {
         "key": "value",
         "key": "value"
+    },
+    "orderby": {
+        "key": "value",
+        "key": "value"
     }
 }
 """
-# dml operations
-DML = "dml"
-DML_INSERT = "insert"
-DML_UPDATE = "update"
-DML_DELETE = "delete"
-# sql operations
-SQL = "sql"
-SQL_SELECT = "select"
 
 class QuerySource(object):
     def __init__(self, schema, table):
@@ -60,13 +56,26 @@ class QueryValues(object):
             self.mapvalues.append(mappair)
 
 class Query(object):
-    def __init__(self, type, schema, table, body, predicate):
-        self.type = ("%s"%(type)).lower()
+    # dml operations
+    DML = "dml"
+    DML_INSERT = "insert"
+    DML_UPDATE = "update"
+    DML_DELETE = "delete"
+    # sql operations
+    SQL = "sql"
+    SQL_SELECT = "select"
+    # order by (default is asc)
+    ORDER_BY_ASC = "ASC"
+    ORDER_BY_DESC = "DESC"
+
+    def __init__(self, querytype, schema, table, body, predicate, orderby=None):
+        self.type = ("%s"%(querytype)).lower()
         self.source = QuerySource(schema, table)
         self.body = QueryValues(body)
         self.data = QueryValues(predicate)
+        self.orderby = orderby if type(orderby) is DictType else None
     def metaquery(self):
-        if self.type == SQL_SELECT:
+        if self.type == Query.SQL_SELECT:
             # prepare values
             bdy = ["%s"%(key) for t in self.body.metavalues for key, value in t.items()]
             prd = [("%s"%(key) + " = %" + "(%s)"%(value) + "s") for t in self.data.metavalues for key, value in t.items()]
@@ -75,21 +84,25 @@ class Query(object):
             querysource = self.source.source()
             querypredicate = " and ".join(prd) if len(prd) else "1 = 1"
             query = "select %s from %s where (%s)" %(querybody, querysource, querypredicate)
+            if self.orderby:
+                obparts = ["%s %s"%(key, value) for key, value in self.orderby.items()]
+                queryorderby = "order by %s"%(", ".join(obparts))
+                query += " %s"%(queryorderby)
             return query
-        elif self.type == DML_INSERT:
+        elif self.type == Query.DML_INSERT:
             src = self.source.source()
             cols = ["%s"%(key) for t in self.body.metavalues for key, value in t.items()]
             vals = [("%" + "(%s)"%(value) + "s") for t in self.body.metavalues for key, value in t.items()]
             query = "insert into %s (%s) values (%s)" %(src, ", ".join(cols), ", ".join(vals))
             return query
-        elif self.type == DML_DELETE:
+        elif self.type == Query.DML_DELETE:
             prd = [("%s"%(key) + " = %" + "(%s)"%(value) + "s") for t in self.data.metavalues for key, value in t.items()]
             # prepare query
             querysource = self.source.source()
             querypredicate = " and ".join(prd) if len(prd) else "1 = 1"
             query = "delete from %s where (%s)" %(querysource, querypredicate)
             return query
-        elif self.type == DML_UPDATE:
+        elif self.type == Query.DML_UPDATE:
             bdy = [("%s"%(key) + " = %" + "(%s)"%(value) + "s") for t in self.body.metavalues for key, value in t.items()]
             prd = [("%s"%(key) + " = %" + "(%s)"%(value) + "s") for t in self.data.metavalues for key, value in t.items()]
             # prepare query
@@ -158,12 +171,14 @@ class MySqlConnector(object):
 
     # process payload and return query
     def _processPayload(self, payload):
+        _orderby = payload["orderby"] if "orderby" in payload else None
         return Query(
             payload["type"],
             payload["schema"],
             payload["table"],
             payload["body"],
-            payload["predicate"]
+            payload["predicate"],
+            _orderby
         )
 
     # execute statement
@@ -172,8 +187,9 @@ class MySqlConnector(object):
         if not res:
             raise StandardError("Object is not Query type")
         # check if operation is SQL or DML
-        opmatch = False or (operation == SQL and res.type == SQL_SELECT)
-        opmatch = opmatch or (operation == DML and res.type in [DML_INSERT, DML_DELETE, DML_UPDATE])
+        opmatch = False or (operation == Query.SQL and res.type == Query.SQL_SELECT)
+        opmatch = opmatch or (operation == Query.DML and res.type in
+            [Query.DML_INSERT, Query.DML_DELETE, Query.DML_UPDATE])
         if opmatch:
             # operation matches type - execute query
             cursor.execute(res.metaquery(), res.mapdict())
@@ -189,7 +205,7 @@ class MySqlConnector(object):
         try:
             cursor = self.cnx.cursor()
             # run command
-            self._executeStatement(DML, cursor, payload)
+            self._executeStatement(Query.DML, cursor, payload)
             # get last row id, if feature is on
             result = cursor.lastrowid if lastrowid else True
             # commit
@@ -214,7 +230,7 @@ class MySqlConnector(object):
         result = None
         cursor = self.cnx.cursor(dictionary=True, buffered=True)
         try:
-            self._executeStatement(SQL, cursor, payload)
+            self._executeStatement(Query.SQL, cursor, payload)
             if fetchone:
                 result = cursor.fetchone()
             else:

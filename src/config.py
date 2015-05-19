@@ -46,3 +46,11 @@ db_table_components_id = "id"
 db_table_components_type = "type"
 db_table_components_fileurl = "fileurl"
 db_table_components_created = "created"
+
+# branch revisions
+db_table_branch_rev = "branch_revisions"
+# branch revisions columns
+db_table_branch_rev_revisionid = "revision_id"
+db_table_branch_rev_branchid = "branchid"
+db_table_branch_rev_created = "created"
+db_table_branch_rev_latest = "latest"

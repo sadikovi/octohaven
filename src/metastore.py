@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import src.config as config
-from src.connector.mysqlconnector import MySqlConnector
+from src.connector.mysqlconnector import MySqlConnector, Query
 from datetime import datetime
 from types import StringType, IntType
 import re
@@ -392,8 +392,79 @@ class ComponentMetaStore(MetaStore):
         return self.connector.dml(execdata)
 
 class RevisionMaster(MetaStore):
-    def createBranchRevision(self, uniquebranchid):
-        pass
+    # better to use within transaction with atomic = False
+    def addBranchRevision(self, uniquebranchid, atomic=True):
+        if not Util.checknumericid(uniquebranchid):
+            raise StandardError("Unique branch id is incorrect")
+        # update latest revision as not latest
+        self.connector.dml({
+            "type": "update",
+            "schema": config.db_schema,
+            "table": config.db_table_branch_rev,
+            "body": {
+                config.db_table_branch_rev_latest: 0
+            },
+            "predicate": {
+                config.db_table_branch_rev_branchid: uniquebranchid
+            }
+        }, atomic=atomic)
+        # insert new revision and return last row id
+        result = self.connector.dml({
+            "type": "insert",
+            "schema": config.db_schema,
+            "table": config.db_table_branch_rev,
+            "body": {
+                config.db_table_branch_rev_branchid: uniquebranchid,
+                config.db_table_branch_rev_created: datetime.now()
+            },
+            "predicate": {}
+        }, atomic=atomic, lastrowid=True)
+        return result
+
+    def getLatestBranchRevision(self, uniquebranchid, atomic=True):
+        if not Util.checknumericid(uniquebranchid):
+            raise StandardError("Unique branch id is incorrect")
+        return self.connector.sql({
+            "type": "select",
+            "schema": config.db_schema,
+            "table": config.db_table_branch_rev,
+            "body": {
+                db_table_branch_rev_revisionid: None,
+                db_table_branch_rev_branchid: None,
+                db_table_branch_rev_created: None,
+                db_table_branch_rev_latest: None
+            },
+            "predicate": {
+                config.db_table_branch_rev_branchid: uniquebranchid,
+                config.db_table_branch_rev_latest: 1
+            }
+        }, atomic=atomic)
+
+    def getBranchRevisions(self, uniquebranchid, atomic=True, getsorted=True):
+        if not Util.checknumericid(uniquebranchid):
+            raise StandardError("Unique branch id is incorrect")
+        if getsorted:
+            orderby = {
+                config.db_table_branch_rev_revisionid: Query.ORDER_BY_ASC
+            }
+        else:
+            orderby = None
+        # return result
+        return self.connector.sql({
+            "type": "select",
+            "schema": config.db_schema,
+            "table": config.db_table_branch_rev,
+            "body": {
+                db_table_branch_rev_revisionid: None,
+                db_table_branch_rev_branchid: None,
+                db_table_branch_rev_created: None,
+                db_table_branch_rev_latest: None
+            },
+            "predicate": {
+                config.db_table_branch_rev_branchid: uniquebranchid
+            },
+            "orderby": orderby
+        }, atomic=atomic, fetchone=False)
 
     def createModuleRevision(self, moduleid):
         pass

@@ -437,6 +437,87 @@ class MySqlConnector_UT(unittest.TestCase):
         print ":Select empty records list - OK"
         self.assertEqual(self.connector.cnx.in_transaction, False)
 
+    def test_select_orderby(self):
+        def insertdata(name, marked):
+            return {
+                "type": "insert",
+                "schema": self.schema(),
+                "table": self.table(),
+                "body": { "name": name, "marked": marked },
+                "predicate": {}
+            }
+        data = [
+            {"name": "select-order-1", "marked": 1},
+            {"name": "select-order-2", "marked": 1},
+            {"name": "select-order-1", "marked": 0},
+            {"name": "select-order-5", "marked": 1},
+            {"name": "select-order-5", "marked": 0},
+            {"name": "select-order-2", "marked": 0}
+        ]
+        for obj in data:
+            self.connector.dml(insertdata(obj["name"], obj["marked"]))
+        print ""
+        # select unsorted
+        result = self.connector.sql({
+            "type": "select",
+            "schema": self.schema(),
+            "table": self.table(),
+            "body": { "name": None, "marked": None },
+            "predicate": {}
+        }, fetchone=False)
+        # check result with data
+        for i in range(len(data)):
+            self.assertEqual(data[i]["name"], result[i][unicode("name")])
+            self.assertEqual(data[i]["marked"], result[i][unicode("marked")])
+        print ":OrderBy [unsorted] - OK"
+        # select all records sorted by marked
+        result = self.connector.sql({
+            "type": "select",
+            "schema": self.schema(),
+            "table": self.table(),
+            "body": { "name": None, "marked": None },
+            "predicate": {},
+            "orderby": {
+                "marked": Query.ORDER_BY_ASC
+            }
+        }, fetchone=False)
+        sorted_by_marked = sorted([x.values() for x in data], key=lambda t:t[1])
+        result_list = [x.values() for x in result]
+        self.assertEqual(sorted_by_marked, result_list)
+        print ":OrderBy [sorted by marked asc] - OK"
+        # select all records sorted by name
+        result = self.connector.sql({
+            "type": "select",
+            "schema": self.schema(),
+            "table": self.table(),
+            "body": { "name": None, "marked": None },
+            "predicate": {},
+            "orderby": {
+                "name": Query.ORDER_BY_DESC
+            }
+        }, fetchone=False)
+        sorted_by_name = sorted([x.values() for x in data], key=lambda t:t[0], reverse=True)
+        result_list = [x.values() for x in result]
+        self.assertEqual(sorted_by_name, result_list)
+        print ":OrderBy [sorted by name desc] - OK"
+        # select all records sorted by name and marked
+        result = self.connector.sql({
+            "type": "select",
+            "schema": self.schema(),
+            "table": self.table(),
+            "body": { "name": None, "marked": None },
+            "predicate": {},
+            "orderby": {
+                "name": Query.ORDER_BY_ASC,
+                "marked": Query.ORDER_BY_ASC
+            }
+        }, fetchone=False)
+        sorted_by_all = sorted([x.values() for x in data])
+        result_list = [x.values() for x in result]
+        self.assertEqual(sorted_by_all, result_list)
+        print ":OrderBy [sorted by name asc, marked asc] - OK"
+
+
 # Load test suites
 def _suites():
     return [
