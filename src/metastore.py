@@ -9,7 +9,7 @@ import re
 class Util(object):
     @staticmethod
     def checkid(someid):
-        return someid and re.match("^[\w-]+$", someid, re.I)
+        return type(someid) is StringType and bool(re.match("^[\w-]+$", someid, re.I))
     @staticmethod
     def checknumericid(someid):
         return type(someid) is IntType and someid > 0
@@ -17,7 +17,6 @@ class Util(object):
     def unifyid(someid):
         return ("%s"%(someid)).strip().lower()
 
-# TODO: !!! optimisation of the workflow and validation
 class MetaStore(object):
     def __init__(self, connector):
         if not connector or type(connector) is not MySqlConnector:
@@ -33,7 +32,7 @@ class UserMetaStore(MetaStore):
         if self.userExists(userid):
             raise StandardError("User name is already taken")
         # prepare execdata
-        execdata = {
+        return self.connector.dml({
             "type": "insert",
             "schema": config.db_schema,
             "table": config.db_table_users,
@@ -42,15 +41,14 @@ class UserMetaStore(MetaStore):
                 config.db_table_users_created: datetime.now()
             },
             "predicate": {}
-        }
-        return self.connector.dml(execdata)
+        })
 
     def getUser(self, userid):
         userid = Util.unifyid(userid)
         if not Util.checkid(userid):
             return None
         # prepare execdata
-        execdata = {
+        return self.connector.sql({
             "type": "select",
             "schema": config.db_schema,
             "table": config.db_table_users,
@@ -58,42 +56,38 @@ class UserMetaStore(MetaStore):
                 config.db_table_users_uniqueid: None,
                 config.db_table_users_id: None,
                 config.db_table_users_created: None
-            }
+            },
             "predicate": {
                 config.db_table_users_id: userid
             }
-        }
-        return self.connector.sql(execdata)
+        })
 
     def userExists(self, userid):
-        return True and self.getUser(userid)
+        return bool(self.getUser(userid))
 
     def deleteUser(self, userid):
         userid = Util.unifyid(userid)
         if not Util.checkid(userid):
             return False
         # prepare execdata
-        execdata = {
-            "type": "delete"
+        return self.connector.dml({
+            "type": "delete",
             "schema": config.db_schema,
             "table": config.db_table_users,
             "body": {},
-            "predicate": {
-                config.db_table_users_id: userid
-            }
-        }
-        return self.connector.dml(execdata)
+            "predicate": { config.db_table_users_id: userid }
+        })
 
 class ProjectMetaStore(MetaStore):
     def createProject(self, userid, projectid):
-        projectid, userid = Util.unifyid(projectid), Util.unifyid(userid)
+        projectid = Util.unifyid(projectid)
         # validation
-        if not Util.checkid(userid):
+        if not Util.checknumericid(userid):
             raise StandardError("User id is incorrect")
         if not Util.checkid(projectid):
             raise StandardError("Project id is incorrect")
         # create project
-        execdata = {
+        return self.connector.dml({
             "type": "insert",
             "schema": config.db_schema,
             "table": config.db_table_projects,
@@ -103,8 +97,7 @@ class ProjectMetaStore(MetaStore):
                 config.db_table_projects_created: datetime.now()
             },
             "predicate": {}
-        }
-        return self.connector.dml(execdata)
+        })
 
     def getProject(self, userid, projectid):
         projectid = Util.unifyid(projectid)
@@ -112,7 +105,7 @@ class ProjectMetaStore(MetaStore):
         if not Util.checknumericid(userid) or not Util.checkid(projectid):
             return None
         # everything is ok, return project
-        execdata = {
+        return self.connector.sql({
             "type": "select",
             "schema": config.db_schema,
             "table": config.db_table_projects,
@@ -126,8 +119,7 @@ class ProjectMetaStore(MetaStore):
                 config.db_table_projects_userid: userid,
                 config.db_table_projects_id: projectid
             }
-        }
-        return self.connector.sql(execdata)
+        })
 
     def deleteProject(self, userid, projectid):
         projectid = Util.unifyid(projectid)
@@ -136,7 +128,7 @@ class ProjectMetaStore(MetaStore):
             raise StandardError("User id is incorrect")
         if not Util.checkid(projectid):
             raise StandardError("Project id is incorrect")
-        execdata = {
+        return self.connector.dml({
             "type": "delete",
             "schema": config.db_schema,
             "table": config.db_table_projects,
@@ -145,8 +137,7 @@ class ProjectMetaStore(MetaStore):
                 config.db_table_projects_userid: userid,
                 config.db_table_projects_id: projectid
             }
-        }
-        return self.connector.dml(execdata)
+        })
 
 class BranchMetaStore(MetaStore):
     def createBranch(self, userid, projectid, branchid):
@@ -159,7 +150,7 @@ class BranchMetaStore(MetaStore):
         if not Util.checkid(branchid):
             raise StandardError("Branch id is incorrect")
         # create branch
-        execdata = {
+        return self.connector.dml({
             "type": "insert",
             "schema": config.db_schema,
             "table": config.db_table_branches,
@@ -170,8 +161,7 @@ class BranchMetaStore(MetaStore):
                 config.db_table_branches_created: datetime.now()
             },
             "predicate": {}
-        }
-        return self.connector.dml(execdata)
+        })
 
     def getBranch(self, userid, projectid, branchid):
         branchid = Util.unifyid(branchid)
@@ -180,7 +170,7 @@ class BranchMetaStore(MetaStore):
                 and Util.checkid(branchid)):
             return None
         # everything is ok, return branch
-        execdata = {
+        return self.connector.sql({
             "type": "select",
             "schema": config.db_schema,
             "table": config.db_table_branches,
@@ -196,14 +186,13 @@ class BranchMetaStore(MetaStore):
                 config.db_table_branches_projectid: projectid,
                 config.db_table_branches_id: branchid
             }
-        }
-        return self.connector.sql(execdata)
+        })
 
     def getBranchByUniqueId(self, uniquebranchid):
         if not Util.checknumericid(uniquebranchid):
             return None
         # everything is ok, return branch
-        execdata = {
+        return self.connector.sql({
             "type": "select",
             "schema": config.db_schema,
             "table": config.db_table_branches,
@@ -217,8 +206,7 @@ class BranchMetaStore(MetaStore):
             "predicate": {
                 config.db_table_branches_uniqueid: uniquebranchid
             }
-        }
-        return self.connector.sql(execdata)
+        })
 
     def deleteBranch(self, userid, projectid, branchid):
         branchid = Util.unifyid(branchid)
@@ -229,7 +217,7 @@ class BranchMetaStore(MetaStore):
             raise StandardError("Project id is incorrect")
         if not Util.checkid(branchid):
             raise StandardError("Branch id is incorrect")
-        execdata = {
+        return self.connector.dml({
             "type": "delete",
             "schema": config.db_schema,
             "table": config.db_table_branches,
@@ -239,22 +227,20 @@ class BranchMetaStore(MetaStore):
                 config.db_table_branches_projectid: projectid,
                 config.db_table_branches_id: branchid
             }
-        }
-        return self.connector.dml(execdata)
+        })
 
     def deleteBranchByUniqueId(self, uniquebranchid):
         if not Util.checknumericid(uniquebranchid):
             return None
-        execdata = {
+        return self.connector.dml({
             "type": "delete",
             "schema": config.db_schema,
             "table": config.db_table_branches,
             "body": {},
             "predicate": {
-                db_table_branches_uniqueid: uniquebranchid
+                config.db_table_branches_uniqueid: uniquebranchid
             }
-        }
-        return self.connector.dml(execdata)
+        })
 
 class ModuleMetaStore(MetaStore):
     def createModule(self):
@@ -267,7 +253,8 @@ class ModuleMetaStore(MetaStore):
             },
             "predicate": {}
         }
-        return self.connector.dml(execdata)
+        # return last row id to know the module id
+        return self.connector.dml(execdata, lastrowid=True)
 
     def getModule(self, moduleid):
         if not Util.checknumericid(moduleid):
@@ -286,7 +273,6 @@ class ModuleMetaStore(MetaStore):
         }
         return self.connector.sql(execdata)
 
-# TODO: check components module
 class ComponentMetaStore(MetaStore):
     def createComponent(self, userid, id, type, fileurl):
         # prepare input data
@@ -320,7 +306,7 @@ class ComponentMetaStore(MetaStore):
             "schema": config.db_schema,
             "table": config.db_table_components,
             "body": {
-                config.db_table_components_unuqueid: None,
+                config.db_table_components_uniqueid: None,
                 config.db_table_components_userid: None,
                 config.db_table_components_id: None,
                 config.db_table_components_type: None,
@@ -343,7 +329,7 @@ class ComponentMetaStore(MetaStore):
             "schema": config.db_schema,
             "table": config.db_table_components,
             "body": {
-                config.db_table_components_unuqueid: None,
+                config.db_table_components_uniqueid: None,
                 config.db_table_components_userid: None,
                 config.db_table_components_id: None,
                 config.db_table_components_type: None,
@@ -466,11 +452,189 @@ class RevisionMaster(MetaStore):
             "orderby": orderby
         }, atomic=atomic, fetchone=False)
 
-    def createModuleRevision(self, moduleid):
-        pass
+    def addModuleRevision(self, moduleid, content, atomic=True):
+        if not Util.checknumericid(moduleid):
+            raise StandardError("Unique module id is incorrect")
+        # update latest revision as not latest
+        self.connector.dml({
+            "type": "update",
+            "schema": config.db_schema,
+            "table": config.db_table_module_rev,
+            "body": {
+                config.db_table_module_rev_latest: 0
+            },
+            "predicate": {
+                config.db_table_module_rev_moduleid: moduleid
+            }
+        }, atomic=atomic)
+        # insert new revision and return last row id
+        result = self.connector.dml({
+            "type": "insert",
+            "schema": config.db_schema,
+            "table": config.db_table_module_rev,
+            "body": {
+                config.db_table_module_rev_moduleid: moduleid,
+                config.db_table_module_rev_created: datetime.now(),
+                config.db_table_module_rev_content: content
+            },
+            "predicate": {}
+        }, atomic=atomic, lastrowid=True)
+        return result
 
-    def createBranchModuleChain(self, branchid, moduleid):
-        pass
+    def getLatestModuleRevision(self, moduleid, atomic=True):
+        if not Util.checknumericid(moduleid):
+            raise StandardError("Unique module id is incorrect")
+        return self.connector.sql({
+            "type": "select",
+            "schema": config.db_schema,
+            "table": config.db_table_module_rev,
+            "body": {
+                config.db_table_module_rev_revisionid: None,
+                config.db_table_module_rev_moduleid: None,
+                config.db_table_module_rev_created: None,
+                config.db_table_module_rev_content: None,
+                config.db_table_module_rev_latest: None
+            },
+            "predicate": {
+                config.db_table_module_rev_moduleid: moduleid,
+                config.db_table_module_rev_latest: 1
+            }
+        }, atomic=atomic)
 
-    def createComponentRevision(self):
-        pass
+    def getModuleRevisions(self, moduleid, atomic=True, getsorted=True):
+        if not Util.checknumericid(uniquebranchid):
+            raise StandardError("Unique branch id is incorrect")
+        if getsorted:
+            orderby = { config.db_table_module_rev_revisionid: Query.ORDER_BY_ASC }
+        else:
+            orderby = None
+        # return result
+        return self.connector.sql({
+            "type": "select",
+            "schema": config.db_schema,
+            "table": config.db_table_module_rev,
+            "body": {
+                config.db_table_module_rev_revisionid: None,
+                config.db_table_module_rev_moduleid: None,
+                config.db_table_module_rev_created: None,
+                config.db_table_module_rev_content: None,
+                config.db_table_module_rev_latest: None
+            },
+            "predicate": {
+                config.db_table_module_rev_moduleid: moduleid
+            },
+            "orderby": orderby
+        }, atomic=atomic, fetchone=False)
+
+    def addBranchModuleChain(self, brevid, mrevid, atomic=True):
+        if not Util.checknumericid(brevid):
+            raise StandardError("Branch revision id is incorrect")
+        if not Util.checknumericid(mrevid):
+            raise StandardError("Module revision id is incorrect")
+        self.connector.dml({
+            "type": "insert",
+            "schema": config.db_schema,
+            "table": config.db_table_branch_module,
+            "body": {
+                config.db_table_branch_module_brevid: brevid,
+                config.db_table_branch_module_mrevid: mrevid
+            },
+            "predicate": {}
+        }, atomic=atomic)
+
+    # returns list (select - fetch all)
+    def getBranchModuleChain(self, brevid, atomic=True, getsorted=True):
+        if not Util.checknumericid(brevid):
+            raise StandardError("Branch revision id is incorrect")
+        if getsorted:
+            orderby = { config.db_table_branch_module_absorder: Query.ORDER_BY_ASC }
+        else:
+            orderby = None
+        # return result
+        return self.connector.sql({
+            "type": "select",
+            "schema": config.db_schema,
+            "table": config.db_table_branch_module,
+            "body": {
+                config.db_table_branch_module_brevid: None,
+                config.db_table_branch_module_mrevid: None,
+                config.db_table_branch_module_absorder: None
+            },
+            "predicate": {
+                config.db_table_branch_module_brevid: brevid
+            },
+            "orderby": orderby
+        }, atomic=atomic, fetchone=False)
+
+    def addComponentRevision(self, componentid, desc, atomic=True):
+        if not Util.checknumericid(componentid):
+            raise StandardError("Component id is incorrect")
+        # update latest revision as not latest
+        self.connector.dml({
+            "type": "update",
+            "schema": config.db_schema,
+            "table": config.db_table_component_rev,
+            "body": {
+                config.db_table_component_rev_latest: 0
+            },
+            "predicate": {
+                config.db_table_component_rev_componentid: componentid
+            }
+        }, atomic=atomic)
+        # insert new revision and return last row id
+        return self.connector.dml({
+            "type": "insert",
+            "schema": config.db_schema,
+            "table": config.db_table_component_rev,
+            "body": {
+                config.db_table_component_rev_componentid: componentid,
+                config.db_table_component_rev_description: desc,
+                config.db_table_component_rev_created: datetime.now()
+            },
+            "predicate": {}
+        }, atomic=atomic, lastrowid=True)
+
+    def getLatestComponentRevision(self, componentid, atomic=True):
+        if not Util.checknumericid(componentid):
+            raise StandardError("Unique component id is incorrect")
+        return self.connector.sql({
+            "type": "select",
+            "schema": config.db_schema,
+            "table": config.db_table_component_rev,
+            "body": {
+                config.db_table_component_rev_revisionid: None,
+                config.db_table_component_rev_componentid: None,
+                config.db_table_component_rev_description: None,
+                config.db_table_component_rev_created: None,
+                config.db_table_component_rev_latest: None
+            },
+            "predicate": {
+                config.db_table_component_rev_componentid: componentid,
+                config.db_table_component_rev_latest: 1
+            }
+        }, atomic=atomic)
+
+    def getComponentRevisions(self, componentid, atomic=True, getsorted=True):
+        if not Util.checknumericid(componentid):
+            raise StandardError("Unique component id is incorrect")
+        if getsorted:
+            orderby = { config.db_table_component_rev_revisionid: Query.ORDER_BY_ASC }
+        else:
+            orderby = None
+        # return result
+        return self.connector.sql({
+            "type": "select",
+            "schema": config.db_schema,
+            "table": config.db_table_component_rev,
+            "body": {
+                config.db_table_component_rev_revisionid: None,
+                config.db_table_component_rev_componentid: None,
+                config.db_table_component_rev_description: None,
+                config.db_table_component_rev_created: None,
+                config.db_table_component_rev_latest: None
+            },
+            "predicate": {
+                config.db_table_component_rev_componentid: componentid
+            },
+            "orderby": orderby
+        }, atomic=atomic, fetchone=False)

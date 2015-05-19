@@ -54,3 +54,28 @@ db_table_branch_rev_revisionid = "revision_id"
 db_table_branch_rev_branchid = "branchid"
 db_table_branch_rev_created = "created"
 db_table_branch_rev_latest = "latest"
+
+# module revisions
+db_table_module_rev = "module_revisions"
+# module revisions columns
+db_table_module_rev_revisionid = "revision_id"
+db_table_module_rev_moduleid = "moduleid"
+db_table_module_rev_created = "created"
+db_table_module_rev_content = "content"
+db_table_module_rev_latest = "latest"
+
+# branch module chain table
+db_table_branch_module = "branch_module"
+# branch module columns
+db_table_branch_module_brevid = "branch_revision_id"
+db_table_branch_module_mrevid = "module_revision_id"
+db_table_branch_module_absorder = "abs_order"
+
+# components revision table
+db_table_component_rev = "component_revisions"
+# component revisions columns
+db_table_component_rev_revisionid = "revision_id"
+db_table_component_rev_componentid = "componentid"
+db_table_component_rev_description = "description"
+db_table_component_rev_created = "created"
+db_table_component_rev_latest = "latest"

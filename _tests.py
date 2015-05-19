@@ -6,7 +6,7 @@ import unittest
 # select what tests to run
 _RUN_TESTS = {
     "core":             False,
-    "metastore":        False,
+    "metastore":        True,
     "mysqlconnector":   True
 }
 
