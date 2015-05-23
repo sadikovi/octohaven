@@ -12,6 +12,7 @@ db_table_users = "users"
 # user table columns
 db_table_users_uniqueid = "uniqueid"
 db_table_users_id = "id"
+db_table_users_pass = "pass"
 db_table_users_created = "created"
 
 # projects table

@@ -24,7 +24,7 @@ class MetaStore(object):
         self.connector = connector
 
 class UserMetaStore(MetaStore):
-    def createUser(self, userid):
+    def createUser(self, userid, userpass):
         userid = Util.unifyid(userid)
         # validate fields
         if not Util.checkid(userid):
@@ -38,6 +38,7 @@ class UserMetaStore(MetaStore):
             "table": config.db_table_users,
             "body": {
                 config.db_table_users_id: userid,
+                config.db_table_users_pass: userpass,
                 config.db_table_users_created: datetime.now()
             },
             "predicate": {}
@@ -55,6 +56,7 @@ class UserMetaStore(MetaStore):
             "body": {
                 config.db_table_users_uniqueid: None,
                 config.db_table_users_id: None,
+                config.db_table_users_pass: None,
                 config.db_table_users_created: None
             },
             "predicate": {

@@ -36,6 +36,7 @@ class StoreTestCase(unittest.TestCase):
         self.connector = MySqlConnector(settings)
         prefix = uuid.uuid4().hex
         self.userid = prefix + "-test-user"
+        self.userpass = prefix + "-test-pass"
         self.projectid = prefix + "-test-project"
         self.branchid = prefix + "-test-branch"
         self.componentid = prefix + "-test-component"
@@ -88,12 +89,13 @@ class UserMetaStore_TS(StoreTestCase):
             UserMetaStore(None)
         store = UserMetaStore(self.connector)
         # create user
-        res = store.createUser(self.userid)
+        res = store.createUser(self.userid, self.userpass)
         self.assertEqual(res, True)
         # get user
         user = store.getUser(self.userid)
         self.assertEqual(type(user), DictType)
         self.assertEqual(user[unicode(config.db_table_users_id)], self.userid)
+        self.assertEqual(user[unicode(config.db_table_users_pass)], self.userpass)
         # check that user exists
         self.assertEqual(store.userExists(self.userid), True)
         # create the same user again - raise exception
