@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 
-import src.config as config
-from src.connector import MySqlConnector
-from src.core import User
-from src.metastore import UserMetaStore
+import src.mysql.config as config
+from src.connector.mysqlconnector import MySqlConnector
+from src.mysql.core import User
+from src.mysql.metastore import UserMetaStore
 
 class Manager(object):
     # default nice layer on top of Metastore

@@ -2,9 +2,9 @@
 
 import unittest
 from datetime import datetime
-import src.config as config
-from src.metastore import Util, MetaStore, UserMetaStore, ProjectMetaStore
-from src.metastore import BranchMetaStore, ModuleMetaStore, ComponentMetaStore
+import src.mysql.config as config
+from src.mysql.metastore import Util, MetaStore, UserMetaStore, ProjectMetaStore
+from src.mysql.metastore import BranchMetaStore, ModuleMetaStore, ComponentMetaStore
 from src.connector.mysqlconnector import MySqlConnector
 from types import DictType, IntType
 import uuid

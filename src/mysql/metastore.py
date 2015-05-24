@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import src.config as config
+import src.mysql.config as config
 from src.connector.mysqlconnector import MySqlConnector, Query
 from datetime import datetime
 from types import StringType, IntType

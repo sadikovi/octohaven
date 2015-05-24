@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import unittest
-import src.config as config
+import src.mysql.config as config
 import src.connector.mysqlconnector as mysqlconnector
 from src.connector.mysqlconnector import QuerySource, QueryValues, Query, MySqlConnector
 from types import DictType, IntType, ListType

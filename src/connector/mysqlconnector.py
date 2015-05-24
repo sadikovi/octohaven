@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import src.config as config
+import src.mysql.config as config
 import mysql.connector
 from mysql.connector import errorcode
 import uuid

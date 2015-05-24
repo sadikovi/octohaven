@@ -40,3 +40,6 @@ skip_files:
 libraries:
 - name: webapp2
   version: latest
+# using official connector
+#- name: mysql.connector
+#  version: 2.0.4

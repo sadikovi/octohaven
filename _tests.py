@@ -7,7 +7,10 @@ import unittest
 _RUN_TESTS = {
     "core":             False,
     "metastore":        True,
-    "mysqlconnector":   True
+    "mysqlconnector":   True,
+    "redisconnector":   True,
+    "redismanager":     True,
+    "rediscore":        True
 }
 
 def _checkTest(key):
@@ -34,6 +37,27 @@ def _collectSystemTests(suites):
         suites.addTest(unittest_mysqlconnector.loadSuites())
     else:
         print "@skip: 'mysqlconnector' tests"
+
+    # redis connector
+    if _checkTest("redisconnector"):
+        import test.unittest_redisconnector as unittest_redisconnector
+        suites.addTest(unittest_redisconnector.loadSuites())
+    else:
+        print "@skip: 'redisconnector' tests"
+
+    # redis manager
+    if _checkTest("redismanager"):
+        import test.unittest_redismanager as unittest_redismanager
+        suites.addTest(unittest_redismanager.loadSuites())
+    else:
+        print "@skip: 'redismanager' tests"
+
+    # redis core
+    if _checkTest("rediscore"):
+        import test.unittest_rediscore as unittest_rediscore
+        suites.addTest(unittest_rediscore.loadSuites())
+    else:
+        print "@skip: 'rediscore' tests"
 
 if __name__ == '__main__':
     suites = unittest.TestSuite()

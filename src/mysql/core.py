@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from src.metastore import Util
+from src.mysql.metastore import Util
 import uuid
 
 # Abstract classes

@@ -5,15 +5,20 @@ unless newProjectForm
 
 # actions
 createbtn =
-    type: "button"
+    type: "a"
     cls: "btn btn-success"
     title: "Create"
+    onclick: (e)=>
+        submitForm()
+        e.preventDefault()
+        e.stopPropagation()
 createbtn = @mapper.parseMapForParent createbtn
 
 cancelbtn =
-    type: "button"
+    type: "a"
     cls: "btn"
     title: "Cancel"
+    href: "/"
 cancelbtn = @mapper.parseMapForParent cancelbtn
 
 # project id
@@ -176,13 +181,31 @@ checkvalue = (dl, input, p) ->
     # reset state
     changeState dl, input, p, "reset"
     # make api call
-    return false unless value
-    result = value.length > 3 and /^[\w-]+$/i.test(value)
-    if result
-        changeState dl, input, p, "success", "All good"
-    else
-        changeState dl, input, p, "error", "Some error"
+    @loader.sendrequest "get", "/project/new/validate?projectid=#{value}", {}, null,
+    (ok, res)=>
+        if res and ok == 200
+            res = JSON.parse(res)
+            changeState dl, input, p, "#{res.status}", "#{res.message}"
+    , (ko, res)=>
+        if res and 400<=ko<=401
+            res = JSON.parse(res)
+            changeState dl, input, p, "#{res.status}", "#{res.message}"
+        else
+            changeState dl, input, p, "error", "Something bad happened on our side"
+    changeState dl, input, p, "success", "All good"
+
 
 @util.addEventListener idinput, "keyup", (e)=> checkvalue iddl, idinput, idmsg
 @util.addEventListener idinput, "onchange", (e)=> checkvalue iddl, idinput, idmsg
 @util.addEventListener idinput, "onpaste", (e)=> checkvalue iddl, idinput, idmsg
+
+# sending post request
+[method, url, headers] = ["post", "/project/new/create", {"Content-Type": "application/x-www-form-urlencoded"}]
+
+submitForm = ->
+    @loader.sendrequest method, url, headers,
+    "projectid=#{idinput.value}&projectname=#{nameinput.value}",
+    (ok, res)->
+        console.log ok, res
+    , (ko, res)->
+        console.log ko, res
