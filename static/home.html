@@ -16,74 +16,80 @@
         <link rel="icon" type="image/x-icon" href="/image/favicon.ico">
         <link rel="stylesheet" href="/style/internal.min.css">
         <link rel="stylesheet" href="/style/semantic.min.css">
+        <script type="text/javascript" src="/script/js/timezone.js"></script>
     </head>
     <body>
-        <div class="ui page grid">
-            <div class="twelve wide centered column">
-                <div class="ui basic segment">
-                    <div class="ui text menu">
-                        <a class="active item" href="/">
+        <div class="ui basic segment">
+            <div class="ui page stackable grid">
+                <div class="four wide column">
+                    <div class="ui vertical text menu">
+                        <div class="header item">
                             Octohaven
-                        </a>
-                        <div class="item">
-                            <i class="user icon"></i>
-                            {{username}}
                         </div>
+                        <a class="item" href="{{home_url}}">
+                            <i class="home icon"></i>
+                            Home
+                        </a>
+                        <a class="item" href="{{userdash_url}}">
+                            <i class="spy icon"></i>
+                            {{ username }}
+                        </a>
                         <a class="item" href="{{logout_url}}">
+                            <i class="plug icon"></i>
                             Logout
                         </a>
                     </div>
                 </div>
-            </div>
-            <div class="twelve wide centered column">
-                {% if projects %}
-                <div class="ui top attached secondary segment">
-                    <form action="{{create_url}}">
-                        <button class="btn">+ project</button>
-                    </form>
-                </div>
-                <div class="ui bottom attached segment">
-                    <div class="ui divided items">
-                        {% for project in projects %}
-                        <div class="item">
-                            <div class="content">
-                                <div class="header">
-                                    <button class="btn btn-link">
-                                        {{ project.id }}
-                                    </button>
-                                </div>
-                                {% autoescape on %}
-                                <div class="meta">
-                                    <span>
-                                        {{ project.name }}
-                                    </span>
-                                </div>
-                                {% endautoescape %}
-                                <div class="extra">
-                                    Created {{ project.datetime }}
+                <div class="twelve wide column">
+                    {% if projects %}
+                    <div class="ui top attached secondary segment">
+                        <form action="{{create_url}}">
+                            <button class="btn">+ project</button>
+                        </form>
+                    </div>
+                    <div class="ui bottom attached segment">
+                        <div class="ui divided items">
+                            {% for project in projects %}
+                            <div class="item">
+                                <div class="content">
+                                    <div class="header">
+                                        <button class="btn btn-link">
+                                            {{ project.id }}
+                                        </button>
+                                    </div>
+                                    {% autoescape on %}
+                                    <div class="meta">
+                                        <span>
+                                            {{ project.name }}
+                                        </span>
+                                    </div>
+                                    {% endautoescape %}
+                                    <div class="extra">
+                                        Created {{ project.datetime }}
+                                    </div>
                                 </div>
                             </div>
+                            {% endfor %}
                         </div>
-                        {% endfor %}
                     </div>
-                </div>
-                {% else %}
-                <div class="ui segment">
-                    <div class="blankslate">
-                        <h1 class="icon header">
-                            <i class="wizard icon"></i>
-                            <div class="content text-thin">
-                                Nothing yet
-                            </div>
-                        </h1>
-                        <p class="text-mute">
-                            <a class="link" href="{{create_url}}">
-                                Create a new project
-                            </a>
-                        </p>
+                    {% else %}
+                    <div class="ui segment">
+                        <div class="blankslate">
+                            <h1 class="icon header">
+                                <i class="wizard icon"></i>
+                                <div class="content text-thin">
+                                    Nothing yet
+                                </div>
+                            </h1>
+                            <p class="text-mute">
+                                <a class="link" href="{{create_url}}">
+                                    Create a new project
+                                </a>
+                            </p>
+                        </div>
                     </div>
+                    {% endif %}
                 </div>
-                {% endif %}
             </div>
         </div>
     </body>

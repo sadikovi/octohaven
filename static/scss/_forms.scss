@@ -50,31 +50,6 @@ input.input-contrast,
   &:focus { background-color: #fff; }
 }
 
-// Custom styling for HTML5 validation bubbles (WebKit only)
-::-webkit-input-placeholder,
-:-moz-placeholder {
-  color: #aaa;
-}
-
-::-webkit-validation-bubble-message {
-  font-size: 12px;
-  color: #fff;
-  background: #9c2400;
-  border: 0;
-  border-radius: 3px;
-  -webkit-box-shadow: 1px 1px 1px rgba(0, 0, 0, 0.1);
-}
-
-input::-webkit-validation-bubble-icon {
-  display: none;
-}
-
-::-webkit-validation-bubble-arrow {
-  background-color: #9c2400;
-  border: solid 1px #9c2400;
-  -webkit-box-shadow: 1px 1px 1px rgba(0, 0, 0, 0.1);
-}
-
 // Mini inputs, to match .minibutton
 input.input-mini {
   min-height: 26px;
@@ -350,7 +325,6 @@ dl.form {
 // the top of pages with autosave.
 .hfields {
   margin: 15px 0;
-  @include clearfix;
 
   dl.form {
     float: left;
@@ -375,17 +349,6 @@ dl.form {
 
   select { margin-top: 5px; }
 }
-
-
-// Hide the up/down buttons in <input type="number"> in the login form, the
-// input is used for two-factor auth codes, type="number" makes it more usable
-// on phones
-input::-webkit-outer-spin-button,
-input::-webkit-inner-spin-button {
-  margin: 0;
-  -webkit-appearance: none;
-}
-
 
 // Input groups
 .input-group {
@@ -441,7 +404,6 @@ input::-webkit-inner-spin-button {
 }
 
 .form-actions {
-  @include clearfix;
 
   .btn {
     float: right;
@@ -476,16 +438,13 @@ input::-webkit-inner-spin-button {
 //
 // Used for example when autosaving checkboxes in settings.
 .status-indicator {
-  @include icon-bootstrap(16px);
   margin-left: 5px;
 }
 
 .status-indicator-success:before {
   color: $brand-green;
-  content: "\f03a"; // octicon-check
 }
 
 .status-indicator-failed:before {
   color: $brand-red;
-  content: "\f02d"; // octicon-x
 }

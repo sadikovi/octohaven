@@ -16,55 +16,60 @@
         <link rel="icon" type="image/x-icon" href="/image/favicon.ico">
         <link rel="stylesheet" href="/style/internal.min.css">
         <link rel="stylesheet" href="/style/semantic.min.css">
+        <script type="text/javascript" src="/script/js/timezone.js"></script>
     </head>
     <body>
-        <div class="ui page grid">
-            <div class="twelve wide centered column">
-                <div class="ui basic segment">
-                    <div class="ui text menu">
-                        <a class="active item" href="/">
+        <div class="ui basic segment">
+            <div class="ui page stackable grid">
+                <div class="four wide column">
+                    <div class="ui vertical text menu">
+                        <div class="header item">
                             Octohaven
-                        </a>
-                        <div class="item">
-                            <i class="user icon"></i>
-                            {{ username }}
                         </div>
+                        <a class="item" href="{{home_url}}">
+                            <i class="home icon"></i>
+                            Home
+                        </a>
+                        <a class="item" href="{{userdash_url}}">
+                            <i class="spy icon"></i>
+                            {{ username }}
+                        </a>
                         <a class="item" href="{{logout_url}}">
+                            <i class="plug icon"></i>
                             Logout
                         </a>
                     </div>
                 </div>
-            </div>
-            <div class="eight wide centered column">
-                <div class="ui segment">
-                    <div class="ui small form">
-                        <h1 class="ui dividing header text-thin">
+                <div class="twelve wide column">
+                    <div class="ui top attached secondary segment">
+                        <h1 class="ui header text-thin">
                             New project
                         </h1>
-                        <div class="required field">
-                            <label>Project id</label>
-                            <input placeholder="Letter, numbers and dashes" type="text">
-                        </div>
-                        <div class="field">
-                            <label>Project name</label>
-                            <input placeholder="Sensible description" type="text">
-                        </div>
-                        <div class="ui basic right aligned segment">
-                            <div class="ui horizontal list">
-                                <div class="item">
-                                    <form action="/">
-                                        <button class="btn">
-                                            Cancel
-                                        </button>
-                                    </form>
-                                </div>
-                                <div class="item">
-                                    <button class="btn btn-success">
-                                        Create
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
+                    </div>
+                    <div class="ui bottom attached segment">
+                        <dl class="form required">
+                            <dt>
+                                <label>Project id</label>
+                            </dt>
+                            <dd>
+                                <input class="input-contrast" placeholder="Letters/numbers/dashes" type="text">
+                            </dd>
+                        </dl>
+                        <dl class="form">
+                            <dt>
+                                <label>Project name</label>
+                            </dt>
+                            <dd>
+                                <input class="input-contrast" placeholder="Sensible description" type="text">
+                            </dd>
+                        </dl>
+                        <div class="ui divider"></div>
+                        <a class="btn" role="button" href="{{ cancel_url }}">
+                            Cancel
+                        </a>
+                        <a class="btn btn-primary" role="button" href="{{ cancel_url }}">
+                            Create
+                        </a>
                     </div>
                 </div>
             </div>

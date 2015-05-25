@@ -5,7 +5,7 @@ import time
 from src.redis.errors import CoreError
 from types import FloatType, DictType
 import re
-from datetime import datetime
+from datetime import datetime, timedelta
 
 class User(object):
     def __init__(self, eid, name, email, created=time.time()):
@@ -52,8 +52,10 @@ class Project(object):
     def id(self):
         return self._id
 
-    def datetime(self):
-        return datetime.fromtimestamp(self._created).strftime("%d/%m/%Y %H:%M:%S")
+    def datetime(self, offset=None, template="%d/%m/%Y %H:%M:%S"):
+        utc = datetime.utcfromtimestamp(self._created)
+        local = (utc - timedelta(minutes=offset)) if offset else utc
+        return local.strftime(template)
 
     @classmethod
     def create(cls, settings):
