@@ -14,17 +14,23 @@ handlers:
   static_files: static/\1/\2
   upload: static/(.*?)/(.*\.(js|coffee))$
 
-- url: /fonts/(.*\.(ttf))$
+- url: /font/(.*\.(ttf))$
   static_files: static/fonts/\1
   upload: static/fonts/(.*\.(ttf))$
 
 # images
-- url: /images/(.*\.(ico|png|jpg|jpeg))$
+- url: /image/(.*\.(ico|png|jpg|jpeg))$
   static_files: static/img/\1
   upload: static/img/(.*\.(ico|png|jpg|jpeg))$
 
 
 # webpage handlers
+- url: /api/.*
+  script: api.application
+
+- url: /auth/.*
+  script: auth.application
+
 - url: /.*
   script: app.application
 

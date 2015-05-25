@@ -25,22 +25,13 @@ class Manager(object):
         if not info:
             return None
         # convert into object
-        _id = info["_id"]
-        _name = info["_name"]
-        _email = info["_email"]
-        _created = info["_created"]
-        return User(_id, _name, _email, _created)
+        return User.create(info)
 
     def createUser(self, uid, name, email):
         key = self._userkey(uid)
         user = User(uid, name, email)
         # convert into dict
-        info = {}
-        info["_id"] = user._id
-        info["_name"] = user._name
-        info["_email"] = user._email
-        info["_created"] = user._created
-        self._connector.storeObject(key, info)
+        self._connector.storeObject(key, user.dict())
         return user
 
     def getProject(self, uid, pid):
@@ -48,22 +39,13 @@ class Manager(object):
         info = self._connector.getObject(key)
         if not info:
             return None
-        _id = info["_id"]
-        _name = info["_name"]
-        _userid = info["_userid"]
-        _created = info["_created"]
-        return Project(_id, _name, _userid, _created)
+        return Project.create(info)
 
     def createProject(self, uid, pid, name):
         key = self._projectkey(uid, pid)
         project = Project(pid, name, uid)
         # convert into object
-        info = {}
-        info["_id"] = project._id
-        info["_name"] = project._name
-        info["_userid"] = project._userid
-        info["_created"] = project._created
-        self._connector.storeObject(key, info)
+        self._connector.storeObject(key, project.dict())
         return project
 
     def addProjectForUser(self, uid, pid):

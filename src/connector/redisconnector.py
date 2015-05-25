@@ -2,6 +2,7 @@
 
 import redis
 from src.redis.errors import ConnectorError
+import cPickle
 from types import DictType, IntType, FloatType, StringType, BooleanType, NoneType
 
 class RedisConnectionPool(object):
@@ -81,6 +82,29 @@ class RedisConnector(object):
             return object
         else:
             return None
+
+    # using cPickle
+    def storeObjectImp(self, key, object={}):
+        if type(object) is not DictType:
+            raise ConnectorError("Object is not a DictType")
+        key = self._key(key)
+        try:
+            info = cPickle.dumps(object)
+        except:
+            raise ConnectorError("Pickling object [%s: type %s] failed"%(object, type(object)))
+        pipe = self._redis.pipeline()
+        pipe.set(key, info).execute()
+
+    # using cPickle
+    def getObjectImp(self, key):
+        key, object = self._key(key), None
+        if self._redis.exists(key):
+            info = self._redis.get(key)
+            try:
+                object = cPickle.loads(info)
+            except:
+                raise ConnectorError("Unpickling info [%s] failed"%(info))
+        return object
 
     def storeConnection(self, key, *args):
         key = self._key(key)
