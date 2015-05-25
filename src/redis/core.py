@@ -5,6 +5,7 @@ import time
 from src.redis.errors import CoreError
 from types import FloatType, DictType
 import re
+from datetime import datetime
 
 class User(object):
     def __init__(self, eid, name, email, created=time.time()):
@@ -44,6 +45,15 @@ class Project(object):
         self._userid = str(userid) if userid else None
         # created as a timestamp instance
         self._created = created
+
+    def name(self):
+        return self._name
+
+    def id(self):
+        return self._id
+
+    def datetime(self):
+        return datetime.fromtimestamp(self._created).strftime("%d/%m/%Y %H:%M:%S")
 
     @classmethod
     def create(cls, settings):

@@ -1,0 +1,24 @@
+// links
+a.link {
+    color: $brand-blue;
+    text-decoration: none;
+
+    &:hover,
+    &:active {
+        color: $brand-blue;
+        text-decoration: underline;
+    }
+}
+
+
+// Muted link
+a.link-muted {
+    color: #777;
+
+    &:hover,
+    &:active,
+    &:visited {
+        color: $brand-blue;
+        text-decoration: none;
+    }
+}

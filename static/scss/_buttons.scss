@@ -156,3 +156,56 @@ $danger-color-active: darken($brand-red, 5);
     background-color: $danger-color-down;
     color: $danger-text-color;
 }
+
+.btn-link.btn {
+    cursor: pointer;
+    display: inline-block;
+
+    min-height: 20px;
+
+    outline: none;
+    border: none;
+    border-radius: inherit;
+    vertical-align: middle;
+    padding: 10px 15px;
+    font-weight: bold;
+    line-height: 1;
+    font-style: normal;
+    text-align: center;
+    box-shadow: none;
+    text-shadow: none;
+    background-color: transparent;
+    background-image: none;
+
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    -webkit-tap-highlight-color: transparent;
+
+    color: $brand-blue;
+    text-decoration: none;
+
+    &:hover,
+    &:active,
+    &:focus {
+        text-shadow: none;
+        box-shadow: none !important;
+        border-radius: inherit;
+        color: $brand-blue;
+        text-decoration: underline;
+        background-color: transparent;
+        background-image: none;
+    }
+}
+
+.btn-disabled.btn-link,
+.btn-link:disabled,
+.btn-disabled.btn-link:hover {
+    cursor: default;
+    color: rgba(102, 102, 102, 0.5) !important;
+    background-color: transparent !important;
+    background-image: none !important;
+    box-shadow: none !important;
+    pointer-events: none;
+}

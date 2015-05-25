@@ -10,36 +10,64 @@
         <meta name="author" content="">
 
         <title>
-            New Project &middot; Octohaven
+            New project &middot; Octohaven
         </title>
 
         <link rel="icon" type="image/x-icon" href="/image/favicon.ico">
-        <link rel="stylesheet" href="/style/primer.css">
+        <link rel="stylesheet" href="/style/internal.min.css">
+        <link rel="stylesheet" href="/style/semantic.min.css">
     </head>
     <body>
-        <header class="masthead">
-            <div class="container">
-                <a class="masthead-logo" href="/">Octohaven</a>
-                <nav class="masthead-nav">
-                    <span>{{ username }}</span>
-                    <a href="/logout">Logout</a>
-                </nav>
+        <div class="ui page grid">
+            <div class="twelve wide centered column">
+                <div class="ui basic segment">
+                    <div class="ui text menu">
+                        <a class="active item" href="/">
+                            Octohaven
+                        </a>
+                        <div class="item">
+                            <i class="user icon"></i>
+                            {{ username }}
+                        </div>
+                        <a class="item" href="{{logout_url}}">
+                            Logout
+                        </a>
+                    </div>
+                </div>
             </div>
-        </header>
-        <div class="container">
-            <div class="columns">
-                <div class="one-half column centered">
-                    <h1 class="text-thin">
-                        New project
-                    </h1>
-                    <form id="new-project-form">
-                    </form>
+            <div class="eight wide centered column">
+                <div class="ui segment">
+                    <div class="ui small form">
+                        <h1 class="ui dividing header text-thin">
+                            New project
+                        </h1>
+                        <div class="required field">
+                            <label>Project id</label>
+                            <input placeholder="Letter, numbers and dashes" type="text">
+                        </div>
+                        <div class="field">
+                            <label>Project name</label>
+                            <input placeholder="Sensible description" type="text">
+                        </div>
+                        <div class="ui basic right aligned segment">
+                            <div class="ui horizontal list">
+                                <div class="item">
+                                    <form action="/">
+                                        <button class="btn">
+                                            Cancel
+                                        </button>
+                                    </form>
+                                </div>
+                                <div class="item">
+                                    <button class="btn btn-success">
+                                        Create
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
-        <script type="text/javascript" src="/script/js/util.js"></script>
-        <script type="text/javascript" src="/script/js/mapper.js"></script>
-        <script type="text/javascript" src="/script/js/loader.js"></script>
-        <script type="text/javascript" src="/script/js/newproject.js"></script>
     </body>
 </html>
