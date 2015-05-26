@@ -27,18 +27,17 @@ def fullpath():
     return os.path.join(os.path.dirname(__file__), "static")
 
 def tzoffset(value):
-    offset = None
     try:
-        offset = int(value)
+        return int(value)
     except:
-        offset = None
-    return offset
+        return None
 
 class app_home(webapp2.RequestHandler):
     def get(self):
         user = users.get_current_user()
         # timezone offset
         offset = tzoffset(self.request.cookies.get(TIMEZONE_COOKIE))
+        # template file and template values
         template_file, template_values = START_PAGE,  {}
         if not user:
             template_file = START_PAGE
@@ -98,6 +97,7 @@ class app_project_new(webapp2.RequestHandler):
             template_values = { "login_url": "/auth/login" }
         else:
             template_values = {
+                "home_url": "/",
                 "username": user.nickname(),
                 "logout_url": "/auth/logout",
                 "cancel_url": "/"

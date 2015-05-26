@@ -32,12 +32,15 @@ class User(object):
             "_created": self._created
         }
 
+    def id(self):
+        return self._id
+
 class Project(object):
     def __init__(self, eid, name, userid=None, created=time.time()):
         if type(created) is not FloatType:
             raise CoreError("[FloatType] required, passed [%s]"%(type(created)))
         if not Project.validateIdLength(eid):
-            raise CoreError("Project id requires minimal length")
+            raise CoreError("Project id must be at least %d characters long"%(Project.MIN_ID_LENGTH()))
         if not Project.validateIdString(eid):
             raise CoreError("Project id can contain only letters, numbers and dashes")
         self._id = str(eid)
@@ -45,6 +48,10 @@ class Project(object):
         self._userid = str(userid) if userid else None
         # created as a timestamp instance
         self._created = created
+
+    @staticmethod
+    def MIN_ID_LENGTH():
+        return 6
 
     def name(self):
         return self._name
@@ -67,7 +74,7 @@ class Project(object):
 
     @staticmethod
     def validateIdLength(projectid):
-        return len(projectid) >= 3
+        return len(projectid) >= Project.MIN_ID_LENGTH()
 
     @staticmethod
     def validateIdString(projectid):

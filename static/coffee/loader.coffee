@@ -23,5 +23,15 @@ class Loader
             xmlhttp.setRequestHeader key, value
         xmlhttp.send(payload);
 
+    # sync request
+    # no callback or anything
+    syncrequest: (method, url, headers, payload) ->
+        xmlhttp = if window.XMLHttpRequest then new XMLHttpRequest else new ActiveXObject "Microsoft.XMLHTTP"
+        # prepare and send request (always async)
+        xmlhttp.open method, url, false
+        for key, value of headers
+            xmlhttp.setRequestHeader key, value
+        xmlhttp.send(payload);
+
 # set global loader
 @loader ?= new Loader

@@ -47,11 +47,12 @@ class APIResultStatusError500(APIResultStatusError):
 
 # result
 class APIResult(object):
-    def __init__(self, status, message):
+    def __init__(self, status, message, data={}):
         if not isinstance(status, APIResultStatus):
             raise TypeError("APIResultStatus expected, passed %s"%type(status))
         self._status = status
         self._message = str(message)
+        self._data = data
 
     def code(self):
         return self._status._code
@@ -59,12 +60,19 @@ class APIResult(object):
     def status(self):
         return self._status._status
 
+    def type(self):
+        return type(self._status)
+
     def message(self):
         return self._message
+
+    def data(self):
+        return self._data
 
     def dict(self):
         return {
             "code": self.code(),
             "status": self.status(),
-            "messsage": self.message()
+            "message": self.message(),
+            "data": self.data()
         }

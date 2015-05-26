@@ -11,8 +11,16 @@ from src.redis.core import Project
 from src.netutils import APIResult, APIResultStatusSuccess, APIResultStatusWarning
 from src.netutils import APIResultStatusError400, APIResultStatusError401
 from src.netutils import APIResultStatusError500
+from src.redis.errors import CoreError
+import src.redis.config as config
+from src.redis.manager import Manager
+from src.connector.redisconnector import RedisConnectionPool, RedisConnector
 
-def validateProjectIdAndName(projectid, projectname):
+# init pool
+octohaven_pool = RedisConnectionPool(config.settings)
+
+
+def validateProjectIdAndName(projectid, projectname, userid):
     result = APIResult(APIResultStatusSuccess(), "All good")
     if not projectid and not projectname:
         # raise error that nothing was specified
@@ -20,11 +28,19 @@ def validateProjectIdAndName(projectid, projectname):
     if projectid:
         # validate projectid
         if not Project.validateIdLength(projectid):
-            return APIResult(APIResultStatusError400(), "Project id must be at least 3 characters long")
+            return APIResult(APIResultStatusError400(), "Project id must be at least %d characters long"%(Project.MIN_ID_LENGTH()))
         elif not Project.validateIdString(projectid):
             return APIResult(APIResultStatusError400(), "Project id must contain only letters, numbers and dashes")
         else:
-            pass
+            # now check against redis db
+            rc = RedisConnector(poolhandler=octohaven_pool)
+            manager = Manager(connector=rc)
+            puser = manager.getUser(userid)
+            if not puser:
+                return APIResult(APIResultStatusError401(), "Requested user does not exist. Please re-login")
+            proj = manager.getProject(puser.id(), projectid)
+            if proj:
+                return APIResult(APIResultStatusError400(), "Project {%s} already exists"%(projectid))
     if projectname:
         # validate projectname
         pass
@@ -42,7 +58,7 @@ class api_project_validate(webapp2.RequestHandler):
             try:
                 projectid = urllib2.unquote(self.request.get("id")).strip().lower()
                 projectname = urllib2.unquote(self.request.get("name").strip())
-                result = validateProjectIdAndName(projectid, projectname)
+                result = validateProjectIdAndName(projectid, projectname, user.user_id())
             except:
                 result = APIResult(APIResultStatusError500(), "Something went wrong. Try again later")
             else:
@@ -54,6 +70,58 @@ class api_project_validate(webapp2.RequestHandler):
         self.response.set_status(result.code())
         self.response.out.write(json.dumps(result.dict()))
 
+class api_project_new(webapp2.RequestHandler):
+    def post(self):
+        user, result = users.get_current_user(), None
+        if not user:
+            # raise authentication error
+            result = APIResult(APIResultStatusError401(), "Not authenticated. Please re-login")
+        else:
+            data = self.request.body.strip()
+            try:
+                data = json.loads(data)
+            except:
+                data = None
+            else:
+                # unquote values
+                for k, v in data.items():
+                    k, v = k.strip().lower(), v.strip()
+                    data[k] = urllib2.unquote(v)
+            pidkey, pnamekey = "projectid", "projectname"
+            # perform check
+            projectid = data[pidkey] if pidkey in data else ""
+            projectname = data[pnamekey] if pnamekey in data else ""
+            result = validateProjectIdAndName(projectid, projectname, user.user_id())
+            if result.type() == APIResultStatusSuccess:
+                try:
+                    # prepare redis
+                    rc = RedisConnector(poolhandler=octohaven_pool)
+                    manager = Manager(connector=rc)
+                    newproject = manager.createProject(user.user_id(), projectid, projectname)
+                    # add chain
+                    manager.addProjectForUser(user.user_id(), newproject.id())
+                except CoreError as ce:
+                    # report error
+                    result = APIResult(APIResultStatusError400(), ce._msg)
+                except KeyError:
+                    # report general error
+                    result = APIResult(APIResultStatusError400(), "General error occuried. Try again later")
+                else:
+                    # everything is okay
+                    data = {
+                        "redirect": "/project/%s?isnew=1"%(newproject.id()),
+                        "isnew": True
+                    }
+                    result = APIResult(APIResultStatusSuccess(), "All good", data)
+            # something is wrong with workflow
+            if not result:
+                result = APIResult(APIResultStatusError500(), "Workflow issues. Try again later")
+        # send request
+        self.response.headers["Content-Type"] = "application/json"
+        self.response.set_status(result.code())
+        self.response.out.write(json.dumps(result.dict()))
+
 application = webapp2.WSGIApplication([
-    ("/api/project/validate", api_project_validate)
+    ("/api/project/validate", api_project_validate),
+    ("/api/project/new", api_project_new)
 ], debug=True)
