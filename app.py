@@ -6,6 +6,8 @@ from google.appengine.api import users
 from google.appengine.ext.webapp import template
 import webapp2
 import os
+import re
+import urllib2
 import src.redis.config as config
 from src.connector.redisconnector import RedisConnectionPool, RedisConnector
 from src.redis.manager import Manager
@@ -18,7 +20,9 @@ octohaven_pool = RedisConnectionPool(config.settings)
 START_PAGE = "welcome.html"
 HOME_PAGE = "home.html"
 UNAVAILABLE_PAGE = "unavailable.html"
+NOTFOUND_PAGE = "notfound.html"
 PROJECT_NEW_PAGE = "project_new.html"
+PROJECT_PAGE = "project.html"
 # cookies
 TIMEZONE_COOKIE = "octohaven_timezone_cookie"
 
@@ -31,6 +35,27 @@ def tzoffset(value):
         return int(value)
     except:
         return None
+
+def manager(userid=None):
+    # check if user exists or not
+    rc = RedisConnector(poolhandler=octohaven_pool)
+    manager = Manager(connector=rc)
+    if userid and not manager.getUser(userid):
+        rc, manager = None, None
+        raise CoreError("Requested user does not exist. Please re-login")
+    return manager
+
+def verifyProjectPath(path):
+    regex = "^(/project/)(%s)$"%(Project.ID_REGEXP(closed=False))
+    parts = re.match(regex, path, re.I)
+    projectid = urllib2.unquote(parts.groups()[1]) if parts and len(parts.groups()) >= 2 else None
+    return projectid
+
+def verifyBranchesPath(path):
+    regex = "^(/project/)(%s)(/branches)$"%(Project.ID_REGEXP(closed=False))
+    parts = re.match(regex, path, re.I)
+    projectid = urllib2.unquote(parts.groups()[1]) if parts and len(parts.groups()) >= 2 else None
+    return projectid
 
 class app_home(webapp2.RequestHandler):
     def get(self):
@@ -45,26 +70,25 @@ class app_home(webapp2.RequestHandler):
         else:
             # check if user exists or not
             try:
-                rc = RedisConnector(poolhandler=octohaven_pool)
-                manager = Manager(connector=rc)
                 # get user
-                octohaven_user, projects = manager.getUser(user.user_id()), None
+                mngr, puserid = manager(), user.user_id()
+                octohaven_user, projects = mngr.getUser(puserid), None
                 if octohaven_user:
                     # get projects
-                    projects = manager.projectsForUser(user.user_id(), asobject=True)
+                    projects = mngr.projectsForUser(puserid, asobject=True, includeNone=False)
                 else:
                     # create user
-                    manager.createUser(user.user_id(), user.nickname(), user.email())
+                    mngr.createUser(puserid, user.nickname(), user.email())
             except:
                 # log error
                 # and redirect to the unavailable page
                 template_file = UNAVAILABLE_PAGE
                 template_values = {}
             else:
-                # if exists - fetch projects
                 # list of objects with local time
                 lprojects = []
                 if projects:
+                    projects = sorted(projects, cmp=lambda x, y: cmp(x._created, y._created), reverse=True)
                     for project in projects:
                         lp = {}
                         lp["id"] = project.id()
@@ -78,6 +102,7 @@ class app_home(webapp2.RequestHandler):
                     "userdash_url": "/user",
                     "logout_url": "/auth/logout",
                     "create_url": "/project/new",
+                    "project_url": "/project/",
                     "projects": lprojects
                 }
                 template_file = HOME_PAGE
@@ -100,6 +125,7 @@ class app_project_new(webapp2.RequestHandler):
                 "home_url": "/",
                 "username": user.nickname(),
                 "logout_url": "/auth/logout",
+                "userdash_url": "/user",
                 "cancel_url": "/"
             }
             template_file = PROJECT_NEW_PAGE
@@ -107,8 +133,44 @@ class app_project_new(webapp2.RequestHandler):
         path = os.path.join(fullpath(), template_file)
         self.response.out.write(template.render(path, template_values))
 
+
+
+class app_project(webapp2.RequestHandler):
+    def get(self):
+        user = users.get_current_user()
+        if not user:
+            template_file = START_PAGE
+            template_values = { "login_url": "/auth/login" }
+        else:
+            projectid = verifyProjectPath(self.request.path)
+            # fetch project
+            puserid = user.user_id()
+            try:
+                project = manager(puserid).getProject(puserid, projectid)
+                if project:
+                    template_values = {
+                        "home_url": "/",
+                        "username": user.nickname(),
+                        "projectid": project.id(),
+                        "userdash_url": "/user",
+                        "logout_url": "/auth/logout",
+                        "project": project
+                    }
+                    template_file = PROJECT_PAGE
+                else:
+                    template_file = NOTFOUND_PAGE
+                    template_values = {}
+            except:
+                # log error
+                template_file = UNAVAILABLE_PAGE
+                template_values = {}
+        # load template
+        path = os.path.join(fullpath(), template_file)
+        self.response.out.write(template.render(path, template_values))
+
 application = webapp2.WSGIApplication([
     ("/", app_home),
     ("/project/new", app_project_new),
+    ("/project/.*", app_project),
     ("/home|/index|/index\.html", app_redirect)
 ], debug=True)

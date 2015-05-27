@@ -16,8 +16,7 @@ a.link-muted {
     color: #777;
 
     &:hover,
-    &:active,
-    &:visited {
+    &:active {
         color: $brand-blue;
         text-decoration: none;
     }

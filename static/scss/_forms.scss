@@ -472,3 +472,11 @@ textarea {
         font-weight: bold !important;
     }
 }
+
+input {
+    &.shorter { width: 130px; }
+
+    &.short { width: 250px; }
+
+    &.long { width: 100%; }
+}

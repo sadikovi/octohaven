@@ -11,7 +11,7 @@ class User(object):
     def __init__(self, eid, name, email, created=time.time()):
         if type(created) is not FloatType:
             raise CoreError("[FloatType] required, passed [%s]"%(type(created)))
-        self._id = str(eid)
+        self._id = str(eid).lower()
         self._name = str(name)
         self._email = str(email)
         # created as a timestamp instance
@@ -43,7 +43,7 @@ class Project(object):
             raise CoreError("Project id must be at least %d characters long"%(Project.MIN_ID_LENGTH()))
         if not Project.validateIdString(eid):
             raise CoreError("Project id can contain only letters, numbers and dashes")
-        self._id = str(eid)
+        self._id = str(eid).lower()
         self._name = str(name)
         self._userid = str(userid) if userid else None
         # created as a timestamp instance
@@ -53,11 +53,22 @@ class Project(object):
     def MIN_ID_LENGTH():
         return 6
 
+    @staticmethod
+    def ID_REGEXP(closed=True):
+        a = "[\w-]+"
+        return "^%s$"%(a) if closed else a
+
     def name(self):
         return self._name
 
+    def setName(self, name):
+        self._name = name.strip()
+
     def id(self):
         return self._id
+
+    def userid(self):
+        return self._userid
 
     def datetime(self, offset=None, template="%d/%m/%Y %H:%M:%S"):
         utc = datetime.utcfromtimestamp(self._created)
@@ -78,7 +89,7 @@ class Project(object):
 
     @staticmethod
     def validateIdString(projectid):
-        return bool(re.match("^[\w-]+$", projectid, re.I))
+        return bool(re.match(Project.ID_REGEXP(), projectid, re.I))
 
     def dict(self):
         return {

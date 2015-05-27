@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+
+        <meta name="description" content="">
+        <meta name="keywords" content="">
+        <meta name="author" content="">
+        <meta name="projectid" content="{{ projectid }}">
+        <title>
+            {{ username }}/{{ projectid }} &middot; Octohaven
+        </title>
+
+        <link rel="icon" type="image/x-icon" href="/image/favicon.ico">
+        <link rel="stylesheet" href="/style/internal.min.css">
+        <link rel="stylesheet" href="/style/semantic.min.css">
+        <script type="text/javascript" src="/script/js/timezone.js"></script>
+    </head>
+    <body>
+        <div class="ui basic segment">
+            <div class="ui page stackable grid">
+                <div class="four wide column">
+                    <!-- main menu -->
+                    <div class="ui vertical text menu">
+                        <div class="header item">
+                            Octohaven
+                        </div>
+                        <a class="item" href="{{home_url}}">
+                            <i class="home icon"></i>
+                            Home
+                        </a>
+                        <a class="item" href="{{userdash_url}}">
+                            <i class="spy icon"></i>
+                            {{ username }}
+                        </a>
+                        <a class="item" href="{{logout_url}}">
+                            <i class="plug icon"></i>
+                            Logout
+                        </a>
+                    </div>
+                    <div class="ui divider"></div>
+                    <!-- project actions -->
+                    <div class="ui vertical text menu">
+                        <a class="item" href="" id="octohaven-project-action-delete">
+                            <i class="trash icon"></i>
+                            <span class="text-red">
+                                Delete project
+                            </span>
+                        </a>
+                    </div>
+                </div>
+                <div class="twelve wide column">
+                    <div class="ui basic segment">
+                        <h2 class="text-thin" id="octohaven-project-id">
+                            {{ project.id }}
+                        </h2>
+                        <p class="text-mute" data-attr="fast-editor" id="octohaven-project-name">
+                            <span data-attr="fast-editor-texter">{{ project.name }}</span>
+                            <a class="link link-muted tooltipped tooltipped-s" href="" data-attr="fast-editor-trigger" aria-label="Edit name">
+                                <i class="write icon"></i>
+                            </a>
+                        </p>
+                    </div>
+                    <!--div class="ui basic segment">
+                        <div class="ui top attached secondary segment">
+                            <a class="link" role="button" href="">+ branch</a>
+                        </div>
+                        <div class="ui bottom attached segment">
+                            <div class="blankslate">
+                                <h1 class="icon header">
+                                    <i class="fork icon"></i>
+                                    <div class="content text-thin">
+                                        No branches
+                                    </div>
+                                </h1>
+                                <p class="text-mute">
+                                    Add one with <code>[+ branch]</code>
+                                </p>
+                            </div>
+                        </div>
+                    </div-->
+                    <div class="ui basic segment">
+                        <div class="ui top attached secondary segment">
+                            <a class="link" role="button" href="">+ branch</a>
+                        </div>
+                        <div class="ui bottom attached segment">
+                            <div class="ui segments">
+                                <div class="ui secondary segment">
+                                    <div class="ui stackable grid">
+                                        <div class="seven wide column">
+                                            <i class="fork icon"></i>
+                                            <a class="link" href="">:master</a>
+                                        </div>
+                                        <div class="five wide column">
+                                            <p class="note">
+                                                Edited 5 hours ago
+                                            </p>
+                                        </div>
+                                        <div class="two wide column">
+                                            <a class="link link-muted tooltipped tooltipped-n" href="" aria-label="Delete branch">
+                                                <i class="trash icon"></i>
+                                            </a>
+                                        </div>
+                                        <div class="two wide column">
+                                            <a class="link link-muted tooltipped tooltipped-n" href="" aria-label="Default branch">
+                                                <i class="checkmark icon"></i>
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="ui segment">
+                                    <div class="ui stackable grid">
+                                        <div class="seven wide column">
+                                            <i class="fork icon"></i>
+                                            <a class="link" href="">:danny-test</a>
+                                        </div>
+                                        <div class="five wide column">
+                                            <p class="note">
+                                                Edited 9 hours ago
+                                            </p>
+                                        </div>
+                                        <div class="two wide column">
+                                            <a class="link link-muted tooltipped tooltipped-n" href="" aria-label="Delete branch">
+                                                <i class="trash icon"></i>
+                                            </a>
+                                        </div>
+                                        <div class="two wide column">
+                                            <a class="link link-muted tooltipped tooltipped-n" href="" aria-label="Set default">
+                                                <i class="radio icon"></i>
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="ui segment">
+                                    <div class="ui stackable grid">
+                                        <div class="seven wide column">
+                                            <i class="fork icon"></i>
+                                            <a class="link" href="">:final</a>
+                                        </div>
+                                        <div class="five wide column">
+                                            <p class="note">
+                                                Edited 10 hours ago
+                                            </p>
+                                        </div>
+                                        <div class="two wide column">
+                                            <a class="link link-muted tooltipped tooltipped-n" href="" aria-label="Delete branch">
+                                                <i class="trash icon"></i>
+                                            </a>
+                                        </div>
+                                        <div class="two wide column">
+                                            <a class="link link-muted tooltipped tooltipped-n" href="" aria-label="Set default">
+                                                <i class="radio icon"></i>
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <script type="text/javascript" src="/script/js/util.js"></script>
+        <script type="text/javascript" src="/script/js/loader.js"></script>
+        <script type="text/javascript" src="/script/js/fasteditor.js"></script>
+        <script type="text/javascript" src="/script/js/octohaven-project.js"></script>
+    </body>
+</html>

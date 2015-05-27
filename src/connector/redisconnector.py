@@ -48,7 +48,8 @@ class RedisConnector(object):
         return value
 
     def _key(self, key):
-        return "%s-%s"%(self._prefix, key)
+        # key is always lowercase
+        return ("%s-%s"%(self._prefix, key)).lower()
 
     def storeObject(self, key, object={}):
         # handle int, float, str, bool, None
@@ -124,7 +125,15 @@ class RedisConnector(object):
         else:
             return None
 
+    def removeConnection(self, key, *args):
+        key = self._key(key)
+        pipe = self._redis.pipeline()
+        for arg in args:
+            pipe.srem(key, arg)
+        pipe.execute()
+
     def delete(self, key):
+        key = self._key(key)
         self._redis.delete(key)
 
     def flushdb(self):

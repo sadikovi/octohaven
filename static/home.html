@@ -42,35 +42,29 @@
                 </div>
                 <div class="twelve wide column">
                     {% if projects %}
-                    <div class="ui top attached secondary segment">
-                        <a class="btn" href="{{ create_url }}">
+                    <div class="ui basic secondary segment">
+                        <a class="link" href="{{ create_url }}">
                             + project
                         </a>
                     </div>
-                    <div class="ui bottom attached segment">
-                        <div class="ui divided items">
-                            {% for project in projects %}
-                            <div class="item">
-                                <div class="content">
-                                    <div class="header">
-                                        <button class="btn btn-link">
-                                            {{ project.id }}
-                                        </button>
-                                    </div>
-                                    {% autoescape on %}
-                                    <div class="meta">
-                                        <span>
-                                            {{ project.name }}
-                                        </span>
-                                    </div>
-                                    {% endautoescape %}
-                                    <div class="extra">
-                                        Created {{ project.datetime }}
-                                    </div>
-                                </div>
+                    <div class="ui segments">
+                        {% for project in projects %}
+                        <div class="ui segment">
+                            <div class="ui basic segment">
+                                <a class="link" href="{{ project_url }}{{ project.id }}">
+                                    {{ project.id }}
+                                </a>
+                                {% autoescape on %}
+                                <p>
+                                    {{ project.name }}
+                                </p>
+                                {% endautoescape %}
+                                <p class="note">
+                                    Created {{ project.datetime }}
+                                </p>
                             </div>
-                            {% endfor %}
                         </div>
+                        {% endfor %}
                     </div>
                     {% else %}
                     <div class="ui segment">

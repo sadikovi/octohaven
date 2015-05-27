@@ -48,16 +48,37 @@ class Manager(object):
         self._connector.storeObject(key, project.dict())
         return project
 
+    def updateProject(self, uid, pid, name):
+        proj = self.getProject(uid, pid)
+        if proj:
+            proj.setName(name)
+            # update proj
+            key = self._projectkey(uid, pid)
+            self._connector.storeObject(key, proj.dict())
+        return proj
+
+    def deleteProject(self, uid, pid):
+        proj = self.getProject(uid, pid)
+        if proj:
+            key = self._projectkey(uid, pid)
+            self._connector.delete(key)
+        return proj
+
     def addProjectForUser(self, uid, pid):
         key = self._user_conn_projectskey(uid)
         self._connector.storeConnection(key, pid)
 
-    def projectsForUser(self, uid, asobject=False):
+    def removeProjectForUser(self, uid, pid):
+        key = self._user_conn_projectskey(uid)
+        self._connector.removeConnection(key, pid)
+
+    def projectsForUser(self, uid, asobject=False, includeNone=True):
         key = self._user_conn_projectskey(uid)
         pids = self._connector.getConnection(key)
         if not pids:
             return None
         if asobject:
-            return [self.getProject(uid, pid) for pid in pids if pid]
+            a = [self.getProject(uid, pid) for pid in pids]
+            return a if includeNone else [x for x in a if x]
         else:
-            return pids
+            return pids if includeNone else [x for x in pids if x]
