@@ -23,12 +23,13 @@
 
   nameeditor = new this.FastEditor(nameelem, (function(_this) {
     return function(status, value) {
+      var data;
       if (status && value && projectid) {
-        return _this.loader.sendrequest("get", "/api/project/update?id=" + (projectid()) + "&name=" + (_this.util.quote(value)), {}, null, function(s, r) {
-          return console.log(s, r);
-        }, function(e, r) {
-          return console.log(e, r);
-        });
+        data = {
+          projectid: "" + (_this.util.quote(projectid())),
+          projectname: "" + (_this.util.quote(value))
+        };
+        return _this.loader.sendrequest("post", "/api/project/update", {}, JSON.stringify(data));
       }
     };
   })(this));
@@ -38,7 +39,7 @@
       var data;
       e.preventDefault();
       data = {
-        "projectid": "" + (projectid())
+        projectid: "" + (_this.util.quote(projectid()))
       };
       return _this.loader.sendrequest("post", "/api/project/delete", {}, JSON.stringify(data), function(s, r) {
         var isdeleted, redirect, response, _ref;

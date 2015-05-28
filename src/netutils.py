@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 
 from types import IntType
-
+import json
+import urllib2
 # success
 code_success, status_success = 200, "success"
 # warning
@@ -76,3 +77,21 @@ class APIResult(object):
             "message": self.message(),
             "data": self.data()
         }
+
+class JSON(object):
+    @classmethod
+    def safeloads(cls, data, unquote=False, strip=False, lower=False):
+        try:
+            data = json.loads(data)
+            # apply modificators
+            if unquote or strip or lower:
+                for k, v in data.items():
+                    if strip:
+                        k, v = k.strip(), v.strip()
+                    if lower:
+                        k = k.lower()
+                    if unquote:
+                        data[k] = urllib2.unquote(v)
+        except:
+            data = None
+        return data

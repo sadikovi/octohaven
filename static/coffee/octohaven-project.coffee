@@ -12,15 +12,16 @@ unless nameelem
     throw new Error "Project name element is undefined"
 nameeditor = new @FastEditor nameelem, (status, value) =>
     if status and value and projectid
-        @loader.sendrequest "get", "/api/project/update?id=#{projectid()}&name=#{@util.quote value}", {}, null, (s, r) ->
-            console.log s, r
-        , (e, r) ->
-            console.log e, r
+        data =
+            projectid: "#{@util.quote projectid()}"
+            projectname: "#{@util.quote value}"
+        @loader.sendrequest "post", "/api/project/update", {}, JSON.stringify(data)
 
 @util.addEventListener deleteLink, "click", (e)=>
     e.preventDefault()
     # send request
-    data = {"projectid": "#{projectid()}"}
+    data =
+        projectid: "#{@util.quote projectid()}"
     @loader.sendrequest "post", "/api/project/delete", {}
     , JSON.stringify(data)
     , (s, r) =>

@@ -8,9 +8,9 @@
         <meta name="description" content="">
         <meta name="keywords" content="">
         <meta name="author" content="">
-        <meta name="projectid" content="{{ projectid }}">
+        <meta name="projectid" content="{{ project.id }}">
         <title>
-            {{ username }}/{{ projectid }} &middot; Octohaven
+            {{ username }}/{{ project.id }} &middot; Octohaven
         </title>
 
         <link rel="icon" type="image/x-icon" href="/image/favicon.ico">
@@ -27,15 +27,15 @@
                         <div class="header item">
                             Octohaven
                         </div>
-                        <a class="item" href="{{home_url}}">
+                        <a class="item" href="{{ home_url }}">
                             <i class="home icon"></i>
                             Home
                         </a>
-                        <a class="item" href="{{userdash_url}}">
+                        <a class="item" href="{{ userdash_url }}">
                             <i class="spy icon"></i>
                             {{ username }}
                         </a>
-                        <a class="item" href="{{logout_url}}">
+                        <a class="item" href="{{ logout_url }}">
                             <i class="plug icon"></i>
                             Logout
                         </a>
@@ -58,7 +58,8 @@
                         </h2>
                         <p class="text-mute" data-attr="fast-editor" id="octohaven-project-name">
                             <span data-attr="fast-editor-texter">{{ project.name }}</span>
-                            <a class="link link-muted tooltipped tooltipped-s" href="" data-attr="fast-editor-trigger" aria-label="Edit name">
+                            <a class="link link-muted tooltipped tooltipped-s" href=""
+                                data-attr="fast-editor-trigger" aria-label="Edit name">
                                 <i class="write icon"></i>
                             </a>
                         </p>

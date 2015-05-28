@@ -36,26 +36,25 @@ def tzoffset(value):
     except:
         return None
 
-def manager(userid=None):
-    # check if user exists or not
+def manager():
     rc = RedisConnector(poolhandler=octohaven_pool)
-    manager = Manager(connector=rc)
-    if userid and not manager.getUser(userid):
-        rc, manager = None, None
-        raise CoreError("Requested user does not exist. Please re-login")
-    return manager
+    return Manager(connector=rc)
 
 def verifyProjectPath(path):
     regex = "^(/project/)(%s)$"%(Project.ID_REGEXP(closed=False))
     parts = re.match(regex, path, re.I)
-    projectid = urllib2.unquote(parts.groups()[1]) if parts and len(parts.groups()) >= 2 else None
-    return projectid
+    return urllib2.unquote(parts.groups()[1]) if parts and len(parts.groups()) >= 2 else None
 
-def verifyBranchesPath(path):
-    regex = "^(/project/)(%s)(/branches)$"%(Project.ID_REGEXP(closed=False))
-    parts = re.match(regex, path, re.I)
-    projectid = urllib2.unquote(parts.groups()[1]) if parts and len(parts.groups()) >= 2 else None
-    return projectid
+def _template():
+    return {
+        "values": {
+            "home_url": "/",
+            "login_url": "/auth/login",
+            "logout_url": "/auth/logout",
+            "userdash_url": "/user"
+        },
+        "file": START_PAGE
+    }
 
 class app_home(webapp2.RequestHandler):
     def get(self):
@@ -63,114 +62,85 @@ class app_home(webapp2.RequestHandler):
         # timezone offset
         offset = tzoffset(self.request.cookies.get(TIMEZONE_COOKIE))
         # template file and template values
-        template_file, template_values = START_PAGE,  {}
-        if not user:
-            template_file = START_PAGE
-            template_values = { "login_url": "/auth/login" }
-        else:
-            # check if user exists or not
+        web_template = _template()
+        if user:
             try:
                 # get user
                 mngr, puserid = manager(), user.user_id()
-                octohaven_user, projects = mngr.getUser(puserid), None
-                if octohaven_user:
-                    # get projects
-                    projects = mngr.projectsForUser(puserid, asobject=True, includeNone=False)
+                puser, projects = mngr.getUser(puserid), None
+                if puser:
+                    projects = mngr.projectsForUser(puser.hash(), asobject=True)
                 else:
-                    # create user
                     mngr.createUser(puserid, user.nickname(), user.email())
             except:
-                # log error
-                # and redirect to the unavailable page
-                template_file = UNAVAILABLE_PAGE
-                template_values = {}
+                web_template["file"] = UNAVAILABLE_PAGE
             else:
                 # list of objects with local time
                 lprojects = []
                 if projects:
                     projects = sorted(projects, cmp=lambda x, y: cmp(x._created, y._created), reverse=True)
-                    for project in projects:
-                        lp = {}
-                        lp["id"] = project.id()
-                        lp["name"] = project.name()
-                        lp["datetime"] = project.datetime(offset=offset)
-                        lprojects.append(lp)
+                    lprojects = [{"id": x.id(), "name": x.name(), "datetime": x.datetime(offset=offset)} for x in projects]
                 # prepare template values
-                template_values = {
-                    "username": user.nickname(),
-                    "home_url": "/",
-                    "userdash_url": "/user",
-                    "logout_url": "/auth/logout",
-                    "create_url": "/project/new",
-                    "project_url": "/project/",
-                    "projects": lprojects
-                }
-                template_file = HOME_PAGE
+                web_template["values"]["username"] = user.nickname()
+                web_template["values"]["create_url"] = "/project/new"
+                web_template["values"]["project_url"] = "/project/"
+                web_template["values"]["projects"] = lprojects
+                web_template["file"] = HOME_PAGE
         # load template
-        path = os.path.join(fullpath(), template_file)
-        self.response.out.write(template.render(path, template_values))
+        path = os.path.join(fullpath(), web_template["file"])
+        self.response.out.write(template.render(path, web_template["values"]))
 
 class app_redirect(webapp2.RequestHandler):
     def get(self):
         self.redirect("/")
 
+class app_notfound(webapp2.RequestHandler):
+    def get(self):
+        web_template = _template()
+        web_template["file"] = NOTFOUND_PAGE
+        path = os.path.join(fullpath(), web_template["file"])
+        self.response.out.write(template.render(path, web_template["values"]))
+
 class app_project_new(webapp2.RequestHandler):
     def get(self):
         user = users.get_current_user()
-        if not user:
-            template_file = START_PAGE
-            template_values = { "login_url": "/auth/login" }
-        else:
-            template_values = {
-                "home_url": "/",
-                "username": user.nickname(),
-                "logout_url": "/auth/logout",
-                "userdash_url": "/user",
-                "cancel_url": "/"
-            }
-            template_file = PROJECT_NEW_PAGE
+        web_template = _template()
+        if user:
+            web_template["values"]["username"] = user.nickname()
+            web_template["file"] = PROJECT_NEW_PAGE
         # load template
-        path = os.path.join(fullpath(), template_file)
-        self.response.out.write(template.render(path, template_values))
-
-
+        path = os.path.join(fullpath(), web_template["file"])
+        self.response.out.write(template.render(path, web_template["values"]))
 
 class app_project(webapp2.RequestHandler):
     def get(self):
         user = users.get_current_user()
-        if not user:
-            template_file = START_PAGE
-            template_values = { "login_url": "/auth/login" }
-        else:
+        if user:
             projectid = verifyProjectPath(self.request.path)
-            # fetch project
-            puserid = user.user_id()
+            web_template = _template()
             try:
-                project = manager(puserid).getProject(puserid, projectid)
+                mngr = manager()
+                puser = mngr.getUser(user.user_id())
+                if not puser:
+                    raise CoreError("Requested user does not exist. Please re-login")
+                project = manager().getProject(puser.hash(), projectid)
                 if project:
-                    template_values = {
-                        "home_url": "/",
-                        "username": user.nickname(),
-                        "projectid": project.id(),
-                        "userdash_url": "/user",
-                        "logout_url": "/auth/logout",
-                        "project": project
-                    }
-                    template_file = PROJECT_PAGE
+                    web_template["values"]["username"] = user.nickname()
+                    web_template["values"]["project"] = project
+                    web_template["file"] = PROJECT_PAGE
                 else:
-                    template_file = NOTFOUND_PAGE
-                    template_values = {}
+                    web_template["file"] = NOTFOUND_PAGE
             except:
                 # log error
-                template_file = UNAVAILABLE_PAGE
-                template_values = {}
+                web_template["file"] = UNAVAILABLE_PAGE
         # load template
-        path = os.path.join(fullpath(), template_file)
-        self.response.out.write(template.render(path, template_values))
+        path = os.path.join(fullpath(), web_template["file"])
+        self.response.out.write(template.render(path, web_template["values"]))
 
 application = webapp2.WSGIApplication([
     ("/", app_home),
     ("/project/new", app_project_new),
     ("/project/.*", app_project),
-    ("/home|/index|/index\.html", app_redirect)
+    ("/home|/index|/index\.html", app_redirect),
+    ("/.*", app_notfound)
 ], debug=True)

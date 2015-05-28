@@ -7,8 +7,7 @@ theForm = new @Form theFormElem, (data) =>
     # quote string data
     data[k] = @util.quote v for k, v of data
     # send request
-    @loader.sendrequest "post", "/api/project/new"
-    , {}
+    @loader.sendrequest "post", "/api/project/create", {}
     , JSON.stringify(data)
     , (success, response) =>
         theForm.stopLoading()
@@ -21,7 +20,6 @@ theForm = new @Form theFormElem, (data) =>
                 theForm.showSuccessMessage response.message
         else
             theForm.showErrorMessage "Something unexpected happened"
-        # window.location.href = "/project/old"
     , (error, response) =>
         theForm.stopLoading()
         try
@@ -97,8 +95,9 @@ changeState = (input, status) ->
 checkvalue = (value, ok, ko) ->
     # make api call
     value = @util.quote value
-    @loader.sendrequest "get", "/api/project/validate?id=#{value}", {}, null, (status, res)=>
-        (if status == 200 then ok?() else ko?())
+    @loader.sendrequest "get", "/api/project/validate?id=#{value}", {}, null
+    , (status, res)=>
+        if status == 200 then ok?() else ko?()
     , (status, res)=>
         ko?()
 

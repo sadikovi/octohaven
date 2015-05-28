@@ -10,14 +10,19 @@ class Manager(object):
             raise StandardError("Connector is unknown")
         self._connector = connector
 
+    # keys
     def _userkey(self, uid):
         return "user:%s"%(uid)
 
-    def _projectkey(self, uid, pid):
-        return "user:%s#project:%s"%(uid, pid)
+    def _projectkey(self, hashkey, pid):
+        return "user:%s#project:%s"%(hashkey, pid)
 
-    def _user_conn_projectskey(self, uid):
-        return "conn-projects#user:%s"%(uid)
+    def _user_conn_projectskey(self, hashkey):
+        return "conn-projects#user:%s"%(hashkey)
+
+    ##################################
+    # User
+    ##################################
 
     def getUser(self, uid):
         key = self._userkey(uid)
@@ -34,51 +39,53 @@ class Manager(object):
         self._connector.storeObject(key, user.dict())
         return user
 
-    def getProject(self, uid, pid):
-        key = self._projectkey(uid, pid)
-        info = self._connector.getObject(key)
-        if not info:
-            return None
-        return Project.create(info)
+    def deleteUser(self, uid):
+        key = self._userkey(uid)
+        self._connector.delete(key)
 
-    def createProject(self, uid, pid, name):
-        key = self._projectkey(uid, pid)
-        project = Project(pid, name, uid)
-        # convert into object
+    ##################################
+    # Project
+    ##################################
+
+    def createProject(self, hashkey, pid, name):
+        key = self._projectkey(hashkey, pid)
+        project = Project(pid, name)
         self._connector.storeObject(key, project.dict())
         return project
 
-    def updateProject(self, uid, pid, name):
-        proj = self.getProject(uid, pid)
+    def getProject(self, hashkey, pid):
+        key = self._projectkey(hashkey, pid)
+        info = self._connector.getObject(key)
+        return Project.create(info) if info else None
+
+    def updateProject(self, hashkey, pid, name):
+        proj = self.getProject(hashkey, pid)
         if proj:
             proj.setName(name)
             # update proj
-            key = self._projectkey(uid, pid)
+            key = self._projectkey(hashkey, pid)
             self._connector.storeObject(key, proj.dict())
         return proj
 
-    def deleteProject(self, uid, pid):
-        proj = self.getProject(uid, pid)
-        if proj:
-            key = self._projectkey(uid, pid)
-            self._connector.delete(key)
-        return proj
+    ##################################
+    # Project - User connections
+    ##################################
 
-    def addProjectForUser(self, uid, pid):
-        key = self._user_conn_projectskey(uid)
+    def addProjectForUser(self, hashkey, pid):
+        key = self._user_conn_projectskey(hashkey)
         self._connector.storeConnection(key, pid)
 
-    def removeProjectForUser(self, uid, pid):
-        key = self._user_conn_projectskey(uid)
+    def removeProjectForUser(self, hashkey, pid):
+        key = self._user_conn_projectskey(hashkey)
         self._connector.removeConnection(key, pid)
 
-    def projectsForUser(self, uid, asobject=False, includeNone=True):
-        key = self._user_conn_projectskey(uid)
+    def projectsForUser(self, hashkey, asobject=False):
+        key = self._user_conn_projectskey(hashkey)
         pids = self._connector.getConnection(key)
         if not pids:
             return None
+        a = [x for x in pids if x]
         if asobject:
-            a = [self.getProject(uid, pid) for pid in pids]
-            return a if includeNone else [x for x in a if x]
-        else:
-            return pids if includeNone else [x for x in pids if x]
+            b = [self.getProject(hashkey, pid) for pid in a]
+            a = [x for x in b if x]
+        return a

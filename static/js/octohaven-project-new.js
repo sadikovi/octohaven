@@ -13,7 +13,7 @@
         v = data[k];
         data[k] = _this.util.quote(v);
       }
-      return _this.loader.sendrequest("post", "/api/project/new", {}, JSON.stringify(data), function(success, response) {
+      return _this.loader.sendrequest("post", "/api/project/create", {}, JSON.stringify(data), function(success, response) {
         var isnew, redirect, _ref;
         theForm.stopLoading();
         if (success === 200) {
