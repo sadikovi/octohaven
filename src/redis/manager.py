@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 from src.connector.redisconnector import RedisConnector
-from src.redis.core import User, Project
+from src.redis.core import User, Project, Branch, BranchGroup
 
 
 class Manager(object):
@@ -19,6 +19,12 @@ class Manager(object):
 
     def _user_conn_projectskey(self, hashkey):
         return "conn-projects#user:%s"%(hashkey)
+
+    def _branchgroupkey(self, userhash, projecthash):
+        return "user:%s#project:%s#branchgroup"%(userhash, projecthash)
+
+    def _branchkey(self, branchgroupkey, branchid):
+        return "%s#branch:%s"%(branchgroupkey, branchid)
 
     ##################################
     # User
@@ -89,3 +95,33 @@ class Manager(object):
             b = [self.getProject(hashkey, pid) for pid in a]
             a = [x for x in b if x]
         return a
+
+    ##################################
+    # Branch group
+    ##################################
+
+    def getBranchGroup(self, userhash, projecthash):
+        key = self._branchgroupkey(userhash, projecthash)
+        bids = self._connector.getConnection(key)
+        branchgroup = BranchGroup(key)
+        if bids:
+            for bid in bids:
+                bkey = self._branchkey(key, bid)
+                info = self._connector.getObject(bkey)
+                if info:
+                    branchgroup.fill(Branch.create(info))
+            branchgroup.default()
+        return branchgroup
+
+    def updateBranchGroup(self, branchgroup):
+        key = branchgroup.key()
+        bids = self._connector.getConnection(key)
+        # remove deleted keys
+        self._connector.removeConnection(key, *branchgroup._removed)
+        # update valid keys
+        for branch in branchgroup.branches():
+            bkey = self._branchkey(key, branch.name())
+            self._connector.storeObject(bkey, branch.dict())
+            self._connector.storeConnection(key, branch.name())
+        branchgroup.default()
+        return branchgroup

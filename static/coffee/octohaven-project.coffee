@@ -33,3 +33,12 @@ nameeditor = new @FastEditor nameelem, (status, value) =>
             console.log "General error happened due to project deletion"
     , (e, r) =>
         console.log "Error #{r}"
+
+
+data =
+    projectid: projectid()
+    branchname: "test-branch0.7116906314622611"
+@loader.sendrequest "post", "/api/branch/select", {}
+, JSON.stringify(data)
+, (s, r) => console.log s, r
+, (e, r) => console.log e, r

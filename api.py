@@ -79,45 +79,6 @@ PROJECT_UPDATE = "update"
 PROJECT_DELETE = "delete"
 PROJECT_ACTION_URL = "/api/project/(%s|%s|%s)"%(PROJECT_CREATE, PROJECT_UPDATE, PROJECT_DELETE)
 
-def performAction(action, userid, projid, projname):
-    if action not in [PROJECT_CREATE, PROJECT_UPDATE, PROJECT_DELETE]:
-        return APIResult(APIResultStatusError400(), "Project action is not recognized")
-    # else parse data and perform action
-    try:
-        mngr = manager()
-        puser = mngr.getUser(userid)
-        if not puser:
-            raise CoreError("Requested user does not exist. Please re-login")
-        puserhash, result = puser.hash(), None
-        if action == PROJECT_CREATE:
-            result = validateProjectIdAndName(projid, projname, puserhash, mngr)
-            if result.type() == APIResultStatusSuccess:
-                newproject = mngr.createProject(puserhash, projid, projname)
-                mngr.addProjectForUser(puserhash, newproject.id())
-                # everything is okay
-                data = {
-                    "redirect": "/project/%s?isnew=1"%(newproject.id()),
-                    "isnew": True
-                }
-                result = APIResult(APIResultStatusSuccess(), "All good", data)
-        elif action == PROJECT_UPDATE:
-            proj = mngr.updateProject(puserhash, projid, projname)
-            # raise core error as project does not exist
-            if not proj:
-                raise CoreError("Project does not exist")
-            result = APIResult(APIResultStatusSuccess(), "All good")
-        elif action == PROJECT_DELETE:
-            mngr.removeProjectForUser(puserhash, projid)
-            result = APIResult(APIResultStatusSuccess(), "All good")
-        else:
-            pass
-    except CoreError as ce:
-        return APIResult(APIResultStatusError400(), ce._msg)
-    except KeyError:
-        return APIResult(APIResultStatusError400(), "General error occuried. Try again later")
-    else:
-        return result
-
 # create new project
 class api_project_action(webapp2.RequestHandler):
     def post(self, *args):
@@ -133,7 +94,7 @@ class api_project_action(webapp2.RequestHandler):
             # perform check
             projectid = data[pidkey] if pidkey in data else None
             projectname = data[pnamekey] if pnamekey in data else None
-            result = performAction(action, user.user_id(), projectid, projectname)
+            result = self.performAction(action, user.user_id(), projectid, projectname)
             # something is wrong with workflow
             if not result:
                 result = APIResult(APIResultStatusError500(), "Workflow issues. Try again later")
@@ -142,7 +103,108 @@ class api_project_action(webapp2.RequestHandler):
         self.response.set_status(result.code())
         self.response.out.write(json.dumps(result.dict()))
 
+    def performAction(self, action, userid, projid, projname):
+        if action not in [PROJECT_CREATE, PROJECT_UPDATE, PROJECT_DELETE]:
+            return APIResult(APIResultStatusError400(), "Project action is not recognized")
+        # else parse data and perform action
+        try:
+            mngr = manager()
+            puser = mngr.getUser(userid)
+            if not puser:
+                raise CoreError("Requested user does not exist. Please re-login")
+            puserhash, result = puser.hash(), None
+            if action == PROJECT_CREATE:
+                result = validateProjectIdAndName(projid, projname, puserhash, mngr)
+                if result.type() == APIResultStatusSuccess:
+                    newproject = mngr.createProject(puserhash, projid, projname)
+                    mngr.addProjectForUser(puserhash, newproject.id())
+                    # everything is okay
+                    data = {
+                        "redirect": "/project/%s?isnew=1"%(newproject.id()),
+                        "isnew": True
+                    }
+                    result = APIResult(APIResultStatusSuccess(), "All good", data)
+            elif action == PROJECT_UPDATE:
+                proj = mngr.updateProject(puserhash, projid, projname)
+                # raise core error as project does not exist
+                if not proj:
+                    raise CoreError("Project does not exist")
+                result = APIResult(APIResultStatusSuccess(), "All good")
+            elif action == PROJECT_DELETE:
+                mngr.removeProjectForUser(puserhash, projid)
+                result = APIResult(APIResultStatusSuccess(), "All good")
+            else:
+                pass
+        except CoreError as ce:
+            return APIResult(APIResultStatusError400(), ce._msg)
+        except:
+            return APIResult(APIResultStatusError400(), "General error occuried. Try again later")
+        else:
+            return result
+
+
+BRANCH_CREATE = "create"
+BRANCH_DEFAULT = "default"
+BRANCH_DELETE = "delete"
+BRANCH_SELECT = "select"
+BRANCH_ACTION_URL = "/api/branch/(%s|%s|%s|%s)"%(BRANCH_CREATE, BRANCH_DELETE, BRANCH_DEFAULT, BRANCH_SELECT)
+
+class api_branch_action(webapp2.RequestHandler):
+    def post(self, *args):
+        user, result = users.get_current_user(), None
+        if not user:
+            result = APIResult(APIResultStatusError401(), "Not authenticated. Please re-login")
+        else:
+            # extract action
+            action = "%s"%(args[0]) if args else None
+            data = JSON.safeloads(self.request.body.strip(), unquote=True, strip=True, lower=True)
+            pidkey, bidkey = "projectid", "branchname"
+            # perform check
+            projectid = data[pidkey] if pidkey in data else None
+            branchname = data[bidkey] if bidkey in data else None
+            result = self.performBranchAction(action, user.user_id(), projectid, branchname)
+            # something is wrong with workflow
+            if not result:
+                result = APIResult(APIResultStatusError500(), "Workflow issues. Try again later")
+        # send request
+        self.response.headers["Content-Type"] = "application/json"
+        self.response.set_status(result.code())
+        self.response.out.write(json.dumps(result.dict()))
+
+    def performBranchAction(self, action, userid, projectid, branchname):
+        if action not in [BRANCH_CREATE, BRANCH_DELETE, BRANCH_DEFAULT, BRANCH_SELECT]:
+            return APIResult(APIResultStatusError400(), "Branch action is not recognized")
+        try:
+            mngr = manager()
+            puser = mngr.getUser(userid)
+            if not puser:
+                raise CoreError("Requested user does not exist. Please re-login")
+            project = mngr.getProject(puser.hash(), projectid)
+            if not project:
+                raise CoreError("Requested project does not exist")
+            # request branch group
+            branchgroup = mngr.getBranchGroup(puser.hash(), project.hash())
+            # do action
+            if action == BRANCH_CREATE:
+                branchgroup.addBranch(branchname)
+            elif action == BRANCH_DEFAULT:
+                branchgroup.setDefault(branchname)
+            elif action == BRANCH_DELETE:
+                branchgroup.removeBranch(branchname)
+            else:
+                pass
+            mngr.updateBranchGroup(branchgroup)
+            data = { "branches": branchgroup.branches(asdict=True) }
+            return APIResult(APIResultStatusSuccess(), "All good", data)
+        except CoreError as ce:
+            return APIResult(APIResultStatusError400(), ce._msg)
+        except:
+            return APIResult(APIResultStatusError400(), "General error occuried. Try again later")
+        else:
+            return None
+
 application = webapp2.WSGIApplication([
     ("/api/project/validate", api_project_validate),
-    (r"%s"%(PROJECT_ACTION_URL), api_project_action)
+    (r"%s"%(PROJECT_ACTION_URL), api_project_action),
+    (r"%s"%(BRANCH_ACTION_URL), api_branch_action)
 ], debug=True)

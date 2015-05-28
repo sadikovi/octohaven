@@ -116,10 +116,11 @@ class Project(object):
         }
 
 class Branch(object):
-    def __init__(self, name, created=time.time(), edited=time.time()):
+    def __init__(self, name, created=time.time(), edited=time.time(), default=False):
         self._name = str(name).strip()
         self._created = created
         self._edited = edited
+        self._default = bool(default)
         self._hash = Key.hashkey(self._name, self._created)
 
     @classmethod
@@ -128,7 +129,8 @@ class Branch(object):
             raise CoreError("[DictType] required, passed [%s]"%(type(settings)))
         created = settings["_created"] if "_created" in settings else None
         edited = settings["_edited"] if "_edited" in settings else None
-        return Branch(settings["_name"], created, edited)
+        default = settings["_default"] if "_default" in settings else None
+        return Branch(settings["_name"], created, edited, default)
 
     def name(self):
         return self._name
@@ -142,23 +144,65 @@ class Branch(object):
     def edited(self):
         return self._edited
 
+    def default(self):
+        return self._default
+
     def dict(self):
         return {
-            "_id": self._id,
             "_name": self._name,
             "_created": self._created,
-            "_edited": self._edited
+            "_edited": self._edited,
+            "_default": self._default
         }
 
 class BranchGroup(object):
-    def __init__(self, projectid):
-        self._projectid = projectid
+    def __init__(self, key):
+        self._rediskey = key
+        self._branches = {}
+        self._removed = []
 
-    def addBranch(self, branch):
-        pass
+    def key(self):
+        return self._rediskey
 
-    def removeBranch(self, branch):
-        pass
+    # [!] for managing only
+    def fill(self, branch):
+        if type(branch) is not Branch:
+            raise CoreError("[Branch] is required, [%s] passed"%(type(branch)))
+        self._branches[branch.name()] = branch
 
-    def setDefault(self, branch):
-        pass
+    def addBranch(self, branchname):
+        if branchname in self._branches:
+            raise CoreError("Branch {%s} already exists"%(branchname))
+        self._branches[branchname] = Branch(branchname)
+
+    def removeBranch(self, branchname):
+        print branchname, self._branches
+        if branchname not in self._branches:
+            raise CoreError("Branch {%s} is unrecognized"%(branchname))
+        self._removed.append(branchname)
+        del self._branches[branchname]
+
+    def setDefault(self, branchname):
+        if branchname not in self._branches:
+            raise CoreError("Branch {%s} is unrecognized"%(branchname))
+        for k, v in self._branches.items():
+            v._default = False
+        self._branches[branchname]._default = True
+
+    def branches(self, asdict=False):
+        a = self._branches.values()
+        return a if not asdict else [x.dict() for x in a]
+
+    def branch(self, bname, asdict=False):
+        if branchname in self._branches:
+            branch = self._branches[branchname]
+            return branch if not asdict else branch.dict()
+        return None
+
+    def default(self):
+        if not self._branches:
+            return None
+        a = [x for x in self._branches.values() if x._default]
+        if len(a) != 1:
+            firstbranch = self._branches.values()[0]
+            self.setDefault(firstbranch.name())
