@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 from src.connector.redisconnector import RedisConnector
-from src.redis.core import User, Project, Branch, BranchGroup
+from src.redis.core import User, Project, Branch, BranchGroup, ProjectGroup
 
 
 class Manager(object):
@@ -14,17 +14,18 @@ class Manager(object):
     def _userkey(self, uid):
         return "user:%s"%(uid)
 
-    def _projectkey(self, hashkey, pid):
-        return "user:%s#project:%s"%(hashkey, pid)
+    def _projectgroupkey(self, userhash):
+        return "user:%s#projectgroup"%(userhash)
 
-    def _user_conn_projectskey(self, hashkey):
-        return "conn-projects#user:%s"%(hashkey)
+    def _projectkey(self, projectgroupkey, projecthash):
+        return "%s#project:%s"%(projectgroupkey, projecthash)
+
 
     def _branchgroupkey(self, userhash, projecthash):
         return "user:%s#project:%s#branchgroup"%(userhash, projecthash)
 
-    def _branchkey(self, branchgroupkey, branchid):
-        return "%s#branch:%s"%(branchgroupkey, branchid)
+    def _branchkey(self, branchgroupkey, branchhash):
+        return "%s#branch:%s"%(branchgroupkey, branchhash)
 
     ##################################
     # User
@@ -50,51 +51,33 @@ class Manager(object):
         self._connector.delete(key)
 
     ##################################
-    # Project
+    # Project group
     ##################################
 
-    def createProject(self, hashkey, pid, name):
-        key = self._projectkey(hashkey, pid)
-        project = Project(pid, name)
-        self._connector.storeObject(key, project.dict())
-        return project
+    def getProjectGroup(self, userhash):
+        key = self._projectgroupkey(userhash)
+        pkeys = self._connector.getConnection(key)
+        projectgroup = ProjectGroup(key)
+        if pkeys:
+            for pkey in pkeys:
+                info = self._connector.getObject(pkey)
+                if info:
+                    projectgroup.fill(Project.create(info))
+        return projectgroup
 
-    def getProject(self, hashkey, pid):
-        key = self._projectkey(hashkey, pid)
-        info = self._connector.getObject(key)
-        return Project.create(info) if info else None
-
-    def updateProject(self, hashkey, pid, name):
-        proj = self.getProject(hashkey, pid)
-        if proj:
-            proj.setName(name)
-            # update proj
-            key = self._projectkey(hashkey, pid)
-            self._connector.storeObject(key, proj.dict())
-        return proj
-
-    ##################################
-    # Project - User connections
-    ##################################
-
-    def addProjectForUser(self, hashkey, pid):
-        key = self._user_conn_projectskey(hashkey)
-        self._connector.storeConnection(key, pid)
-
-    def removeProjectForUser(self, hashkey, pid):
-        key = self._user_conn_projectskey(hashkey)
-        self._connector.removeConnection(key, pid)
-
-    def projectsForUser(self, hashkey, asobject=False):
-        key = self._user_conn_projectskey(hashkey)
-        pids = self._connector.getConnection(key)
-        if not pids:
-            return None
-        a = [x for x in pids if x]
-        if asobject:
-            b = [self.getProject(hashkey, pid) for pid in a]
-            a = [x for x in b if x]
-        return a
+    def updateProjectGroup(self, projectgroup):
+        key = projectgroup.key()
+        # remove deleted keys
+        self._connector.removeConnection(
+            key,
+            *[self._projectkey(key, x) for x in projectgroup._removed]
+        )
+        # update valid keys
+        for project in projectgroup.projects():
+            pkey = self._projectkey(key, project.hash())
+            self._connector.storeObject(pkey, project.dict())
+            self._connector.storeConnection(key, pkey)
+        return projectgroup
 
     ##################################
     # Branch group
@@ -102,11 +85,10 @@ class Manager(object):
 
     def getBranchGroup(self, userhash, projecthash):
         key = self._branchgroupkey(userhash, projecthash)
-        bids = self._connector.getConnection(key)
+        bkeys = self._connector.getConnection(key)
         branchgroup = BranchGroup(key)
-        if bids:
-            for bid in bids:
-                bkey = self._branchkey(key, bid)
+        if bkeys:
+            for bkey in bkeys:
                 info = self._connector.getObject(bkey)
                 if info:
                     branchgroup.fill(Branch.create(info))
@@ -115,13 +97,15 @@ class Manager(object):
 
     def updateBranchGroup(self, branchgroup):
         key = branchgroup.key()
-        bids = self._connector.getConnection(key)
         # remove deleted keys
-        self._connector.removeConnection(key, *branchgroup._removed)
+        self._connector.removeConnection(
+            key,
+            *[self._branchkey(key, x) for x in branchgroup._removed]
+        )
         # update valid keys
         for branch in branchgroup.branches():
-            bkey = self._branchkey(key, branch.name())
+            bkey = self._branchkey(key, branch.hash())
             self._connector.storeObject(bkey, branch.dict())
-            self._connector.storeConnection(key, branch.name())
+            self._connector.storeConnection(key, bkey)
         branchgroup.default()
         return branchgroup

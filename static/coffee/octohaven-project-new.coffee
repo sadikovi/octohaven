@@ -29,8 +29,8 @@ theForm = new @Form theFormElem, (data) =>
             theForm.showErrorMessage "Something unexpected happened"
 
 # find project id input
-projectidInput = theForm.getControlForNameAttr "projectid"
-throw new Error("Project id field is not found") unless projectidInput
+projectidInput = theForm.getControlForNameAttr "projectname"
+throw new Error("Project name field is not found") unless projectidInput
 
 # random id generator
 generate = ->
@@ -61,9 +61,9 @@ generate = ->
     "#{adjs[rnd>>6%64]}-#{nouns[rnd%64]}"
 
 # activate random id generator
-randomlink = document.getElementById "form-random-projectid"
+randomlink = document.getElementById "form-random-projectname"
 randomlink.innerHTML = generate()
-generatelink = document.getElementById "form-generate-projectid"
+generatelink = document.getElementById "form-generate-projectname"
 @util.addEventListener randomlink, "click", (e)=>
     projectidInput.value = randomlink.innerHTML
     if document.createEvent
@@ -94,8 +94,9 @@ changeState = (input, status) ->
 
 checkvalue = (value, ok, ko) ->
     # make api call
-    value = @util.quote value
-    @loader.sendrequest "get", "/api/project/validate?id=#{value}", {}, null
+    data =
+        projectname: @util.quote value
+    @loader.sendrequest "post", "/api/project/validate", {}, JSON.stringify(data)
     , (status, res)=>
         if status == 200 then ok?() else ko?()
     , (status, res)=>

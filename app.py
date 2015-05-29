@@ -12,6 +12,7 @@ import src.redis.config as config
 from src.connector.redisconnector import RedisConnectionPool, RedisConnector
 from src.redis.manager import Manager
 from src.redis.core import Project
+from src.redis.errors import CoreError
 
 # init pool
 octohaven_pool = RedisConnectionPool(config.settings)
@@ -26,7 +27,6 @@ PROJECT_PAGE = "project.html"
 # cookies
 TIMEZONE_COOKIE = "octohaven_timezone_cookie"
 
-
 def fullpath():
     return os.path.join(os.path.dirname(__file__), "static")
 
@@ -39,11 +39,6 @@ def tzoffset(value):
 def manager():
     rc = RedisConnector(poolhandler=octohaven_pool)
     return Manager(connector=rc)
-
-def verifyProjectPath(path):
-    regex = "^(/project/)(%s)$"%(Project.ID_REGEXP(closed=False))
-    parts = re.match(regex, path, re.I)
-    return urllib2.unquote(parts.groups()[1]) if parts and len(parts.groups()) >= 2 else None
 
 def _template():
     return {
@@ -59,17 +54,15 @@ def _template():
 class app_home(webapp2.RequestHandler):
     def get(self):
         user = users.get_current_user()
-        # timezone offset
         offset = tzoffset(self.request.cookies.get(TIMEZONE_COOKIE))
-        # template file and template values
         web_template = _template()
         if user:
             try:
-                # get user
                 mngr, puserid = manager(), user.user_id()
                 puser, projects = mngr.getUser(puserid), None
                 if puser:
-                    projects = mngr.projectsForUser(puser.hash(), asobject=True)
+                    projectgroup = mngr.getProjectGroup(puser.hash())
+                    projects = projectgroup.projects()
                 else:
                     mngr.createUser(puserid, user.nickname(), user.email())
             except:
@@ -79,7 +72,7 @@ class app_home(webapp2.RequestHandler):
                 lprojects = []
                 if projects:
                     projects = sorted(projects, cmp=lambda x, y: cmp(x._created, y._created), reverse=True)
-                    lprojects = [{"id": x.id(), "name": x.name(), "datetime": x.datetime(offset=offset)} for x in projects]
+                    lprojects = [{"name": x.name(), "desc": x.desc(), "datetime": x.datetime(offset=offset)} for x in projects]
                 # prepare template values
                 web_template["values"]["username"] = user.nickname()
                 web_template["values"]["create_url"] = "/project/new"
@@ -113,25 +106,28 @@ class app_project_new(webapp2.RequestHandler):
         self.response.out.write(template.render(path, web_template["values"]))
 
 class app_project(webapp2.RequestHandler):
-    def get(self):
+    def get(self, *args):
         user = users.get_current_user()
         if user:
-            projectid = verifyProjectPath(self.request.path)
             web_template = _template()
             try:
                 mngr = manager()
                 puser = mngr.getUser(user.user_id())
                 if not puser:
                     raise CoreError("Requested user does not exist. Please re-login")
-                project = manager().getProject(puser.hash(), projectid)
+                pname = "%s"%(args[0]) if args else None
+                pname = Project.validateName(pname)
+                projectgroup = mngr.getProjectGroup(puser.hash())
+                project = projectgroup.project(pname)
                 if project:
                     web_template["values"]["username"] = user.nickname()
                     web_template["values"]["project"] = project
                     web_template["file"] = PROJECT_PAGE
                 else:
-                    web_template["file"] = NOTFOUND_PAGE
+                    raise CoreError("Project {%s} is not recognized"%(pname))
+            except CoreError as ce:
+                web_template["file"] = NOTFOUND_PAGE
             except:
-                # log error
                 web_template["file"] = UNAVAILABLE_PAGE
         # load template
         path = os.path.join(fullpath(), web_template["file"])
@@ -140,7 +136,7 @@ class app_project(webapp2.RequestHandler):
 application = webapp2.WSGIApplication([
     ("/", app_home),
     ("/project/new", app_project_new),
-    ("/project/.*", app_project),
+    ("/project/(.*)", app_project),
     ("/home|/index|/index\.html", app_redirect),
     ("/.*", app_notfound)
 ], debug=True)

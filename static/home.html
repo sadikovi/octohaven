@@ -51,12 +51,12 @@
                         {% for project in projects %}
                         <div class="ui segment">
                             <div class="ui basic segment">
-                                <a class="link" href="{{ project_url }}{{ project.id }}">
-                                    {{ project.id }}
+                                <a class="link" href="{{ project_url }}{{ project.name }}">
+                                    {{ project.name }}
                                 </a>
                                 {% autoescape on %}
                                 <p>
-                                    {{ project.name }}
+                                    {{ project.desc }}
                                 </p>
                                 {% endautoescape %}
                                 <p class="note">

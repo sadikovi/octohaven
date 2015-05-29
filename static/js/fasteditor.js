@@ -3,10 +3,14 @@
   var FastEditor, Panel;
 
   FastEditor = (function() {
-    function FastEditor(_at_elem, _at_onDidFinishEdit) {
+    function FastEditor(_at_elem, _at_onDidFinishEdit, _at_oktext, _at_canceltext, _at_placeholder, _at_displayvalue) {
       var _ref;
       this.elem = _at_elem;
       this.onDidFinishEdit = _at_onDidFinishEdit;
+      this.oktext = _at_oktext != null ? _at_oktext : "Save";
+      this.canceltext = _at_canceltext != null ? _at_canceltext : "Cancel";
+      this.placeholder = _at_placeholder != null ? _at_placeholder : "";
+      this.displayvalue = _at_displayvalue != null ? _at_displayvalue : true;
       if (!(this.elem && this.elem.nodeType === Node.ELEMENT_NODE && this.hasDataAttribute(this.elem))) {
         throw new Error("Wrong element");
       }
@@ -70,7 +74,7 @@
         return false;
       }
       value = value || ("" + this.assets.texter.textContent);
-      this.panel = new Panel(value);
+      this.panel = new Panel(value, this.placeholder, this.oktext, this.canceltext);
       this.assets.texter.innerHTML = "";
       this.assets.texter.appendChild(this.panel.html());
       this.assets.trigger.style.display = "none";
@@ -102,10 +106,11 @@
     };
 
     FastEditor.prototype.hidePanel = function(value) {
+      var _ref;
       if (!this.on) {
         return false;
       }
-      this.assets.texter.textContent = value != null ? value : this.panel.initvalue;
+      this.assets.texter.textContent = (_ref = (this.displayvalue ? value : null)) != null ? _ref : this.panel.initvalue;
       this.panel = null;
       this.assets.trigger.style.display = "";
       return this.on = false;
@@ -116,9 +121,12 @@
   })();
 
   Panel = (function() {
-    function Panel(_at_initvalue) {
+    function Panel(_at_initvalue, _at_placeholder, _at_oktext, _at_canceltext) {
       var _ref;
       this.initvalue = _at_initvalue;
+      this.placeholder = _at_placeholder != null ? _at_placeholder : "";
+      this.oktext = _at_oktext != null ? _at_oktext : "Save";
+      this.canceltext = _at_canceltext != null ? _at_canceltext : "Cancel";
       this.initvalue = this.initvalue ? this.initvalue.trim() : "";
       _ref = [this.submit(), this.cancel(), this.input(this.initvalue)], this.ok = _ref[0], this.ko = _ref[1], this.texter = _ref[2];
     }
@@ -126,6 +134,7 @@
     Panel.prototype.input = function(value) {
       var i, _ref;
       i = document.createElement("input");
+      i.setAttribute("placeholder", "" + this.placeholder);
       _ref = ["text", "" + value], i.type = _ref[0], i.value = _ref[1];
       FastEditor._util.addClass(i, "form-control", "short");
       return i;
@@ -134,7 +143,7 @@
     Panel.prototype.submit = function() {
       var s;
       s = document.createElement("div");
-      s.innerHTML = "Save";
+      s.innerHTML = "" + this.oktext;
       FastEditor._util.addClass(s, "btn", "btn-success");
       return s;
     };
@@ -142,7 +151,7 @@
     Panel.prototype.cancel = function() {
       var c;
       c = document.createElement("div");
-      c.innerHTML = "Cancel";
+      c.innerHTML = "" + this.canceltext;
       FastEditor._util.addClass(c, "btn");
       return c;
     };

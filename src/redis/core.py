@@ -14,15 +14,19 @@ class Key(object):
         combo = "%s#%s"%(eid, created)
         return uuid.uuid3(uuid.NAMESPACE_DNS, combo).hex
 
+    @staticmethod
+    def randomkey():
+        return uuid.uuid4().hex
+
 class User(object):
-    def __init__(self, eid, name, email, created=time.time()):
-        if type(created) is not FloatType:
-            raise CoreError("[FloatType] required, passed [%s]"%(type(created)))
+    def __init__(self, eid, name, email, created=None):
         self._id = str(eid).lower()
         self._name = str(name)
         self._email = str(email)
         # created as a timestamp instance
-        self._created = created
+        self._created = created or time.time()
+        if type(self._created) is not FloatType:
+            raise CoreError("[FloatType] required, passed [%s]"%(type(self._created)))
         # create hash for projects
         self._hash = Key.hashkey(self._id, self._created)
 
@@ -48,45 +52,35 @@ class User(object):
         return self._hash
 
 class Project(object):
-    def __init__(self, eid, name, created=time.time()):
-        if type(created) is not FloatType:
-            raise CoreError("[FloatType] required, passed [%s]"%(type(created)))
-        if not eid:
-            raise CoreError("Project must have an id")
-        # stringify id and lower
-        self._id = str(eid).lower()
-        # validate id
-        if not Project.validateIdLength(self._id):
-            raise CoreError("Project id must be at least %d characters long"%(Project.MIN_ID_LENGTH()))
-        if not Project.validateIdString(self._id):
-            raise CoreError("Project id can contain only letters, numbers and dashes")
-        # assign other parameters
-        self._name = str(name) if name else ""
-        # created as a timestamp instance
-        self._created = created
-        # create hash for branches
-        self._hash = Key.hashkey(self._id, self._created)
+    def __init__(self, _hash, name, desc, created=None):
+        self._hash = _hash if _hash else Key.randomkey()
+        self._name = Project.validateName(name)
+        self._desc = str(desc) if desc else ""
+        self._created = created or time.time()
 
     @staticmethod
-    def MIN_ID_LENGTH():
+    def MIN_NAME_LENGTH():
         return 6
 
     @staticmethod
-    def ID_REGEXP(closed=True):
+    def NAME_REGEXP(closed=True):
         a = "[\w-]+"
         return "^%s$"%(a) if closed else a
+
+    def hash(self):
+        return self._hash
 
     def name(self):
         return self._name
 
-    def setName(self, name):
-        self._name = name.strip()
+    def setDesc(self, desc):
+        self._desc = desc.strip()
 
-    def id(self):
-        return self._id
+    def desc(self):
+        return self._desc
 
-    def hash(self):
-        return self._hash
+    def created(self):
+        return self._created
 
     def datetime(self, offset=None, template="%d/%m/%Y %H:%M:%S"):
         utc = datetime.utcfromtimestamp(self._created)
@@ -97,31 +91,75 @@ class Project(object):
     def create(cls, settings):
         if type(settings) is not DictType:
             raise CoreError("[DictType] required, passed [%s]"%(type(settings)))
+        desc = settings["_desc"] if "_desc" in settings else None
         created = settings["_created"] if "_created" in settings else None
-        return Project(settings["_id"], settings["_name"], created)
+        return Project(settings["_hash"], settings["_name"], desc, created)
 
     @staticmethod
-    def validateIdLength(projectid):
-        return len(projectid) >= Project.MIN_ID_LENGTH()
-
-    @staticmethod
-    def validateIdString(projectid):
-        return bool(re.match(Project.ID_REGEXP(), projectid, re.I))
+    def validateName(name):
+        if not name:
+            raise CoreError("Project name is not specified")
+        if len(name) < Project.MIN_NAME_LENGTH():
+            raise CoreError("Project name must be at least %d characters long"%(Project.MIN_NAME_LENGTH()))
+        if not bool(re.match(Project.NAME_REGEXP(), name, re.I)):
+            raise CoreError("Project name can contain only letters, numbers and dashes")
+        return str(name).strip().lower()
 
     def dict(self):
         return {
-            "_id": self._id,
+            "_hash": self._hash,
             "_name": self._name,
+            "_desc": self._desc,
             "_created": self._created
         }
 
+class ProjectGroup(object):
+    def __init__(self, key):
+        self._rediskey = key
+        self._projects = {}
+        self._removed = []
+
+    def key(self):
+        return self._rediskey
+
+    def fill(self, project):
+        if type(project) is not Project:
+            raise CoreError("[Project] required, [%s] passed"%(type(project)))
+        self._projects[project.name()] = project
+
+    def addProject(self, name, desc):
+        if name in self._projects:
+            raise CoreError("Project {%s} already exists"%(name))
+        self._projects[name] = Project(None, name, desc)
+
+    def removeProject(self, name):
+        if name not in self._projects:
+            raise CoreError("Project {%s} is not recognized"%(name))
+        self._removed.append(self._projects[name].hash())
+        del self._projects[name]
+
+    def updateDesc(self, name, desc):
+        if name not in self._projects:
+            raise CoreError("Project {%s} is not recognized"%(name))
+        self._projects[name].setDesc(desc)
+
+    def project(self, name, asdict=False):
+        if name not in self._projects:
+            return None
+        a = self._projects[name]
+        return a.dict() if asdict else a
+
+    def projects(self, asdict=False):
+        a = self._projects.values()
+        return a if not asdict else [x.dict() for x in a]
+
 class Branch(object):
-    def __init__(self, name, created=time.time(), edited=time.time(), default=False):
-        self._name = str(name).strip()
-        self._created = created
-        self._edited = edited
+    def __init__(self, _hash, name, created=None, edited=None, default=False):
+        self._hash = _hash if _hash else Key.randomkey()
+        self._name = Branch.validateName(name)
+        self._created = created or time.time()
+        self._edited = edited or time.time()
         self._default = bool(default)
-        self._hash = Key.hashkey(self._name, self._created)
 
     @classmethod
     def create(cls, settings):
@@ -130,7 +168,13 @@ class Branch(object):
         created = settings["_created"] if "_created" in settings else None
         edited = settings["_edited"] if "_edited" in settings else None
         default = settings["_default"] if "_default" in settings else None
-        return Branch(settings["_name"], created, edited, default)
+        return Branch(settings["_hash"], settings["_name"], created, edited, default)
+
+    @staticmethod
+    def validateName(name):
+        if not name:
+            raise CoreError("Branch name is not specified")
+        return str(name).strip().lower()
 
     def name(self):
         return self._name
@@ -147,8 +191,13 @@ class Branch(object):
     def default(self):
         return self._default
 
+    def setDefault(self, flag):
+        self._default = flag
+        self._edited = time.time()
+
     def dict(self):
         return {
+            "_hash": self._hash,
             "_name": self._name,
             "_created": self._created,
             "_edited": self._edited,
@@ -173,13 +222,12 @@ class BranchGroup(object):
     def addBranch(self, branchname):
         if branchname in self._branches:
             raise CoreError("Branch {%s} already exists"%(branchname))
-        self._branches[branchname] = Branch(branchname)
+        self._branches[branchname] = Branch(None, branchname)
 
     def removeBranch(self, branchname):
-        print branchname, self._branches
         if branchname not in self._branches:
             raise CoreError("Branch {%s} is unrecognized"%(branchname))
-        self._removed.append(branchname)
+        self._removed.append(self._branches[branchname].hash())
         del self._branches[branchname]
 
     def setDefault(self, branchname):
@@ -187,15 +235,15 @@ class BranchGroup(object):
             raise CoreError("Branch {%s} is unrecognized"%(branchname))
         for k, v in self._branches.items():
             v._default = False
-        self._branches[branchname]._default = True
+        self._branches[branchname].setDefault(True)
 
     def branches(self, asdict=False):
         a = self._branches.values()
         return a if not asdict else [x.dict() for x in a]
 
     def branch(self, bname, asdict=False):
-        if branchname in self._branches:
-            branch = self._branches[branchname]
+        if bname in self._branches:
+            branch = self._branches[bname]
             return branch if not asdict else branch.dict()
         return None
 

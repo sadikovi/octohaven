@@ -39,10 +39,10 @@
     };
   })(this));
 
-  projectidInput = theForm.getControlForNameAttr("projectid");
+  projectidInput = theForm.getControlForNameAttr("projectname");
 
   if (!projectidInput) {
-    throw new Error("Project id field is not found");
+    throw new Error("Project name field is not found");
   }
 
   generate = function() {
@@ -53,11 +53,11 @@
     return adjs[rnd >> 6 % 64] + "-" + nouns[rnd % 64];
   };
 
-  randomlink = document.getElementById("form-random-projectid");
+  randomlink = document.getElementById("form-random-projectname");
 
   randomlink.innerHTML = generate();
 
-  generatelink = document.getElementById("form-generate-projectid");
+  generatelink = document.getElementById("form-generate-projectname");
 
   this.util.addEventListener(randomlink, "click", (function(_this) {
     return function(e) {
@@ -97,8 +97,11 @@
   };
 
   checkvalue = function(value, ok, ko) {
-    value = this.util.quote(value);
-    return this.loader.sendrequest("get", "/api/project/validate?id=" + value, {}, null, (function(_this) {
+    var data;
+    data = {
+      projectname: this.util.quote(value)
+    };
+    return this.loader.sendrequest("post", "/api/project/validate", {}, JSON.stringify(data), (function(_this) {
       return function(status, res) {
         if (status === 200) {
           return typeof ok === "function" ? ok() : void 0;

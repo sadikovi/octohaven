@@ -1,27 +1,30 @@
 # add fast editor on description
-projectid = ->
+project_name = ->
     a = document.getElementsByTagName("meta")
-    return x.getAttribute("content") for x in a when x.name == "projectid"
+    return x.getAttribute("content") for x in a when x.name == "projectname"
+project_hash = ->
+    a = document.getElementsByTagName("meta")
+    return x.getAttribute("content") for x in a when x.name == "projecthash"
 # elements on page
 ## name
-nameelem = document.getElementById "octohaven-project-name"
+nameelem = document.getElementById "octohaven-project-desc"
 ## project - delete
 deleteLink = document.getElementById "octohaven-project-action-delete"
 
 unless nameelem
     throw new Error "Project name element is undefined"
 nameeditor = new @FastEditor nameelem, (status, value) =>
-    if status and value and projectid
+    if status and value
         data =
-            projectid: "#{@util.quote projectid()}"
-            projectname: "#{@util.quote value}"
+            projectname: "#{@util.quote project_name()}"
+            projectdesc: "#{@util.quote value}"
         @loader.sendrequest "post", "/api/project/update", {}, JSON.stringify(data)
 
 @util.addEventListener deleteLink, "click", (e)=>
     e.preventDefault()
     # send request
     data =
-        projectid: "#{@util.quote projectid()}"
+        projectname: "#{@util.quote project_name()}"
     @loader.sendrequest "post", "/api/project/delete", {}
     , JSON.stringify(data)
     , (s, r) =>
@@ -34,11 +37,215 @@ nameeditor = new @FastEditor nameelem, (status, value) =>
     , (e, r) =>
         console.log "Error #{r}"
 
+# loading branches form
+branchesform = document.getElementById "octohaven-branches-form"
+brancheslist = document.getElementById "octohaven-branches-list"
+branchesaddb = document.getElementById "octohaven-branches-addb"
 
-data =
-    projectid: projectid()
-    branchname: "test-branch0.7116906314622611"
-@loader.sendrequest "post", "/api/branch/select", {}
-, JSON.stringify(data)
-, (s, r) => console.log s, r
-, (e, r) => console.log e, r
+unless branchesform and brancheslist and branchesaddb
+    throw new Error "Branches form or its elements are undefined"
+
+# no branches map
+no_branches_map = () ->
+    map =
+        type: "div"
+        cls: "blankslate"
+        children: [
+            header =
+                type: "h1"
+                cls: "icon header"
+                children: [
+                    icon =
+                        type: "i"
+                        cls: "fork icon"
+                    content =
+                        type: "div"
+                        cls: "content text-thin"
+                        title: "No branches"
+                ]
+            paragraph =
+                type: "p"
+                cls: "text-mute"
+                title: "Add one with [+ branch]"
+        ]
+
+# branches map
+branches_map = (branches) ->
+    _one_branch = (branch) ->
+        if branch.default
+            [default_i, delete_i, default_t, delete_t] = ["checkmark", "minus", "Default branch", "Cannot be deleted"]
+        else
+            [default_i, delete_i, default_t, delete_t] = ["radio", "trash", "Set default", "Delete branch"]
+        _b_default =
+            type: "a"
+            cls: "link link-muted tooltipped tooltipped-n"
+            href: ""
+            children:
+                type: "i"
+                cls: "#{default_i} icon"
+        _b_delete =
+            type: "a"
+            cls: "link link-muted tooltipped tooltipped-n"
+            href: ""
+            children:
+                type: "i"
+                cls: "#{delete_i} icon"
+        _b_default = @mapper.parseMapForParent _b_default
+        _b_default.setAttribute "aria-label", default_t
+        _b_default._branch = branch
+        _b_delete = @mapper.parseMapForParent _b_delete
+        _b_delete.setAttribute "aria-label", delete_t
+        _b_delete._branch = branch
+        @util.addEventListener _b_default, "click", (e) -> e.preventDefault()
+        if branch.default
+            @util.addEventListener _b_default, "click", (e) -> e.preventDefault()
+            @util.addEventListener _b_delete, "click", (e) -> e.preventDefault()
+        else
+            @util.addEventListener _b_default, "click", (e) ->
+                e.preventDefault()
+                setDefault?(@_branch)
+            @util.addEventListener _b_delete, "click", (e) ->
+                e.preventDefault()
+                deleteBranch?(@_branch)
+        # overall branch map
+        branch =
+            type: "div"
+            cls: "ui secondary segment"
+            children:
+                type: "div"
+                cls: "ui stackable grid"
+                children: [
+                    name =
+                        type: "div"
+                        cls: "seven wide column"
+                        children: [
+                            icon =
+                                type: "i"
+                                cls: "fork icon"
+                            link = [
+                                type: "a"
+                                cls: "link"
+                                href: branch.link
+                                title: branch.name
+                            ]
+                        ]
+                    edited =
+                        type: "div"
+                        cls: "five wide column"
+                        children:
+                            type: "p"
+                            cls: "note"
+                            title: convertTimeStampIntoRuntime?(branch.edited)
+                    action_default =
+                        type: "div"
+                        cls: "two wide column"
+                        children: _b_default
+                    action_delete =
+                        type: "div"
+                        cls: "two wide column"
+                        children: _b_delete
+                ]
+
+    if branches and branches.length
+        _branches_map =
+            type: "div"
+            cls: "ui segments"
+            children: (_one_branch(x) for x in branches)
+    else
+        no_branches_map()
+
+# error map
+error_map = (msg) ->
+    msg ?= "Cannot fetch branches."
+    map =
+        type: "div"
+        cls: "blankslate"
+        children: [
+            header =
+                type: "h1"
+                cls: "icon header"
+                children: [
+                    icon =
+                        type: "i"
+                        cls: "fork icon"
+                    content =
+                        type: "div"
+                        cls: "content text-thin"
+                        title: "Something went wrong"
+                ]
+            paragraph =
+                type: "p"
+                cls: "text-mute"
+                children: [
+                    message =
+                        type: "span"
+                        title: "#{msg}"
+                    div =
+                        type: "div"
+                        cls: "ui divider"
+                    action =
+                        type: "a"
+                        cls: "link"
+                        title: "Reload branches"
+                        href: ""
+                        onclick: (e) ->
+                            reloadBranchesForm?()
+                            e.preventDefault()
+                ]
+        ]
+
+# send data and ask for branches initially
+reloadBranchesForm = (link, data) ->
+    data = data or {projectname: project_name(), branchname: "", projecthash: project_hash()}
+    brancheslist.innerHTML = ""
+    @util.addClass branchesform, "loading"
+    link = link or "/api/branch/select"
+    # send request
+    @loader.sendrequest "post", link, {}, JSON.stringify(data)
+    , (s, r) =>
+        if s == 200
+            r = JSON.parse r
+            @mapper.parseMapForParent branches_map(r.data.branches), brancheslist
+        else
+            @mapper.parseMapForParent error_map(), brancheslist
+        @util.removeClass branchesform, "loading"
+    , (e, r) =>
+        msg = JSON.parse(r).message if e == 400
+        @mapper.parseMapForParent error_map(msg), brancheslist
+        @util.removeClass branchesform, "loading"
+
+createBranch = (branchname) ->
+    reloadBranchesForm?("/api/branch/create",
+        {projectname: project_name(), branchname: branchname, projecthash: project_hash()})
+
+setDefault = (branch) ->
+    reloadBranchesForm?("/api/branch/default",
+        {projectname: project_name(), branchname: branch.name, projecthash: project_hash()})
+
+deleteBranch = (branch) ->
+    reloadBranchesForm?("/api/branch/delete",
+        {projectname: project_name(), branchname: branch.name, projecthash: project_hash()})
+
+convertTimeStampIntoRuntime = (timestamp) ->
+    [now, date] = [new Date, new Date timestamp * 1000]
+    diff = (now.getTime() - date.getTime())/1000.0
+    if 0 < diff < 60
+        # display seconds
+        "Edited less than a minute ago"
+    else if 60 <= diff < 60*60
+        # display minutes
+        "Edited #{Math.round diff/60} minutes ago"
+    else if 60*60 <= diff < 24*60*60
+        # display hours
+        "Edited #{Math.round diff/60/60} hours ago"
+    else
+        # display full date
+        "Edited on #{date.toLocaleString("en-nz")}"
+
+# fire for the first time
+reloadBranchesForm?()
+
+# add fast editor on +branch
+addbrancheditor = new @FastEditor branchesaddb, (status, value) ->
+    createBranch?(value) if status
+, "Create", "Cancel", "New branch name", false

@@ -1,5 +1,5 @@
 class FastEditor
-    constructor: (@elem, @onDidFinishEdit) ->
+    constructor: (@elem, @onDidFinishEdit, @oktext="Save", @canceltext="Cancel", @placeholder="", @displayvalue=true) ->
         # fast-editor
         # fast-editor-trigger
         unless @elem and @elem.nodeType == Node.ELEMENT_NODE and @hasDataAttribute @elem
@@ -38,7 +38,7 @@ class FastEditor
     showPanel: (value) ->
         return false if @on
         value = value or "#{@assets.texter.textContent}"
-        @panel = new Panel value
+        @panel = new Panel value, @placeholder, @oktext, @canceltext
         @assets.texter.innerHTML = ""
         @assets.texter.appendChild @panel.html()
         # hide trigger
@@ -57,31 +57,32 @@ class FastEditor
 
     hidePanel: (value) ->
         return false unless @on
-        @assets.texter.textContent = value ? @panel.initvalue
+        @assets.texter.textContent = (if @displayvalue then value else null) ? @panel.initvalue
         @panel = null
         @assets.trigger.style.display = ""
         @on = false
 
 class Panel
-    constructor: (@initvalue) ->
+    constructor: (@initvalue, @placeholder="", @oktext="Save", @canceltext="Cancel") ->
         @initvalue = if @initvalue then @initvalue.trim() else ""
         [@ok, @ko, @texter] = [@submit(), @cancel(), @input(@initvalue)]
 
     input: (value) ->
         i = document.createElement "input"
+        i.setAttribute "placeholder", "#{@placeholder}"
         [i.type, i.value] = ["text", "#{value}"]
         FastEditor._util.addClass i, "form-control", "short"
         i
 
     submit: ->
         s = document.createElement "div"
-        s.innerHTML = "Save"
+        s.innerHTML = "#{@oktext}"
         FastEditor._util.addClass s, "btn", "btn-success"
         s
 
     cancel: ->
         c = document.createElement "div"
-        c.innerHTML = "Cancel"
+        c.innerHTML = "#{@canceltext}"
         FastEditor._util.addClass c, "btn"
         c
 
