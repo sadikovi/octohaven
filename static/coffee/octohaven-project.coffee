@@ -53,16 +53,8 @@ no_branches_map = () ->
         children: [
             header =
                 type: "h1"
-                cls: "icon header"
-                children: [
-                    icon =
-                        type: "i"
-                        cls: "fork icon"
-                    content =
-                        type: "div"
-                        cls: "content text-thin"
-                        title: "No branches"
-                ]
+                cls: "text-thin"
+                title: "No branches"
             paragraph =
                 type: "p"
                 cls: "text-mute"
@@ -73,33 +65,30 @@ no_branches_map = () ->
 branches_map = (branches) ->
     _one_branch = (branch) ->
         if branch.default
-            [default_i, delete_i, default_t, delete_t] = ["checkmark", "minus", "Default branch", "Cannot be deleted"]
+            [default_t, delete_t] = ["DEFAULT", "---"]
         else
-            [default_i, delete_i, default_t, delete_t] = ["radio", "trash", "Set default", "Delete branch"]
+            [default_t, delete_t] = ["[ Set ]", "[ Delete ]"]
+        # create maps
         _b_default =
             type: "a"
-            cls: "link link-muted tooltipped tooltipped-n"
             href: ""
-            children:
-                type: "i"
-                cls: "#{default_i} icon"
+            title: "#{default_t}"
         _b_delete =
             type: "a"
-            cls: "link link-muted tooltipped tooltipped-n"
             href: ""
-            children:
-                type: "i"
-                cls: "#{delete_i} icon"
+            title: "#{delete_t}"
+        # convert into elements
         _b_default = @mapper.parseMapForParent _b_default
-        _b_default.setAttribute "aria-label", default_t
         _b_default._branch = branch
         _b_delete = @mapper.parseMapForParent _b_delete
-        _b_delete.setAttribute "aria-label", delete_t
         _b_delete._branch = branch
         @util.addEventListener _b_default, "click", (e) -> e.preventDefault()
         if branch.default
-            @util.addEventListener _b_default, "click", (e) -> e.preventDefault()
-            @util.addEventListener _b_delete, "click", (e) -> e.preventDefault()
+            _b_default =
+                type: "span"
+                cls: "text-emphasized"
+                title: "Default"
+            _b_delete = null
         else
             @util.addEventListener _b_default, "click", (e) ->
                 e.preventDefault()
@@ -110,46 +99,47 @@ branches_map = (branches) ->
         # overall branch map
         branch =
             type: "div"
-            cls: "ui secondary segment"
+            cls: "segment"
             children:
                 type: "div"
-                cls: "ui stackable grid"
+                cls: "columns"
                 children: [
                     name =
                         type: "div"
-                        cls: "seven wide column"
-                        children: [
-                            icon =
-                                type: "i"
-                                cls: "fork icon"
-                            link = [
+                        cls: "one-fifth column"
+                        children:
+                            type: "div"
+                            cls: "segment"
+                            children:
                                 type: "a"
-                                cls: "link"
                                 href: branch.link
                                 title: branch.name
-                            ]
-                        ]
                     edited =
                         type: "div"
-                        cls: "five wide column"
+                        cls: "two-fifths column"
                         children:
-                            type: "p"
-                            cls: "note"
+                            type: "div"
+                            cls: "segment"
                             title: convertTimeStampIntoRuntime?(branch.edited)
-                    action_default =
+                    isdefault =
                         type: "div"
-                        cls: "two wide column"
-                        children: _b_default
-                    action_delete =
+                        cls: "one-fifth column"
+                        children:
+                            type: "div"
+                            cls: "segment"
+                            children: [_b_default]
+                    isdelete =
                         type: "div"
-                        cls: "two wide column"
-                        children: _b_delete
+                        cls: "one-fifth column"
+                        children:
+                            type: "div"
+                            cls: "segment"
+                            children: [_b_delete]
                 ]
-
     if branches and branches.length
         _branches_map =
             type: "div"
-            cls: "ui segments"
+            cls: "segments"
             children: (_one_branch(x) for x in branches)
     else
         no_branches_map()
@@ -163,35 +153,22 @@ error_map = (msg) ->
         children: [
             header =
                 type: "h1"
-                cls: "icon header"
-                children: [
-                    icon =
-                        type: "i"
-                        cls: "fork icon"
-                    content =
-                        type: "div"
-                        cls: "content text-thin"
-                        title: "Something went wrong"
-                ]
+                cls: "text-thin"
+                title: "Something went wrong"
             paragraph =
                 type: "p"
                 cls: "text-mute"
-                children: [
-                    message =
-                        type: "span"
-                        title: "#{msg}"
-                    div =
-                        type: "div"
-                        cls: "ui divider"
-                    action =
-                        type: "a"
-                        cls: "link"
-                        title: "Reload branches"
-                        href: ""
-                        onclick: (e) ->
-                            reloadBranchesForm?()
-                            e.preventDefault()
-                ]
+                title: "#{msg}"
+            reload =
+                type: "p"
+                cls: "text-mute"
+                children:
+                    type: "a"
+                    title: "Reload branches"
+                    href: ""
+                    onclick: (e) ->
+                        reloadBranchesForm?()
+                        e.preventDefault()
         ]
 
 # send data and ask for branches initially

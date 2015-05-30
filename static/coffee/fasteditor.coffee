@@ -88,23 +88,26 @@ class Panel
 
     html: ->
         main = document.createElement "div"
-        FastEditor._util.addClass main, "ui horizontal list"
+        FastEditor._util.addClass main, "breadcrumb"
         # input section
         isec = document.createElement "div"
-        FastEditor._util.addClass isec, "item"
+        FastEditor._util.addClass isec, "section"
         isec.appendChild @texter
         # submit section
         ssec = document.createElement "div"
-        FastEditor._util.addClass ssec, "item"
+        FastEditor._util.addClass ssec, "section"
         ssec.appendChild @ok
         # cancel section
         csec = document.createElement "div"
-        FastEditor._util.addClass csec, "item"
+        FastEditor._util.addClass csec, "section"
         csec.appendChild @ko
+        # divider
+        _divider = ->
+            divider = document.createElement "div"
+            FastEditor._util.addClass divider, "divider"
+            divider
         # append children
-        main.appendChild isec
-        main.appendChild ssec
-        main.appendChild csec
+        main.appendChild k for k in [isec, _divider(), ssec, _divider(), csec]
         main
 
 FastEditor._util = @util

@@ -15,38 +15,34 @@
 
         <link rel="icon" type="image/x-icon" href="/image/favicon.ico">
         <link rel="stylesheet" href="/style/internal.min.css">
-        <link rel="stylesheet" href="/style/semantic.min.css">
         <script type="text/javascript" src="/script/js/timezone.js"></script>
     </head>
     <body>
-        <div class="ui basic segment">
-            <div class="ui page stackable grid">
-                <div class="four wide column">
-                    <div class="ui vertical text menu">
-                        <div class="header item">
+        <div class="page container">
+            <div class="columns">
+                <div class="one-fourth column">
+                    <div class="menu">
+                        <div class="menu-heading">
                             Octohaven
                         </div>
-                        <a class="item" href="{{ home_url }}">
-                            <i class="home icon"></i>
+                        <a class="menu-item" href="{{ home_url }}">
                             Home
                         </a>
-                        <a class="item" href="{{ userdash_url }}">
-                            <i class="spy icon"></i>
+                        <a class="menu-item" href="{{ userdash_url }}">
                             {{ username }}
                         </a>
-                        <a class="item" href="{{ logout_url }}">
-                            <i class="plug icon"></i>
+                        <a class="menu-item" href="{{ logout_url }}">
                             Logout
                         </a>
                     </div>
                 </div>
-                <div class="twelve wide column">
-                    <div class="ui top attached secondary segment">
-                        <h1 class="ui header text-thin">
+                <div class="three-fourths column">
+                    <div class="top attached secondary segment">
+                        <h1 class="text-thin">
                             New project
                         </h1>
                     </div>
-                    <div class="ui bottom attached segment" data-attr="form" id="octohaven-new-project-form">
+                    <div class="bottom attached segment" data-attr="form" id="octohaven-new-project-form">
                         <dl class="form required">
                             <dt>
                                 <label>Project id</label>
@@ -59,9 +55,9 @@
                         <dl class="form-note">
                             <p class="note">
                                 <span>Don't know what unique name to pick? Try </span>
-                                <a class="link" href="" id="form-random-projectname">shy-sunshine</a>
+                                <a href="" id="form-random-projectname">shy-sunshine</a>
                                 <span> or get </span>
-                                <a class="link" href="" id="form-generate-projectname">another one</a>
+                                <a href="" id="form-generate-projectname">another one</a>
                             </p>
                         </dl>
                         <dl class="form">
@@ -73,7 +69,6 @@
                                     data-attr="control" data-name-attr="projectdesc">
                             </dd>
                         </dl>
-                        <div class="ui divider"></div>
                         <a class="btn" role="button" href="{{ home_url }}"
                             data-attr="cancel">
                             Cancel

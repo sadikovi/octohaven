@@ -15,43 +15,39 @@
 
         <link rel="icon" type="image/x-icon" href="/image/favicon.ico">
         <link rel="stylesheet" href="/style/internal.min.css">
-        <link rel="stylesheet" href="/style/semantic.min.css">
         <script type="text/javascript" src="/script/js/timezone.js"></script>
     </head>
     <body>
-        <div class="ui basic segment">
-            <div class="ui page stackable grid">
-                <div class="four wide column">
-                    <div class="ui vertical text menu">
-                        <div class="header item">
+        <div class="page container">
+            <div class="columns">
+                <div class="one-fourth column">
+                    <nav class="menu">
+                        <div class="menu-heading">
                             Octohaven
                         </div>
-                        <a class="item" href="{{ home_url }}">
-                            <i class="home icon"></i>
+                        <a class="menu-item" href="{{ home_url }}">
                             Home
                         </a>
-                        <a class="item" href="{{ userdash_url }}">
-                            <i class="spy icon"></i>
+                        <a class="menu-item" href="{{ userdash_url }}">
                             {{ username }}
                         </a>
-                        <a class="item" href="{{ logout_url }}">
-                            <i class="plug icon"></i>
+                        <a class="menu-item" href="{{ logout_url }}">
                             Logout
                         </a>
-                    </div>
+                    </nav>
                 </div>
-                <div class="twelve wide column">
+                <div class="three-fourths column">
                     {% if projects %}
-                    <div class="ui basic secondary segment">
-                        <a class="link" href="{{ create_url }}">
+                    <div class="basic secondary segment">
+                        <a href="{{ create_url }}">
                             + project
                         </a>
                     </div>
-                    <div class="ui segments">
+                    <div class="segments">
                         {% for project in projects %}
-                        <div class="ui segment">
-                            <div class="ui basic segment">
-                                <a class="link" href="{{ project_url }}{{ project.name }}">
+                        <div class="segment">
+                            <div class="basic segment">
+                                <a href="{{ project_url }}{{ project.name }}">
                                     {{ project.name }}
                                 </a>
                                 {% autoescape on %}
@@ -67,16 +63,13 @@
                         {% endfor %}
                     </div>
                     {% else %}
-                    <div class="ui segment">
+                    <div class="segment">
                         <div class="blankslate">
-                            <h1 class="icon header">
-                                <i class="wizard icon"></i>
-                                <div class="content text-thin">
-                                    Nothing yet
-                                </div>
+                            <h1 class="text-thin">
+                                Nothing yet
                             </h1>
-                            <p class="text-mute">
-                                <a class="link" href="{{ create_url }}">
+                            <p>
+                                <a href="{{ create_url }}">
                                     Create a new project
                                 </a>
                             </p>

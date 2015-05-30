@@ -78,24 +78,15 @@
   }
 
   no_branches_map = function() {
-    var content, header, icon, map, paragraph;
+    var header, map, paragraph;
     return map = {
       type: "div",
       cls: "blankslate",
       children: [
         header = {
           type: "h1",
-          cls: "icon header",
-          children: [
-            icon = {
-              type: "i",
-              cls: "fork icon"
-            }, content = {
-              type: "div",
-              cls: "content text-thin",
-              title: "No branches"
-            }
-          ]
+          cls: "text-thin",
+          title: "No branches"
         }, paragraph = {
           type: "p",
           cls: "text-mute",
@@ -108,46 +99,36 @@
   branches_map = function(branches) {
     var x, _branches_map, _one_branch;
     _one_branch = function(branch) {
-      var action_default, action_delete, default_i, default_t, delete_i, delete_t, edited, icon, link, name, _b_default, _b_delete, _ref, _ref1;
+      var default_t, delete_t, edited, isdefault, isdelete, name, _b_default, _b_delete, _ref, _ref1;
       if (branch["default"]) {
-        _ref = ["checkmark", "minus", "Default branch", "Cannot be deleted"], default_i = _ref[0], delete_i = _ref[1], default_t = _ref[2], delete_t = _ref[3];
+        _ref = ["DEFAULT", "---"], default_t = _ref[0], delete_t = _ref[1];
       } else {
-        _ref1 = ["radio", "trash", "Set default", "Delete branch"], default_i = _ref1[0], delete_i = _ref1[1], default_t = _ref1[2], delete_t = _ref1[3];
+        _ref1 = ["[ Set ]", "[ Delete ]"], default_t = _ref1[0], delete_t = _ref1[1];
       }
       _b_default = {
         type: "a",
-        cls: "link link-muted tooltipped tooltipped-n",
         href: "",
-        children: {
-          type: "i",
-          cls: default_i + " icon"
-        }
+        title: "" + default_t
       };
       _b_delete = {
         type: "a",
-        cls: "link link-muted tooltipped tooltipped-n",
         href: "",
-        children: {
-          type: "i",
-          cls: delete_i + " icon"
-        }
+        title: "" + delete_t
       };
       _b_default = this.mapper.parseMapForParent(_b_default);
-      _b_default.setAttribute("aria-label", default_t);
       _b_default._branch = branch;
       _b_delete = this.mapper.parseMapForParent(_b_delete);
-      _b_delete.setAttribute("aria-label", delete_t);
       _b_delete._branch = branch;
       this.util.addEventListener(_b_default, "click", function(e) {
         return e.preventDefault();
       });
       if (branch["default"]) {
-        this.util.addEventListener(_b_default, "click", function(e) {
-          return e.preventDefault();
-        });
-        this.util.addEventListener(_b_delete, "click", function(e) {
-          return e.preventDefault();
-        });
+        _b_default = {
+          type: "span",
+          cls: "text-emphasized",
+          title: "Default"
+        };
+        _b_delete = null;
       } else {
         this.util.addEventListener(_b_default, "click", function(e) {
           e.preventDefault();
@@ -160,43 +141,47 @@
       }
       return branch = {
         type: "div",
-        cls: "ui secondary segment",
+        cls: "segment",
         children: {
           type: "div",
-          cls: "ui stackable grid",
+          cls: "columns",
           children: [
             name = {
               type: "div",
-              cls: "seven wide column",
-              children: [
-                icon = {
-                  type: "i",
-                  cls: "fork icon"
-                }, link = [
-                  {
-                    type: "a",
-                    cls: "link",
-                    href: branch.link,
-                    title: branch.name
-                  }
-                ]
-              ]
+              cls: "one-fifth column",
+              children: {
+                type: "div",
+                cls: "segment",
+                children: {
+                  type: "a",
+                  href: branch.link,
+                  title: branch.name
+                }
+              }
             }, edited = {
               type: "div",
-              cls: "five wide column",
+              cls: "two-fifths column",
               children: {
-                type: "p",
-                cls: "note",
+                type: "div",
+                cls: "segment",
                 title: typeof convertTimeStampIntoRuntime === "function" ? convertTimeStampIntoRuntime(branch.edited) : void 0
               }
-            }, action_default = {
+            }, isdefault = {
               type: "div",
-              cls: "two wide column",
-              children: _b_default
-            }, action_delete = {
+              cls: "one-fifth column",
+              children: {
+                type: "div",
+                cls: "segment",
+                children: [_b_default]
+              }
+            }, isdelete = {
               type: "div",
-              cls: "two wide column",
-              children: _b_delete
+              cls: "one-fifth column",
+              children: {
+                type: "div",
+                cls: "segment",
+                children: [_b_delete]
+              }
             }
           ]
         }
@@ -205,7 +190,7 @@
     if (branches && branches.length) {
       return _branches_map = {
         type: "div",
-        cls: "ui segments",
+        cls: "segments",
         children: (function() {
           var _i, _len, _results;
           _results = [];
@@ -222,7 +207,7 @@
   };
 
   error_map = function(msg) {
-    var action, content, div, header, icon, map, message, paragraph;
+    var header, map, paragraph, reload;
     if (msg == null) {
       msg = "Cannot fetch branches.";
     }
@@ -232,40 +217,26 @@
       children: [
         header = {
           type: "h1",
-          cls: "icon header",
-          children: [
-            icon = {
-              type: "i",
-              cls: "fork icon"
-            }, content = {
-              type: "div",
-              cls: "content text-thin",
-              title: "Something went wrong"
-            }
-          ]
+          cls: "text-thin",
+          title: "Something went wrong"
         }, paragraph = {
           type: "p",
           cls: "text-mute",
-          children: [
-            message = {
-              type: "span",
-              title: "" + msg
-            }, div = {
-              type: "div",
-              cls: "ui divider"
-            }, action = {
-              type: "a",
-              cls: "link",
-              title: "Reload branches",
-              href: "",
-              onclick: function(e) {
-                if (typeof reloadBranchesForm === "function") {
-                  reloadBranchesForm();
-                }
-                return e.preventDefault();
+          title: "" + msg
+        }, reload = {
+          type: "p",
+          cls: "text-mute",
+          children: {
+            type: "a",
+            title: "Reload branches",
+            href: "",
+            onclick: function(e) {
+              if (typeof reloadBranchesForm === "function") {
+                reloadBranchesForm();
               }
+              return e.preventDefault();
             }
-          ]
+          }
         }
       ]
     };

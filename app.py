@@ -11,7 +11,7 @@ import urllib2
 import src.redis.config as config
 from src.connector.redisconnector import RedisConnectionPool, RedisConnector
 from src.redis.manager import Manager
-from src.redis.core import Project
+from src.redis.core import Project, Branch
 from src.redis.errors import CoreError
 
 # init pool
@@ -22,8 +22,9 @@ START_PAGE = "welcome.html"
 HOME_PAGE = "home.html"
 UNAVAILABLE_PAGE = "unavailable.html"
 NOTFOUND_PAGE = "notfound.html"
-PROJECT_NEW_PAGE = "project_new.html"
+PROJECT_NEW_PAGE = "newproject.html"
 PROJECT_PAGE = "project.html"
+EDITOR_PAGE = "editor.html"
 # cookies
 TIMEZONE_COOKIE = "octohaven_timezone_cookie"
 
@@ -108,8 +109,8 @@ class app_project_new(webapp2.RequestHandler):
 class app_project(webapp2.RequestHandler):
     def get(self, *args):
         user = users.get_current_user()
+        web_template = _template()
         if user:
-            web_template = _template()
             try:
                 mngr = manager()
                 puser = mngr.getUser(user.user_id())
@@ -133,10 +134,46 @@ class app_project(webapp2.RequestHandler):
         path = os.path.join(fullpath(), web_template["file"])
         self.response.out.write(template.render(path, web_template["values"]))
 
+class app_editor(webapp2.RequestHandler):
+    def get(self, *args):
+        user = users.get_current_user()
+        web_template = _template()
+        if user:
+            try:
+                mngr = manager()
+                puser = mngr.getUser(user.user_id())
+                if not puser:
+                    raise CoreError("Requested user does not exist. Please re-login")
+                pname, bname = args if args and len(args) == 2 else (None, None)
+                pname = Project.validateName(pname)
+                projectgroup = mngr.getProjectGroup(puser.hash())
+                project = projectgroup.project(pname)
+                if not project:
+                    raise CoreError("Project {%s} is not recognized"%(pname))
+                bname = Branch.validateName(bname)
+                branchgroup = mngr.getBranchGroup(puser.hash(), project.hash())
+                branch = branchgroup.branch(bname)
+                if not branch:
+                    raise CoreError("Branch {%s} is not recognized"%(bname))
+                # branch and project are valid
+                web_template["values"]["username"] = user.nickname()
+                web_template["values"]["project_url"] = "/project/%s"%(project.name())
+                web_template["values"]["project"] = project
+                web_template["values"]["branch"] = branch
+                web_template["file"] = EDITOR_PAGE
+            except CoreError as ce:
+                web_template["file"] = NOTFOUND_PAGE
+            except:
+                web_template["file"] = UNAVAILABLE_PAGE
+        # load template
+        path = os.path.join(fullpath(), web_template["file"])
+        self.response.out.write(template.render(path, web_template["values"]))
+
 application = webapp2.WSGIApplication([
     ("/", app_home),
     ("/project/new", app_project_new),
-    ("/project/(.*)", app_project),
+    (r"/project/([^/]*)", app_project),
+    (r"/project/([^/]*)/branch/([^/]*)", app_editor),
     ("/home|/index|/index\.html", app_redirect),
     ("/.*", app_notfound)
 ], debug=True)

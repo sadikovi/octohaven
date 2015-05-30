@@ -10,6 +10,9 @@
         <meta name="author" content="">
         <meta name="projectname" content="{{ project.name }}">
         <meta name="projecthash" content="{{ project.hash }}">
+        <meta name="branchname" content="{{ branch.name }}">
+        <meta name="branchhash" content="{{ branch.hash }}">
+
         <title>
             {{ username }}/{{ project.name }} &middot; Octohaven
         </title>
@@ -35,43 +38,48 @@
                         <a class="menu-item" href="{{ logout_url }}">
                             Logout
                         </a>
+                    </nav>
+                    <nav class="menu">
                         <div class="menu-heading">
-                            Project
+                            {{ project.name }}
                         </div>
-                        <a class="menu-item text-danger" href="" id="octohaven-project-action-delete">
-                            Delete project
+                        <div class="menu-item selected">
+                            <div class="lbl lbl-green">
+                                : {{ branch.name }}
+                            </div>
+                        </div>
+                        <a class="menu-item" href="{{ project_url }}">
+                            Back to project
                         </a>
                     </nav>
                 </div>
                 <div class="three-fourths column">
-                    <div id="octohaven-branches-form">
-                        <div class="top attached secondary segment">
-                            <h1 class="text-thin" id="octohaven-project-id">
-                                {{ project.name }}
-                            </h1>
-                            <p class="text-mute" data-attr="fast-editor" id="octohaven-project-desc">
-                                <span data-attr="fast-editor-texter">{{ project.desc }}</span>
-                                <a href="" data-attr="fast-editor-trigger" aria-label="Edit name">
-                                    [ Edit name ]
+                    <div class="container">
+                        <div class="top tertiary attached segment">
+                            <div class="breadcrumb">
+                                <a class="section text-danger" href="">
+                                    [ Delete ]
                                 </a>
-                            </p>
+                                <div class="divider"></div>
+                                <a class="section" href="">
+                                    [ Minimise ]
+                                </a>
+                                <div class="divider"></div>
+                                <a class="section" href="">
+                                    [ Up ]
+                                </a>
+                                <div class="divider"></div>
+                                <a class="section" href="">
+                                    [ Down ]
+                                </a>
+                            </div>
                         </div>
-                        <div class="attached tertiary segment" data-attr="fast-editor" id="octohaven-branches-addb">
-                            <span data-attr="fast-editor-texter"></span>
-                            <a href="" data-attr="fast-editor-trigger">
-                                + branch
-                            </a>
-                        </div>
-                        <div class="bottom attached segment" id="octohaven-branches-list">
+                        <div class="bottom attached segment medium fixed-height">
+                            main text
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-        <script type="text/javascript" src="/script/js/util.js"></script>
-        <script type="text/javascript" src="/script/js/loader.js"></script>
-        <script type="text/javascript" src="/script/js/mapper.js"></script>
-        <script type="text/javascript" src="/script/js/fasteditor.js"></script>
-        <script type="text/javascript" src="/script/js/octohaven-project.js"></script>
     </body>
 </html>

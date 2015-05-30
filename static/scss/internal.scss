@@ -4,15 +4,21 @@
 @import "variables";
 
 // Basecoat
-@import "fonts";
-@import "utils";
+@import "./basecoat/normalize";
+@import "./basecoat/base";
+@import "./basecoat/fonts";
+@import "./basecoat/type";
+@import "./basecoat/grid";
+@import "./basecoat/forms";
+@import "./basecoat/utility";
 
 // Components
-@import "blankslate";
-@import "buttons";
-@import "forms";
-@import "tooltips";
-@import "links";
-@import "jumbotron";
-@import "masthead";
-@import "labels"
+@import "./components/blankslate";
+@import "./components/buttons";
+@import "./components/jumbotron";
+@import "./components/labels";
+@import "./components/menu";
+@import "./components/tooltips";
+@import "./components/breadcrumb";
+@import "./components/segment";
+@import "./components/container";

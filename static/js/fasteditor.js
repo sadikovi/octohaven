@@ -157,21 +157,29 @@
     };
 
     Panel.prototype.html = function() {
-      var csec, isec, main, ssec;
+      var csec, isec, k, main, ssec, _divider, _i, _len, _ref;
       main = document.createElement("div");
-      FastEditor._util.addClass(main, "ui horizontal list");
+      FastEditor._util.addClass(main, "breadcrumb");
       isec = document.createElement("div");
-      FastEditor._util.addClass(isec, "item");
+      FastEditor._util.addClass(isec, "section");
       isec.appendChild(this.texter);
       ssec = document.createElement("div");
-      FastEditor._util.addClass(ssec, "item");
+      FastEditor._util.addClass(ssec, "section");
       ssec.appendChild(this.ok);
       csec = document.createElement("div");
-      FastEditor._util.addClass(csec, "item");
+      FastEditor._util.addClass(csec, "section");
       csec.appendChild(this.ko);
-      main.appendChild(isec);
-      main.appendChild(ssec);
-      main.appendChild(csec);
+      _divider = function() {
+        var divider;
+        divider = document.createElement("div");
+        FastEditor._util.addClass(divider, "divider");
+        return divider;
+      };
+      _ref = [isec, _divider(), ssec, _divider(), csec];
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        k = _ref[_i];
+        main.appendChild(k);
+      }
       return main;
     };
 

@@ -94,10 +94,12 @@ class Form
 
     createMessage: (type, header, message) ->
         mainElem = document.createElement "div"
-        Form._util.addClass mainElem, "ui", "#{type}", "message"
+        if type == "success"
+            Form._util.addClass mainElem, "#{type}", "success-box"
+        else
+            Form._util.addClass mainElem, "#{type}", "error-box"
         # header
-        headerElem = document.createElement "div"
-        Form._util.addClass headerElem, "header"
+        headerElem = document.createElement "h4"
         headerElem.innerHTML = "#{header}"
         # paragraph
         paragElem = document.createElement "p"

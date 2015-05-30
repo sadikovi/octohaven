@@ -158,9 +158,12 @@
     Form.prototype.createMessage = function(type, header, message) {
       var headerElem, mainElem, paragElem;
       mainElem = document.createElement("div");
-      Form._util.addClass(mainElem, "ui", "" + type, "message");
-      headerElem = document.createElement("div");
-      Form._util.addClass(headerElem, "header");
+      if (type === "success") {
+        Form._util.addClass(mainElem, "" + type, "success-box");
+      } else {
+        Form._util.addClass(mainElem, "" + type, "error-box");
+      }
+      headerElem = document.createElement("h4");
       headerElem.innerHTML = "" + header;
       paragElem = document.createElement("p");
       paragElem.innerHTML = "" + message;
