@@ -175,7 +175,7 @@ error_map = (msg) ->
 reloadBranchesForm = (link, data) ->
     data = data or {projectname: project_name(), branchname: "", projecthash: project_hash()}
     brancheslist.innerHTML = ""
-    @util.addClass branchesform, "loading"
+    @util.addClass brancheslist, "loading"
     link = link or "/api/branch/select"
     # send request
     @loader.sendrequest "post", link, {}, JSON.stringify(data)
@@ -185,11 +185,11 @@ reloadBranchesForm = (link, data) ->
             @mapper.parseMapForParent branches_map(r.data.branches), brancheslist
         else
             @mapper.parseMapForParent error_map(), brancheslist
-        @util.removeClass branchesform, "loading"
+        @util.removeClass brancheslist, "loading"
     , (e, r) =>
         msg = JSON.parse(r).message if e == 400
         @mapper.parseMapForParent error_map(msg), brancheslist
-        @util.removeClass branchesform, "loading"
+        @util.removeClass brancheslist, "loading"
 
 createBranch = (branchname) ->
     reloadBranchesForm?("/api/branch/create",

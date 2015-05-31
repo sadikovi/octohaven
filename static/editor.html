@@ -54,28 +54,29 @@
                     </nav>
                 </div>
                 <div class="three-fourths column">
-                    <div class="container">
-                        <div class="top tertiary attached segment">
-                            <div class="breadcrumb">
-                                <a class="section text-danger" href="">
-                                    [ Delete ]
-                                </a>
-                                <div class="divider"></div>
-                                <a class="section" href="">
-                                    [ Minimise ]
-                                </a>
-                                <div class="divider"></div>
-                                <a class="section" href="">
-                                    [ Up ]
-                                </a>
-                                <div class="divider"></div>
-                                <a class="section" href="">
-                                    [ Down ]
-                                </a>
+                    <div class="container" data-attr="canvas-body" id="octohaven-editor-canvas">
+                        <div class="top tertiary attached segment" data-attr="module-controls">
+                            <div class="btn" role="button">
+                                Delete
+                            </div>
+                            <div class="btn" role="button">
+                                Minimise
+                            </div>
+                            <div class="btn" role="button">
+                                Up
+                            </div>
+                            <div class="btn" role="button">
+                                Dw
                             </div>
                         </div>
-                        <div class="bottom attached segment medium fixed-height">
+                        <div class="bottom attached segment medium fixed-height" data-attr="module-body">
                             main text
+                        </div>
+                    </div>
+                    <div class="divider"></div>
+                    <div class="container" data-attr="canvas-actions" id="octohaven-canvas-actions">
+                        <div class="btn" role="button">
+                            Add module
                         </div>
                     </div>
                 </div>

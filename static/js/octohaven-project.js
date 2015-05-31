@@ -249,7 +249,7 @@
       projecthash: project_hash()
     };
     brancheslist.innerHTML = "";
-    this.util.addClass(branchesform, "loading");
+    this.util.addClass(brancheslist, "loading");
     link = link || "/api/branch/select";
     return this.loader.sendrequest("post", link, {}, JSON.stringify(data), (function(_this) {
       return function(s, r) {
@@ -259,7 +259,7 @@
         } else {
           _this.mapper.parseMapForParent(error_map(), brancheslist);
         }
-        return _this.util.removeClass(branchesform, "loading");
+        return _this.util.removeClass(brancheslist, "loading");
       };
     })(this), (function(_this) {
       return function(e, r) {
@@ -268,7 +268,7 @@
           msg = JSON.parse(r).message;
         }
         _this.mapper.parseMapForParent(error_map(msg), brancheslist);
-        return _this.util.removeClass(branchesform, "loading");
+        return _this.util.removeClass(brancheslist, "loading");
       };
     })(this));
   };

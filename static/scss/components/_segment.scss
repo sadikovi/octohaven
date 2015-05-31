@@ -56,6 +56,16 @@
         color: rgba(40, 40, 40, 0.3);
     }
 
+    &.left-aligned { text-align: left; }
+
+    &.right-aligned { text-align: right; }
+
+    &.center-aligned { text-align: center; }
+}
+
+// loading
+$loader-size: 36px;
+.segment {
     &.loading {
         position: relative;
         cursor: default;
@@ -63,6 +73,8 @@
         text-shadow: none !important;
         color: transparent !important;
         transition: all 0s linear;
+        min-width: $loader-size*2;
+        min-height: $loader-size*2;
 
         &:before {
             position: absolute;
@@ -82,9 +94,9 @@
             top: 50%;
             left: 50%;
 
-            margin: -18px 0 0 -18px;
-            width: 36px;
-            height: 36px;
+            margin: (-$loader-size/2) 0 0 (-$loader-size/2);
+            width: $loader-size;
+            height: $loader-size;
 
             animation: segment-spin 0.6s linear;
             animation-iteration-count: infinite;
@@ -100,12 +112,6 @@
             z-index: 101;
         }
     }
-
-    &.left-aligned { text-align: left; }
-
-    &.right-aligned { text-align: right; }
-
-    &.center-aligned { text-align: center; }
 }
 
 @keyframes segment-spin {
