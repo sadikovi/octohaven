@@ -57,7 +57,8 @@
     Util.prototype.addClass = function() {
       var c, classes, elem, m, x;
       elem = arguments[0], classes = 2 <= arguments.length ? __slice.call(arguments, 1) : [];
-      c = elem.className.split(' ');
+      c = elem.className.trim();
+      c = c ? c.split(' ') : [];
       m = c.concat((function() {
         var _i, _len, _results;
         _results = [];
@@ -101,6 +102,10 @@
 
     Util.prototype.isArray = function(obj) {
       return Array.isArray(obj) || {}.toString.call(obj) === '[object Array]';
+    };
+
+    Util.prototype.randomid = function() {
+      return ("" + (Math.random())).split(".")[1];
     };
 
     return Util;

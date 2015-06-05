@@ -29,7 +29,8 @@ class Util
             elem['on'+event] = null
 
     addClass: (elem, classes...) ->
-        c = elem.className.split ' '
+        c = elem.className.trim()
+        c = if c then c.split ' ' else []
         m = c.concat (x for x in classes when x and x not in c)
         elem.className = m.join ' '
 
@@ -45,6 +46,8 @@ class Util
             return '%' + c.charCodeAt(0).toString(16)
 
     isArray: (obj) -> Array.isArray(obj) or {}.toString.call(obj) is '[object Array]'
+
+    randomid: -> "#{Math.random()}".split(".")[1]
 
 # init global util
 @util ?= new Util
