@@ -1,7 +1,11 @@
-# compile scss -> css
-# and minify css
-sass ./static/scss/internal.scss ./static/css/internal.min.css --style compressed --sourcemap=none
+#!/bin/sh
+
+bin="`dirname "$0"`"
+ROOT_DIR="`cd "$bin/../"; pwd`"
+# compile scss -> css and minify css
+sass "$ROOT_DIR/service/scss/internal.scss" "$ROOT_DIR/service/css/internal.min.css" \
+    --style compressed --sourcemap=none
 # compile coffee -> js
-coffee --compile --output static/js static/coffee
+# coffee --compile --output static/js static/coffee
 # and minify js
 # uglifyjs static/js/loader.js -o foo.min.js -c -m

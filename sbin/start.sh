@@ -34,7 +34,7 @@ else
 fi
 
 # start serving
-eval "$WHICH_PYTHON -m SimpleHTTPServer $OCTOHAVEN_PORT"
+eval "$WHICH_PYTHON $ROOT_DIR/run_service.py $OCTOHAVEN_PORT"
 
 echo "root: $ROOT_DIR"
 echo "octohaven port: $OCTOHAVEN_PORT"

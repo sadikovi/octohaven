@@ -21,3 +21,11 @@ fi
 
 # stop serving
 echo "[INFO] Stopping service..."
+# start serving
+PROCESS_ID=$(ps aux | grep "$WHICH_PYTHON $ROOT_DIR/run_service.py $OCTOHAVEN_PORT" | grep -v grep | awk '{print $2}')
+if [ -z "$PROCESS_ID" ]; then
+    echo "[INFO] Nothing to stop"
+else
+    kill $PROCESS_ID
+    echo "[INFO] Stopped"
+fi
