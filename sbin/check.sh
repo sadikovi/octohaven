@@ -7,6 +7,13 @@ if [ -z "$WHICH_PYTHON" ]; then
     exit 1
 fi
 
+# enforce Python 2.7.x
+PYTHON_VERSION=$($WHICH_PYTHON -c 'import sys; print ".".join([str(x) for x in sys.version_info[0:2]])')
+if [ "$PYTHON_VERSION" != "2.7" ]; then
+    echo "[ERROR] Python 2.7 required, found Python $PYTHON_VERSION"
+    exit 1
+fi
+
 # find docker and check running redis container
 export WHICH_DOCKER=$(which docker)
 if [ -z "$WHICH_DOCKER" ]; then

@@ -35,8 +35,8 @@ class ServeCall(object):
 # pages map for redirect
 API_V1 = "/api/v1"
 PAGE_MAP = {
-    "": "welcome.html",
-    "index.html": "welcome.html"
+    "": "index.html",
+    "/": "index.html"
 }
 # root directory for http server
 ROOT = paths.SERV_PATH
@@ -53,8 +53,8 @@ class SimpleHandler(BaseHTTPRequestHandler):
         isapi = self.path.startswith(API_V1)
         path = self.fullPath(urllib.unquote(parsed.path))
         query = [urllib.unquote(part) for part in parsed.query.split("&")]
-        print "Processing %s ..." % path
-        print "Received query %s" % query
+        self.log_message("Requested %s" % path)
+        self.log_message("Received query %s" % query)
         # parsing requested file
         if isapi:
             # process this as api request
