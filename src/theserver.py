@@ -4,22 +4,44 @@ import paths
 import os
 import sys
 import urllib
+import json
 from urlparse import urlparse
-from BaseHTTPServer import BaseHTTPRequestHandler
+from BaseHTTPServer import HTTPServer, BaseHTTPRequestHandler
+import sparkheartbeat
+
+# pages map for redirect
+API_V1 = "/api/v1"
+PAGE_MAP = {
+    "": "index.html",
+    "/": "index.html"
+}
+# root directory for http server
+ROOT = paths.SERV_PATH
 
 # process only API requests
 class APICall(object):
-    def __init__(self, path, query):
+    def __init__(self, path, query, settings):
         self.path = path
         self.query = query
+        self.settings = settings
+        if "SPARK_UI_ADDRESS" not in self.settings or "SPARK_MASTER_ADDRESS" not in self.settings:
+            raise StandardError("Spark UI Address and Spark Master Address must be specified")
 
     def process(self):
-        return {"code": 200, "content": "{\"name\": 1}"}
+        if self.path.endswith("%s/sparkstatus" % API_V1):
+            # call Spark heartbeat
+            try:
+                status = sparkheartbeat.sparkStatus(self.settings["SPARK_UI_ADDRESS"])
+                return {"code": 200, "status": "OK", "content": {"sparkstatus": status}}
+            except BaseException as e:
+                return {"code": 400, "status": "ERROR", "content": {"msg": e.message}}
+        return {"code": 200, "content": {}}
 
 # process any other request with serving a file
 class ServeCall(object):
-    def __init__(self, path):
+    def __init__(self, path, settings):
         self.path = path
+        self.settings = settings
         self.mimetype = self.mimetype(path)
 
     def mimetype(self, path):
@@ -31,15 +53,6 @@ class ServeCall(object):
             return "text/css"
         else:
             return "text/plain"
-
-# pages map for redirect
-API_V1 = "/api/v1"
-PAGE_MAP = {
-    "": "index.html",
-    "/": "index.html"
-}
-# root directory for http server
-ROOT = paths.SERV_PATH
 
 class SimpleHandler(BaseHTTPRequestHandler):
     def fullPath(self, path):
@@ -58,14 +71,14 @@ class SimpleHandler(BaseHTTPRequestHandler):
         # parsing requested file
         if isapi:
             # process this as api request
-            call = APICall(path, query)
+            call = APICall(path, query, self.server.settings)
             result = call.process()
             self.send_response(result["code"])
             self.send_header("Content-type", "application/json")
             self.end_headers()
-            self.wfile.write(result["content"])
+            self.wfile.write(json.dumps(result))
         else:
-            call = ServeCall(path)
+            call = ServeCall(path, settings)
             # serve file
             try:
                 with open(call.path) as f:
@@ -75,3 +88,9 @@ class SimpleHandler(BaseHTTPRequestHandler):
                     self.wfile.write(f.read())
             except IOError:
                 self.send_error(404, "File Not Found: %s" % call.path)
+
+# creates updated version of HTTPServer with settings
+class RichHTTPServer(HTTPServer):
+    def __init__(self, host, port, handler, settings):
+        self.settings = settings
+        HTTPServer.__init__(self, (host, port), handler)
