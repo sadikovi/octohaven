@@ -8,10 +8,9 @@ import json
 from urlparse import urlparse
 from BaseHTTPServer import HTTPServer, BaseHTTPRequestHandler
 import sparkheartbeat
-
-# pages map for redirect
+# constants for request mapping
 API_V1 = "/api/v1"
-PAGE_MAP = {
+REQUEST_TABLE = {
     "": "index.html",
     "/": "index.html"
 }
@@ -32,7 +31,11 @@ class APICall(object):
             # call Spark heartbeat
             try:
                 status = sparkheartbeat.sparkStatus(self.settings["SPARK_UI_ADDRESS"])
-                return {"code": 200, "status": "OK", "content": {"sparkstatus": status}}
+                return {"code": 200, "status": "OK", "content": {
+                    "sparkstatus": status,
+                    "spark-ui-address": self.settings["SPARK_UI_ADDRESS"],
+                    "spark-master-address": self.settings["SPARK_MASTER_ADDRESS"]
+                }}
             except BaseException as e:
                 return {"code": 400, "status": "ERROR", "content": {"msg": e.message}}
         return {"code": 200, "content": {}}
@@ -57,7 +60,7 @@ class ServeCall(object):
 class SimpleHandler(BaseHTTPRequestHandler):
     def fullPath(self, path):
         path = path.lstrip("/")
-        path = PAGE_MAP[path] if path in PAGE_MAP else path
+        path = REQUEST_TABLE[path] if path in REQUEST_TABLE else path
         return os.path.join(ROOT, path)
 
     def do_GET(self):
@@ -78,7 +81,7 @@ class SimpleHandler(BaseHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(json.dumps(result))
         else:
-            call = ServeCall(path, settings)
+            call = ServeCall(path, self.server.settings)
             # serve file
             try:
                 with open(call.path) as f:

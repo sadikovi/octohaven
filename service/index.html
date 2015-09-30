@@ -25,9 +25,9 @@
                         <div class="menu-heading">
                             Octohaven
                         </div>
-                        <div class="menu-item" id="octohaven-spark-server-status">
+                        <div class="menu-item" id="octohaven-spark-server">
                             <span class="text-mute">Status:</span>
-                            <span class="text-green">Server is free</span>
+                            <span class="text-mute" id="octohaven-spark-server-status">Pending...</span>
                         </div>
                         <a class="menu-item" href="">
                             Create new job
@@ -35,15 +35,30 @@
                     </nav>
                 </div>
                 <div class="three-fourths column">
-                    <div class="top attached secondary segment">
+                    <div class="top attached segment">
+                        <div>
+                            <span class="text-mute">Spark UI: </span>
+                            <code id="octohaven-spark-ui-address">?</code>
+                        </div>
+                        <div>
+                            <span class="text-mute">Spark Master: </span>
+                            <code id="octohaven-spark-master-address">?</code>
+                        </div>
+                    </div>
+                    <div class="attached secondary segment">
                         <h1 class="text-thin">
                             Job history
                         </h1>
                     </div>
                     <div class="bottom attached segment" id="octohaven-jobs-history">
+                        <code>val a = Map("a" -> 1, "b" -> 2)</code>
                     </div>
                 </div>
             </div>
         </div>
+        <script type="text/javascript" src="js/utilities/util.js"></script>
+        <script type="text/javascript" src="js/utilities/loader.js"></script>
+        <script type="text/javascript" src="js/utilities/mapper.js"></script>
+        <script type="text/javascript" src="js/index.js"></script>
     </body>
 </html>

@@ -34,7 +34,12 @@ else
 fi
 
 # start serving
-eval "$WHICH_PYTHON $ROOT_DIR/run_service.py $OCTOHAVEN_PORT $OCTOHAVEN_SPARK_UI_ADDRESS $OCTOHAVEN_SPARK_MASTER_ADDRESS"
+eval "$WHICH_PYTHON $ROOT_DIR/run_service.py \
+    --port=$OCTOHAVEN_PORT \
+    --spark-ui-address=$OCTOHAVEN_SPARK_UI_ADDRESS \
+    --spark-master-address=$OCTOHAVEN_SPARK_MASTER_ADDRESS \
+    --redis-host=$REDIS_HOST \
+    --redis-port=$REDIS_PORT"
 
 echo "root: $ROOT_DIR"
 echo "octohaven port: $OCTOHAVEN_PORT"
