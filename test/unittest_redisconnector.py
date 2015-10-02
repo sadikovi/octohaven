@@ -17,9 +17,6 @@ class RedisConnectorTestSuite(unittest.TestCase):
     def tearDown(self):
         self._redis = None
 
-    def test_okay(self):
-        self.assertEqual(True, True)
-
     def test_key(self):
         key = "test"
         fullkey = self._redis._key(key)

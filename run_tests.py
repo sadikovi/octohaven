@@ -2,10 +2,12 @@
 
 import unittest
 import paths
+import sys
 
 # select what tests to run
 RUN_TESTS = {
-    "redisconnector": True
+    "redisconnector": True,
+    "job": True
 }
 
 def checkTest(key):
@@ -18,6 +20,13 @@ def collectSystemTests(suites):
         suites.addTest(unittest_redisconnector.loadSuites())
     else:
         print "@skip: 'redisconnector' tests"
+
+    # job class
+    if checkTest("job"):
+        import test.unittest_job as unittest_job
+        suites.addTest(unittest_job.loadSuites())
+    else:
+        print "@skip: 'job' tests"
 
 if __name__ == '__main__':
     suites = unittest.TestSuite()
