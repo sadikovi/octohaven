@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+# Redis constants including host, port and db
+# db range must be 0-15
 class RedisConst(object):
     REDIS_HOST = ""
     REDIS_PORT = -1

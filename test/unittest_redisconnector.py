@@ -16,6 +16,7 @@ class RedisConnectorTestSuite(unittest.TestCase):
         self._redis.flushdb()
 
     def tearDown(self):
+        self._redis.flushdb()
         self._redis = None
 
     def test_key(self):

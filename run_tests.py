@@ -7,7 +7,8 @@ import sys
 # select what tests to run
 RUN_TESTS = {
     "redisconnector": True,
-    "job": True
+    "job": True,
+    "storagemanager": True
 }
 
 def checkTest(key):
@@ -27,6 +28,13 @@ def collectSystemTests(suites):
         suites.addTest(unittest_job.loadSuites())
     else:
         print "@skip: 'job' tests"
+
+    # storage manager
+    if checkTest("storagemanager"):
+        import test.unittest_storagemanager as unittest_storagemanager
+        suites.addTest(unittest_storagemanager.loadSuites())
+    else:
+        print "@skip: 'storagemanager' tests"
 
 if __name__ == '__main__':
     args = sys.argv[2:]
