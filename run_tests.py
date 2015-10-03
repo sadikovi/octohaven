@@ -29,6 +29,12 @@ def collectSystemTests(suites):
         print "@skip: 'job' tests"
 
 if __name__ == '__main__':
+    args = sys.argv[2:]
+    if not args or len(args) < 3:
+        raise StandardError("Required: REDIS_HOST, REDIS_PORT, REDIS_TEST_DB, got %s" % args)
+    else:
+        from test.unittest_constants import RedisConst
+        RedisConst.setRedisSettings(args[0], args[1], args[2])
     suites = unittest.TestSuite()
     print ""
     print "### [:Octohaven] Gathering tests info ###"

@@ -6,31 +6,38 @@ ROOT_DIR="`cd "$sbin/../"; pwd`"
 
 # load default variables (Octohaven and Redis settings)
 . "$ROOT_DIR/sbin/config.sh"
-# check dependencies
-. "$ROOT_DIR/sbin/check.sh"
 
-# check passed port to run, default is 33900
-OCTOHAVEN_PORT="$1"
-if [ -z "$OCTOHAVEN_PORT" ]; then
-    OCTOHAVEN_PORT="$OCTOHAVEN_DEFAULT_PORT"
-fi
+# check dependencies (python is always checked)
+. "$ROOT_DIR/sbin/check-python.sh"
 
-# check if container exists and running
-DOCKER_REDIS_EXISTS=$(docker ps -a | grep -e "$REDIS_CONTAINER$")
-DOCKER_REDIS_RUNNING=$(docker ps | grep -e "$REDIS_CONTAINER$")
+# check if we are using Docker
+if [ -n "$USE_DOCKER" ]; then
+    . "$ROOT_DIR/sbin/check-docker.sh"
 
-if [ -z "$DOCKER_REDIS_RUNNING" ]; then
-    if [ -z "$DOCKER_REDIS_EXISTS" ]; then
-        # run new container, as no container can be found
-        echo "[INFO] Running new Redis container..."
-        eval "$WHICH_DOCKER run -h $REDIS_HOST -p $REDIS_PORT:$REDIS_PORT --name $REDIS_CONTAINER -d redis:$REDIS_VERSION"
+    # check if container exists and running
+    DOCKER_REDIS_EXISTS=$(docker ps -a | grep -e "$REDIS_CONTAINER$")
+    DOCKER_REDIS_RUNNING=$(docker ps | grep -e "$REDIS_CONTAINER$")
+    if [ -z "$DOCKER_REDIS_RUNNING" ]; then
+        if [ -z "$DOCKER_REDIS_EXISTS" ]; then
+            # run new container, as no container can be found
+            echo "[INFO] Running new Redis container..."
+            eval "$WHICH_DOCKER run -h $REDIS_HOST -p $REDIS_PORT:6379 --name $REDIS_CONTAINER -d redis:$REDIS_VERSION"
+        else
+            # start stopped container
+            echo "[INFO] Starting up Redis container..."
+            eval "$WHICH_DOCKER start $REDIS_CONTAINER"
+        fi
     else
-        # start stopped container
-        echo "[INFO] Starting up Redis container..."
-        eval "$WHICH_DOCKER start $REDIS_CONTAINER"
+        echo "[INFO] Redis is already running"
     fi
-else
-    echo "[INFO] Redis is already running"
+    # if we use Docker we have to reevaluate Redis host, as it will be VM IP in case of boot2docker
+    # or localhost on Linux
+    if [ -n "$WHICH_DOCKER_MACHINE" ]; then
+        ACTIVE_VM=$($WHICH_DOCKER_MACHINE active)
+        REDIS_HOST=$($WHICH_DOCKER_MACHINE ip $ACTIVE_VM)
+    else
+        REDIS_HOST="localhost"
+    fi
 fi
 
 # start serving
@@ -39,7 +46,8 @@ eval "$WHICH_PYTHON $ROOT_DIR/run_service.py \
     --spark-ui-address=$OCTOHAVEN_SPARK_UI_ADDRESS \
     --spark-master-address=$OCTOHAVEN_SPARK_MASTER_ADDRESS \
     --redis-host=$REDIS_HOST \
-    --redis-port=$REDIS_PORT"
+    --redis-port=$REDIS_PORT \
+    --redis-db=$REDIS_DB"
 
 echo "root: $ROOT_DIR"
 echo "octohaven port: $OCTOHAVEN_PORT"

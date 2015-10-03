@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-STATUSES = ["WAITING", "SUBMITTED", "SCHEDULED", "CLOSED"]
+STATUSES = ["CREATED", "WAITING", "SUBMITTED", "CLOSED"]
 DURATIONS = ["LONG", "MEDIUM", "QUICK"]
 
 class Job(object):

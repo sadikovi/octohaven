@@ -1,15 +1,16 @@
 #!/usr/bin/env python
 
 import unittest
-from src.redisconnector import RedisConnectionPool, RedisConnector
 from types import StringType, DictType, ListType
+from src.redisconnector import RedisConnectionPool, RedisConnector
+from test.unittest_constants import RedisConst
 
 class RedisConnectorTestSuite(unittest.TestCase):
     def setUp(self):
         self._test_pool = RedisConnectionPool({
-            "host": "localhost",
-            "port": 6379,
-            "db": 11
+            "host": RedisConst.redisHost(),
+            "port": RedisConst.redisPort(),
+            "db": RedisConst.redisTestDb()
         })
         self._redis = RedisConnector(self._test_pool)
         self._redis.flushdb()

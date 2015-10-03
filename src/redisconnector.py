@@ -87,6 +87,8 @@ class RedisConnector(object):
         self._redis.flushdb()
 
     def removeFromCollection(self, key, args):
+        if type(args) is not ListType:
+            raise StandardError("Expected ListType, got %s" + type(args))
         fullkey = self._key(key)
         pipe = self._redis.pipeline()
         for arg in args:

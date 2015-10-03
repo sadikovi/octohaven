@@ -38,6 +38,7 @@ Options are:
 - (required) spark master address [ --spark-master-address=spark://local:7077 ]
 - redis host [ --redis-host=localhost ]
 - redis port [ --redis-port=6379 ]
+- redis db [ --redis-db=11 ]
 
         """
         sys.exit(0)
@@ -50,6 +51,7 @@ Options are:
     spark_master_address = params["--spark-master-address"] if "--spark-master-address" in params else None
     redis_host = params["--redis-host"] if "--redis-host" in params else "localhost"
     redis_port = params["--redis-port"] if "--redis-port" in params else "6379"
+    redis_db = params["--redis-db"] if "--redis-db" in params else "11"
     # check if any of required parameters are not set
     if spark_ui_address is None:
         raise StandardError("Spark UI address must be set, e.g. http://localhost:8080")
@@ -61,12 +63,14 @@ Options are:
         "SPARK_UI_ADDRESS": spark_ui_address,
         "SPARK_MASTER_ADDRESS": spark_master_address,
         "REDIS_HOST": redis_host,
-        "REDIS_PORT": redis_port
+        "REDIS_PORT": redis_port,
+        "REDIS_DB": redis_db
     })
 
     print "[INFO] Spark UI address is set to %s" % spark_ui_address
     print "[INFO] Spark Master address is set to %s" % spark_master_address
     print "[INFO] Redis host and port are set to %s:%s" % (redis_host, redis_port)
+    print "[INFO] Using Redis db %s" % redis_db
     print time.asctime(), "Serving HTTP on %s:%s ..." % (host, port)
     try:
         httpd.serve_forever()
