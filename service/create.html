@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+
+        <meta name="description" content="">
+        <meta name="keywords" content="">
+        <meta name="author" content="">
+
+        <title>
+            Octohaven &middot; Create a job
+        </title>
+
+        <link rel="icon" type="image/x-icon" href="img/favicon.ico">
+        <link rel="stylesheet" href="css/internal.min.css">
+        <script type="text/javascript" src="js/timezone.js"></script>
+    </head>
+    <body>
+        <div class="page container">
+            <div class="columns">
+                <div class="one-fourth column">
+                    <nav class="menu">
+                        <div class="menu-heading">
+                            Octohaven
+                        </div>
+                        <a class="menu-item" href="/">
+                            Home
+                        </a>
+                    </nav>
+                </div>
+                <div class="three-fourths column">
+                    <div class="top attached secondary segment">
+                        <h1 class="text-thin">Create a new job</h1>
+                    </div>
+                    <div class="attached segment">
+                        <div class="segments">
+                            <!-- Job name -->
+                            <div class="segment">
+                                <div class="columns">
+                                    <div class="one-fourth column">
+                                        <span class="text-mute tooltipped tooltipped-n"
+                                            aria-label="A friendly job name.">Job name</span>
+                                    </div>
+                                    <div class="one-half column">
+                                        <code class="text-emphasized">Test-job</code>
+                                    </div>
+                                    <div class="one-fourth column">
+                                        <a class="right" href="#">Change</a>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Spark Master URL -->
+                            <div class="segment">
+                                <div class="columns">
+                                    <div class="one-fourth column">
+                                        <span class="text-mute tooltipped tooltipped-n"
+                                            aria-label="Cluster URL to run job.">Spark Master URL</span>
+                                    </div>
+                                    <div class="one-half column">
+                                        <code class="text-emphasized">spark://wynchcs240.wyn.cnw.co.nz:7077</code>
+                                    </div>
+                                    <div class="one-fourth column"></div>
+                                </div>
+                            </div>
+                            <!-- Main class to run job -->
+                            <div class="segment">
+                                <div class="columns">
+                                    <div class="one-fourth column tooltipped tooltipped-n"
+                                        aria-label="Main class (full name) as entrypoint for the job.">
+                                        <span class="text-mute">Entrypoint Class</span>
+                                    </div>
+                                    <div class="one-half column css-truncate expandable">
+                                        <code class="text-emphasized css-truncate-target">
+                                            com.wyn.research.core.periodicity.PeriodicityRunner
+                                        </code>
+                                    </div>
+                                    <div class="one-fourth column">
+                                        <a class="right" href="#">Change</a>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Driver memory -->
+                            <div class="segment">
+                                <div class="columns">
+                                    <div class="one-fourth column tooltipped tooltipped-n"
+                                        aria-label="Amount of memory for operations in a driver programme">
+                                        <span class="text-mute">Spark driver memory</span>
+                                    </div>
+                                    <div class="one-half column css-truncate expandable">
+                                        <code class="text-emphasized css-truncate-target">8g</code>
+                                    </div>
+                                    <div class="one-fourth column">
+                                        <a class="right" href="#">Change</a>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Executor memory -->
+                            <div class="segment">
+                                <div class="columns">
+                                    <div class="one-fourth column tooltipped tooltipped-n"
+                                        aria-label="Amount of memory for Spark executors">
+                                        <span class="text-mute">Spark executor memory</span>
+                                    </div>
+                                    <div class="one-half column css-truncate expandable">
+                                        <code class="text-emphasized css-truncate-target">8g</code>
+                                    </div>
+                                    <div class="one-fourth column">
+                                        <a class="right" href="#">Change</a>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Additional options -->
+                            <div class="segment">
+                                <div class="columns">
+                                    <div class="one-fourth column tooltipped tooltipped-n"
+                                        aria-label="Optional, e.g. JVM options, networking, shuffle...">
+                                        <span class="text-mute">Additional options</span>
+                                    </div>
+                                    <div class="one-half column css-truncate expandable">
+                                        <code class="text-emphasized css-truncate-target"></code>
+                                    </div>
+                                    <div class="one-fourth column">
+                                        <a class="right" href="#">Change</a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="attached segment">
+                        <div class="blankslate">
+                            File finder
+                            <code> val a = 1</code>
+                            <a href="">Link</a>
+                        </div>
+                    </div>
+                    <div class="bottom attached segment">
+                        <div class="btn btn-success">Submit</div>
+                        <div class="btn">Cancel</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <script type="text/javascript" src="js/utilities/util.js"></script>
+        <script type="text/javascript" src="js/utilities/loader.js"></script>
+        <script type="text/javascript" src="js/utilities/mapper.js"></script>
+    </body>
+</html>

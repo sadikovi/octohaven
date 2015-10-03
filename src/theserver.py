@@ -15,7 +15,8 @@ from storagemanager import StorageManager
 API_V1 = "/api/v1"
 REQUEST_TABLE = {
     "": "index.html",
-    "/": "index.html"
+    "/": "index.html",
+    "create": "create.html"
 }
 # root directory for http server
 ROOT = paths.SERV_PATH
