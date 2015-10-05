@@ -29,8 +29,15 @@ class StorageManagerTestSuite(unittest.TestCase):
         starttime = long(time.time())
         name = "test-job"
         duration = "MEDIUM"
-        command = "spark-submit test command"
-        return Job(uid, status, starttime, name, duration, command)
+        entrypoint = "org.apache.spark.test.Class"
+        masterurl = "spark://jony-local.local:7077"
+        options = {
+            "spark.driver.memory": "8g",
+            "spark.executor.memory": "8g",
+            "spark.shuffle.spill": "true",
+            "spark.file.overwrite": "true"
+        }
+        return Job(uid, status, starttime, name, duration, entrypoint, masterurl, options)
 
     def test_init(self):
         storageManager = StorageManager(self.connector)

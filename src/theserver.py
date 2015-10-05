@@ -77,10 +77,17 @@ class APICall(object):
                     uid = str(uuid.uuid4())
                     status = random.choice(STATUSES)
                     starttime = long(time.time())
-                    name = "Test job for index %d" % index
+                    name = "test-job-for-index-%d" % index
                     duration = "MEDIUM"
-                    command = "spark-submit test command"
-                    return Job(uid, status, starttime, name, duration, command)
+                    entrypoint = "org.apache.spark.test.Class"
+                    masterurl = "spark://jony-local.local:7077"
+                    options = {
+                        "spark.driver.memory": "8g",
+                        "spark.executor.memory": "8g",
+                        "spark.shuffle.spill": "true",
+                        "spark.file.overwrite": "true"
+                    }
+                    return Job(uid, status, starttime, name, duration, entrypoint, masterurl, options)
                 jobs = [newJob(i) for i in range(30)]
                 for job in jobs:
                     self.storageManager.addJobForStatus(self.storageManager.ALL_JOBS_KEY, job.uid)
