@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # find python to run server
 export WHICH_PYTHON=$(which python)

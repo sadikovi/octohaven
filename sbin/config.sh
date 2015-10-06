@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 # Octohaven app settings
 # Octohaven application port to service web pages and all
 export OCTOHAVEN_PORT="33900"

@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # figure out project directory
 sbin="`dirname "$0"`"

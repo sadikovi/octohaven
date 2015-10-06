@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # find docker and check running redis container
 export WHICH_DOCKER=$(which docker)
