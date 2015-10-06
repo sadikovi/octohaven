@@ -67,32 +67,22 @@ class APICall(object):
                     return {"code": 400, "status": "ERROR", "content": {
                         "msg": "expected one 'status' parameter"
                     }}
-            elif self.path.endswith("%s/test/populate" % API_V1):
-                # TEST API (will go away eventually)
-                # clear db and add some dummy records
-                self.storageManager.connector.flushdb()
-                def newJob(index):
-                    import uuid, time, random
-                    from job import Job, STATUSES
-                    uid = str(uuid.uuid4())
-                    status = random.choice(STATUSES)
-                    starttime = long(time.time())
-                    name = "test-job-for-index-%d" % index
-                    duration = "MEDIUM"
-                    entrypoint = "org.apache.spark.test.Class"
-                    masterurl = "spark://jony-local.local:7077"
-                    options = {
-                        "spark.driver.memory": "8g",
-                        "spark.executor.memory": "8g",
-                        "spark.shuffle.spill": "true",
-                        "spark.file.overwrite": "true"
-                    }
-                    return Job(uid, status, starttime, name, duration, entrypoint, masterurl, options)
-                jobs = [newJob(i) for i in range(30)]
-                for job in jobs:
-                    self.storageManager.addJobForStatus(self.storageManager.ALL_JOBS_KEY, job.uid)
-                    self.storageManager.addJobForStatus(job.status, job.uid)
-                    self.storageManager.saveJob(job)
+            elif self.path.endswith("%s/create" % API_V1):
+                if len(self.query) != 1:
+                    return {"code": 500, "status": "ERROR", "content": {
+                        "msg": "Query returned too many parameters"
+                    }}
+                data = self.query[-1]
+                if not data:
+                    # raise an error that input is empty
+                    return {"code": 400, "status": "ERROR", "content": {
+                        "msg": "Job information expected, got empty input"
+                    }}
+                else:
+                    # create job from json string passed
+                    return {"code": 200, "status": "OK", "content": {
+                        "msg": "Job has been created"
+                    }}
         except BaseException as e:
             return {"code": 400, "status": "ERROR", "content": {"msg": e.message}}
         else:
@@ -149,6 +139,33 @@ class SimpleHandler(BaseHTTPRequestHandler):
                     self.wfile.write(f.read())
             except IOError:
                 self.send_error(404, "File Not Found: %s" % call.path)
+
+    def do_POST(self):
+        parsed = urlparse(self.path)
+        isapi = self.path.startswith(API_V1)
+        path = self.fullPath(urllib.unquote(parsed.path))
+        self.log_message("Requested %s" % path)
+        if isapi:
+            # process api request
+            # get content in bytes
+            content = self.headers.getheader("Content-Length")
+            self.log_message("Content received: %s" % (content is not None))
+            # raw string content
+            raw = self.rfile.read(int(content) if content else 0)
+            self.log_message("Raw content is %s" % raw)
+            # in case of POST query is a list with one element which is unquoted raw string that
+            # can be a json or xml, etc.
+            query = [urllib.unquote(raw)]
+            call = APICall(path, query, self.server.settings)
+            result = call.process()
+            # as with GET, POST api returns json
+            self.send_response(result["code"])
+            self.send_header("Content-type", "application/json")
+            self.end_headers()
+            self.wfile.write(json.dumps(result))
+        else:
+            # fail, as we do not process POST requests for non-api tasks
+            self.send_error(400, "POST is not supported for general queries")
 
 # creates updated version of HTTPServer with settings
 class RichHTTPServer(HTTPServer):
