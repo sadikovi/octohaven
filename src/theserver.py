@@ -10,6 +10,7 @@ from BaseHTTPServer import HTTPServer, BaseHTTPRequestHandler
 import sparkheartbeat
 from redisconnector import RedisConnector, RedisConnectionPool
 from storagemanager import StorageManager
+from utils import *
 
 # constants for request mapping
 API_V1 = "/api/v1"
@@ -41,17 +42,30 @@ class APICall(object):
         })
         connector = RedisConnector(pool)
         self.storageManager = StorageManager(connector)
+        self.response = None
+
+    @private
+    def sendError(self, msg=""):
+        self.response = {"code": 400, "status": "ERROR", "content": {"msg": "%s" % msg}}
+
+    @private
+    def sendSystemError(self, msg=""):
+        self.response = {"code": 500, "status": "ERROR", "content": {"msg": "%s" % msg}}
+
+    @private
+    def sendSuccess(self, content):
+        self.response = {"code": 200, "status": "OK", "content": content}
 
     def process(self):
         try:
             if self.path.endswith("%s/sparkstatus" % API_V1):
                 # call Spark heartbeat
                 status = sparkheartbeat.sparkStatus(self.settings["SPARK_UI_ADDRESS"])
-                return {"code": 200, "status": "OK", "content": {
+                self.sendSuccess({
                     "sparkstatus": status,
                     "spark-ui-address": self.settings["SPARK_UI_ADDRESS"],
                     "spark-master-address": self.settings["SPARK_MASTER_ADDRESS"]
-                }}
+                })
             elif self.path.endswith("%s/jobs" % API_V1):
                 # retrieve jobs for status
                 # we are expecting one parameter starting with "status="
@@ -59,34 +73,25 @@ class APICall(object):
                 if len(pairs) == 1 and len(pairs[0]) == 2:
                     status = pairs[0][1]
                     jobs = self.storageManager.jobsForStatus(status)
-                    return {"code": 200, "status": "OK", "content": {
-                        "jobs": [job.toDict() for job in jobs]
-                    }}
+                    self.sendSuccess({"jobs": [job.toDict() for job in jobs]})
                 else:
-                    # raise error
-                    return {"code": 400, "status": "ERROR", "content": {
-                        "msg": "expected one 'status' parameter"
-                    }}
+                    self.sendError("expected one 'status' parameter")
             elif self.path.endswith("%s/create" % API_V1):
-                if len(self.query) != 1:
-                    return {"code": 500, "status": "ERROR", "content": {
-                        "msg": "Query returned too many parameters"
-                    }}
                 data = self.query[-1]
                 if not data:
-                    # raise an error that input is empty
-                    return {"code": 400, "status": "ERROR", "content": {
-                        "msg": "Job information expected, got empty input"
-                    }}
+                    self.sendError("Job information expected, got empty input")
                 else:
-                    # create job from json string passed
-                    return {"code": 200, "status": "OK", "content": {
-                        "msg": "Job has been created"
-                    }}
+                    self.sendSuccess({"msg": "Job has been created"})
+            # if there is no reponse by the end of the block, we raise an error, as response was not
+            # prepared for user or there were holes in logic flow
+            if not self.response:
+                raise Exception("Response could not be created")
+        except StandardError as e:
+            self.sendError(e.message)
         except BaseException as e:
-            return {"code": 400, "status": "ERROR", "content": {"msg": e.message}}
-        else:
-            return {"code": 200, "content": {}}
+            self.sendSystemError(e.message)
+        # return final response
+        return self.response
 
 # process any other request with serving a file
 class ServeCall(object):
