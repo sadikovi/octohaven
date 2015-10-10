@@ -40,6 +40,12 @@ if [ -n "$USE_DOCKER" ]; then
     fi
 fi
 
+# check that jar folder exists
+if [ ! -d "$JAR_FOLDER" ]; then
+    echo "[ERROR] $JAR_FOLDER does not exist"
+    exit 1
+fi
+
 # start serving
 eval "$WHICH_PYTHON $ROOT_DIR/run_service.py \
     --port=$OCTOHAVEN_PORT \
@@ -47,7 +53,8 @@ eval "$WHICH_PYTHON $ROOT_DIR/run_service.py \
     --spark-master-address=$OCTOHAVEN_SPARK_MASTER_ADDRESS \
     --redis-host=$REDIS_HOST \
     --redis-port=$REDIS_PORT \
-    --redis-db=$REDIS_DB"
+    --redis-db=$REDIS_DB \
+    --jar-folder=$JAR_FOLDER"
 
 echo "root: $ROOT_DIR"
 echo "octohaven port: $OCTOHAVEN_PORT"

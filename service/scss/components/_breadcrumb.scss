@@ -8,10 +8,10 @@
 
     &:last-child { margin-bottom: 0; }
 
-    .divider {
+    .separator {
         display: inline-block;
-        opacity: 0.5;
-        margin: 0 5px 0;
+        opacity: 0.8;
+        margin: 0 2px 0;
 
         font-size: 90%;
         color: #ccc;
@@ -30,6 +30,6 @@
         margin: 0;
         padding: 4px;
 
-        .active { font-weight: bold; }
+        &.active { font-weight: bold; }
     }
 }

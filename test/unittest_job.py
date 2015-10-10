@@ -30,7 +30,7 @@ class JobSentinel(object):
         sparkjob = JobSentinel.sparkJob()
         return Job(uid, status, starttime, duration, sparkjob)
 
-class JobCheckSuite(unittest.TestCase):
+class JobCheckTestSuite(unittest.TestCase):
     def test_validateMemory(self):
         memory = ["8gb", "8g", "512mb", "512m", "1024M", "16G", "2pb"]
         for entry in memory:
@@ -69,7 +69,7 @@ class JobCheckSuite(unittest.TestCase):
             with self.assertRaises(StandardError):
                 JobCheck.validateJarPath(entry)
 
-class SparkJobSuite(unittest.TestCase):
+class SparkJobTestSuite(unittest.TestCase):
     def setUp(self):
         self.uid = str(uuid.uuid4())
         self.name = "test-job"
@@ -181,8 +181,8 @@ class JobTestSuite(unittest.TestCase):
 # Load test suites
 def _suites():
     return [
-        JobCheckSuite,
-        SparkJobSuite,
+        JobCheckTestSuite,
+        SparkJobTestSuite,
         JobTestSuite
     ]
 

@@ -10,6 +10,7 @@ from BaseHTTPServer import HTTPServer, BaseHTTPRequestHandler
 import sparkheartbeat
 from redisconnector import RedisConnector, RedisConnectionPool
 from storagemanager import StorageManager
+from filemanager import FileManager
 from utils import *
 
 # constants for request mapping
@@ -26,11 +27,16 @@ ROOT = paths.SERV_PATH
 class APICall(object):
     def __init__(self, path, query, settings):
         self.path = path
-        self.query = query
+        # query is a key-value map
+        self.query = dict([pair for pair in [q.split("=", 1) for q in query] if len(pair) == 2])
         self.settings = settings
         # check Spark settings
         if "SPARK_UI_ADDRESS" not in self.settings or "SPARK_MASTER_ADDRESS" not in self.settings:
             raise StandardError("Spark UI Address and Spark Master Address must be specified")
+        # check whether Jar folder is set
+        if "JAR_FOLDER" not in self.settings:
+            raise StandardError("Jar folder is not set")
+        jarFolder = self.settings["JAR_FOLDER"]
         # make connection to Redis
         if "REDIS_HOST" not in self.settings or "REDIS_PORT" not in self.settings \
             or "REDIS_DB" not in self.settings:
@@ -42,6 +48,7 @@ class APICall(object):
         })
         connector = RedisConnector(pool)
         self.storageManager = StorageManager(connector)
+        self.fileManager = FileManager(jarFolder)
         self.response = None
 
     @private
@@ -69,16 +76,22 @@ class APICall(object):
             elif self.path.endswith("%s/jobs" % API_V1):
                 # retrieve jobs for status
                 # we are expecting one parameter starting with "status="
-                pairs = [q.split("=", 1) for q in self.query if q.startswith("status")]
-                if len(pairs) == 1 and len(pairs[0]) == 2:
-                    status = pairs[0][1]
+                if "status" in self.query:
+                    status = self.query["status"]
                     jobs = self.storageManager.jobsForStatus(status)
                     self.sendSuccess({"jobs": [job.toDict() for job in jobs]})
                 else:
-                    self.sendError("expected one 'status' parameter")
+                    self.sendError("expected 'status' parameter")
+            elif self.path.endswith("%s/breadcrumbs" % API_V1):
+                path = self.query["path"] if "path" in self.query else ""
+                data = self.fileManager.breadcrumbs(path, asdict=True)
+                self.sendSuccess({"breadcrumbs": data})
+            elif self.path.endswith("%s/list" % API_V1):
+                path = self.query["path"] if "path" in self.query else ""
+                data = self.fileManager.list(path, sort=True, asdict=True)
+                self.sendSuccess({"list": data})
             elif self.path.endswith("%s/create" % API_V1):
-                data = self.query[-1]
-                if not data:
+                if "content" not in self.query or not self.query["content"]:
                     self.sendError("Job information expected, got empty input")
                 else:
                     self.sendSuccess({"msg": "Job has been created"})
@@ -160,7 +173,7 @@ class SimpleHandler(BaseHTTPRequestHandler):
             self.log_message("Raw content is %s" % raw)
             # in case of POST query is a list with one element which is unquoted raw string that
             # can be a json or xml, etc.
-            query = [urllib.unquote(raw)]
+            query = ["content=%s" % urllib.unquote(raw)]
             call = APICall(path, query, self.server.settings)
             result = call.process()
             # as with GET, POST api returns json
