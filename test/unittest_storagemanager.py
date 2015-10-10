@@ -8,6 +8,7 @@ from src.job import Job, STATUSES
 from src.redisconnector import RedisConnectionPool, RedisConnector
 from src.storagemanager import StorageManager
 from test.unittest_constants import RedisConst
+from test.unittest_job import JobSentinel
 
 class StorageManagerTestSuite(unittest.TestCase):
     def setUp(self):
@@ -24,20 +25,7 @@ class StorageManagerTestSuite(unittest.TestCase):
         self.connector = None
 
     def newJob(self):
-        uid = str(uuid.uuid4())
-        status = random.choice(STATUSES)
-        starttime = long(time.time())
-        name = "test-job"
-        duration = "MEDIUM"
-        entrypoint = "org.apache.spark.test.Class"
-        masterurl = "spark://jony-local.local:7077"
-        options = {
-            "spark.driver.memory": "8g",
-            "spark.executor.memory": "8g",
-            "spark.shuffle.spill": "true",
-            "spark.file.overwrite": "true"
-        }
-        return Job(uid, status, starttime, name, duration, entrypoint, masterurl, options)
+        return JobSentinel.job()
 
     def test_init(self):
         storageManager = StorageManager(self.connector)
