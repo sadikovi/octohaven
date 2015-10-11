@@ -104,7 +104,7 @@ class Panel
         # divider
         _divider = ->
             divider = document.createElement "div"
-            FastEditor._util.addClass divider, "divider"
+            FastEditor._util.addClass divider, "separator"
             divider
         # append children
         main.appendChild k for k in [isec, _divider(), ssec, _divider(), csec]

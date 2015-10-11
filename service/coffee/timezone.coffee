@@ -1,3 +1,4 @@
+# block of code to extract client's timezone
 if navigator.cookieEnabled
     [COOKIE_EXPIRE, COOKIE_NAME] = [999*24*60*60, "octohaven_timezone_cookie"]
     [d, c] = [new Date, new Date]

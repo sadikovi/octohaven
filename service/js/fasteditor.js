@@ -172,7 +172,7 @@
       _divider = function() {
         var divider;
         divider = document.createElement("div");
-        FastEditor._util.addClass(divider, "divider");
+        FastEditor._util.addClass(divider, "separator");
         return divider;
       };
       _ref = [isec, _divider(), ssec, _divider(), csec];
