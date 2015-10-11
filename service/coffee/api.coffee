@@ -36,3 +36,35 @@ class Status
 
 # set class to be global
 @Status ?= Status
+
+# Filelist object as a helper to fetch breadcrumbs and files
+class Filelist
+    constructor: ->
+
+    # Breadcrumbs api requester.
+    # - before() -> function to run before sending request
+    # - after(status, uiURL, masterURL) -> function that will be called after response is received
+    sendRequest: (url, before, after) ->
+        before?()
+        loader.sendrequest "get", url, {}, null
+        , (code, response) =>
+            if code == 200
+                json = JSON.parse response
+                console.log(json)
+                after?(json)
+            else
+                console.log "[ERROR] #{response}"
+                after?(false)
+        , (error, response) =>
+            console.log "[ERROR] #{response}"
+            after?(false)
+
+    breadcrumbs: (directory, before, after) ->
+        @sendRequest("/api/v1/breadcrumbs?path=#{directory}", before, after)
+
+    # Files request
+    files: (directory, before, after) ->
+        @sendRequest("/api/v1/list?path=#{directory}", before, after)
+
+# set class to be global
+@Filelist ?= Filelist

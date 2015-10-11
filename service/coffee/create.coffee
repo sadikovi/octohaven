@@ -1,6 +1,9 @@
 jobCanvas = document.getElementById("octohaven-job-settings")
 unless jobCanvas
     throw new Error("Job settings canvas is undefined")
+filelist = document.getElementById("octohaven-filelist")
+unless filelist
+    throw new Error("Filelist canvas is undefined")
 
 ################################################################
 # Build job settings
@@ -61,3 +64,67 @@ map =
 ################################################################
 # Build file manager
 ################################################################
+filelist = new @Filelist
+breadcrumbsElem = document.getElementById("octohaven-filelist-breadcrumbs")
+filesElem = document.getElementById("octohaven-filelist-files")
+unless breadcrumbsElem and filesElem
+    throw new Error("Cannot build file list")
+
+# fetching breadcrumbs
+breadcrumbs = (dir) ->
+    filelist.breadcrumbs(dir, ->
+        breadcrumbsElem.innerHTML = ""
+    , (json) =>
+        return false unless json
+        [arr, ls] = [[], json["content"]["breadcrumbs"]]
+        for obj, i in ls
+            if i < ls.length-1
+                # not a last element
+                elem =
+                    type: "a"
+                    cls: "section"
+                    title: "#{obj["name"]}"
+                    onclick: (e) ->
+                        breadcrumbs(@path)
+                        files(@path)
+                elem = @mapper.parseMapForParent(elem)
+                elem.path = obj["path"]
+                arr.push(elem)
+                arr.push(type: "div", cls: "separator", title: "/")
+                elem = null
+            else
+                # last element
+                arr.push(type: "div", cls: "active section", title: "#{obj["name"]}")
+        @mapper.parseMapForParent(arr, breadcrumbsElem)
+    )
+
+# fetching files
+files = (dir) ->
+    filelist.files(dir, ->
+        filesElem.innerHTML = ""
+    , (json) =>
+        return false unless json
+        [arr, ls] = [[], json["content"]["list"]]
+        for obj in ls
+            if obj["tp"] == "DIR"
+                # it is a directory
+                elem =
+                    type: "a"
+                    cls: "menu-item"
+                    href: "#"
+                    title: "[=] #{obj["name"]}"
+                    onclick: (e) ->
+                        breadcrumbs(@path)
+                        files(@path)
+                elem = @mapper.parseMapForParent(elem)
+                elem.path = obj["path"]
+                arr.push(elem)
+            else
+                # it is a file
+                arr.push(type: "div", cls: "menu-item", title: "#{obj["name"]}")
+        @mapper.parseMapForParent(arr, filesElem)
+    )
+
+# initial call with an empty directory == ROOT
+breadcrumbs("")
+files("")
