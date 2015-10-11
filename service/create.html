@@ -35,24 +35,28 @@
                     </nav>
                 </div>
                 <div class="three-fourths column">
-                    <div class="top attached secondary segment">
+                    <div class="top attached segment">
+                        <div>
+                            <span class="text-mute">Spark UI: </span>
+                            <code id="octohaven-spark-ui-address">?</code>
+                        </div>
+                        <div>
+                            <span class="text-mute">Spark Master: </span>
+                            <code id="octohaven-spark-master-address">?</code>
+                        </div>
+                    </div>
+                    <div class="attached secondary segment">
                         <h1 class="text-thin">Create a new job</h1>
                     </div>
                     <div class="attached segment" id="octohaven-job-settings">
                     </div>
                     <div class="attached segment">
-                        <h3 class="text-thin">Select .jar file</h3>
-                        <div class="breadcrumb">
-                            <a class="section">ROOT</a>
-                            <div class="separator">/</div>
-                            <a class="section">dev</a>
-                            <div class="separator">/</div>
-                            <a class="section">test</a>
-                            <div class="separator">/</div>
-                            <div class="section active">another</div>
-                        </div>
-                        <div class="blankslate">
-                            <span>[DIR] dev</span>
+                        <span class="text-mute">Select <code>.jar</code> file</span>
+                        <div class="segments">
+                            <div class="compact segment"><a href="#">./prod</a></div>
+                            <div class="compact segment"><a href="#">./dev</a></div>
+                            <div class="compact segment"><a href="#">./test</a></div>
+                            <div class="compact segment">dummy.jar</div>
                         </div>
                     </div>
                     <div class="bottom attached segment">
@@ -68,6 +72,7 @@
         <script type="text/javascript" src="js/utilities/namer.js"></script>
         <script type="text/javascript" src="js/fasteditor.js"></script>
         <script type="text/javascript" src="js/status.js"></script>
+        <script type="text/javascript" src="js/index.js"></script>
         <script type="text/javascript" src="js/create.js"></script>
     </body>
 </html>
