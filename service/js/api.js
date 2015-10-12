@@ -61,7 +61,6 @@
           var json;
           if (code === 200) {
             json = JSON.parse(response);
-            console.log(json);
             return typeof after === "function" ? after(json) : void 0;
           } else {
             console.log("[ERROR] " + response);

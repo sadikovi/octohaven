@@ -50,7 +50,6 @@ class Filelist
         , (code, response) =>
             if code == 200
                 json = JSON.parse response
-                console.log(json)
                 after?(json)
             else
                 console.log "[ERROR] #{response}"
