@@ -49,5 +49,13 @@ class Util
 
     randomid: -> "#{Math.random()}".split(".")[1]
 
+    # parses string into json and returns object, if okay, otherwise returns def
+    jsonOrElse: (str, def=null) ->
+        try
+            obj = JSON.parse(str)
+        catch e
+            obj = def
+        return obj
+
 # init global util
 @util ?= new Util

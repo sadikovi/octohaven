@@ -6,7 +6,6 @@
     margin: 12px;
     padding: 10px 10px;
     border-radius: 3px;
-    border: none;
 
     &:first-child {
         margin-top: 0;
@@ -61,6 +60,23 @@
     &.right-aligned { text-align: right; }
 
     &.center-aligned { text-align: center; }
+
+    &.bordered {
+        border: 1px solid;
+        border-color: #d8d8d8;
+
+        &.blue { border-color: $brand-blue; }
+        &.green { border-color: $brand-green; }
+        &.yellow { border-color: $brand-yellow; }
+    }
+
+    &.fixed-height {
+        &.small { min-height: 50px; }
+
+        &.medium { min-height: 100px; }
+
+        &.large { min-height: 200px; }
+    }
 }
 
 // loading
@@ -208,16 +224,5 @@ $loader-size: 36px;
         margin-bottom: 0;
         top: 0px;
         box-shadow: none;
-    }
-}
-
-// add some min height
-.segment {
-    &.fixed-height {
-        &.small { min-height: 50px; }
-
-        &.medium { min-height: 100px; }
-
-        &.large { min-height: 200px; }
     }
 }

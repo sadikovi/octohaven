@@ -108,6 +108,20 @@
       return ("" + (Math.random())).split(".")[1];
     };
 
+    Util.prototype.jsonOrElse = function(str, def) {
+      var e, obj;
+      if (def == null) {
+        def = null;
+      }
+      try {
+        obj = JSON.parse(str);
+      } catch (_error) {
+        e = _error;
+        obj = def;
+      }
+      return obj;
+    };
+
     return Util;
 
   })();

@@ -90,7 +90,7 @@ class APICall(object):
                 path = self.query["path"] if "path" in self.query else ""
                 data = self.fileManager.list(path, sort=True, asdict=True)
                 self.sendSuccess({"list": data})
-            elif self.path.endswith("%s/create" % API_V1):
+            elif self.path.endswith("%s/submit" % API_V1):
                 if "content" not in self.query or not self.query["content"]:
                     self.sendError("Job information expected, got empty input")
                 else:
