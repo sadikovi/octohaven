@@ -9,7 +9,7 @@ class RedisConst(object):
 
     @classmethod
     def setRedisSettings(cls, host, port, db):
-        print "Settings Redis instance..."
+        print "Settings test Redis instance..."
         cls.REDIS_HOST = host
         cls.REDIS_PORT = int(port)
         cls.REDIS_TEST_DB = int(db)

@@ -121,6 +121,18 @@ class FileManagerTestSuite(unittest.TestCase):
         expected = manager.list(ROOT, sort=True, asdict=True)
         self.assertEqual(files, expected)
 
+    def test_resolveRelativePath(self):
+        manager = FileManager(self.root)
+        directory = ROOT + SEP + "test"
+        obj = manager.list(directory, sort=False, asdict=False)[0]
+        abspath = manager.resolveRelativePath(obj.path)
+        self.assertEqual(abspath, os.path.join(self.root, "test", obj.name))
+        # test failure cases
+        with self.assertRaises(StandardError):
+            manager.resolveRelativePath("")
+        with self.assertRaises(StandardError):
+            manager.resolveRelativePath("root" + SEP + "another")
+
 # Load test suites
 def _suites():
     return [

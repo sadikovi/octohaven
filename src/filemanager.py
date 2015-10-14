@@ -40,6 +40,8 @@ class FileManager(object):
 
     @private
     def checkPath(self, path):
+        # checks file path to ensure that it is absolute and does not contain illegal characters
+        # or directories like ".."
         ok = os.path.isabs(path)
         arr = path.split(os.sep)[1:]
         ok = reduce(lambda x, y: x and y, [ok] + [self.checkDirectory(elem) for elem in arr])
@@ -47,6 +49,8 @@ class FileManager(object):
 
     @private
     def checkDirectory(self, directory):
+        # checks directory name ensuring that it does not have illegal characters,
+        # e.g. ";[]", ".."
         prep = directory.strip()
         return len(prep) > 0 and prep != "." and prep != ".." and \
             re.match(r"^[^\*?!:;|\[\]/]+$", directory) is not None
@@ -105,3 +109,17 @@ class FileManager(object):
         if asdict:
             files = [x.toDict() for x in files]
         return files
+
+    # resolves relative path into absolute path in current filesystem.
+    # path can be a directory or file
+    def resolveRelativePath(self, path):
+        arr = path.split(SEP)
+        if not arr:
+            raise StandardError("Filepath appears to be empty")
+        root = arr[0]
+        if root != ROOT:
+            raise StandardError("Filepath does not follow local pattern: " + path)
+        absolutePath = os.path.join(self.root, *arr[1:])
+        if not self.checkPath(absolutePath):
+            raise StandardError("Filepath is not a valid system path: " + absolutePath)
+        return absolutePath

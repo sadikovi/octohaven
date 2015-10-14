@@ -11,6 +11,8 @@ import sparkheartbeat
 from redisconnector import RedisConnector, RedisConnectionPool
 from storagemanager import StorageManager
 from filemanager import FileManager
+from jobmanager import JobManager
+from job import Job, SparkJob
 from utils import *
 
 # constants for request mapping
@@ -33,6 +35,7 @@ class APICall(object):
         # check Spark settings
         if "SPARK_UI_ADDRESS" not in self.settings or "SPARK_MASTER_ADDRESS" not in self.settings:
             raise StandardError("Spark UI Address and Spark Master Address must be specified")
+        sparkMasterAddress = settings["SPARK_MASTER_ADDRESS"]
         # check whether Jar folder is set
         if "JAR_FOLDER" not in self.settings:
             raise StandardError("Jar folder is not set")
@@ -49,6 +52,7 @@ class APICall(object):
         connector = RedisConnector(pool)
         self.storageManager = StorageManager(connector)
         self.fileManager = FileManager(jarFolder)
+        self.jobManager = JobManager(sparkMasterAddress)
         self.response = None
 
     @private
@@ -94,6 +98,8 @@ class APICall(object):
                 if "content" not in self.query or not self.query["content"]:
                     self.sendError("Job information expected, got empty input")
                 else:
+                    # resolve and validate some of the parameters
+                    # create job and store it using StorageManager
                     self.sendSuccess({"msg": "Job has been created"})
             # if there is no reponse by the end of the block, we raise an error, as response was not
             # prepared for user or there were holes in logic flow

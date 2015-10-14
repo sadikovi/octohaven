@@ -9,7 +9,8 @@ RUN_TESTS = {
     "redisconnector": True,
     "job": True,
     "storagemanager": True,
-    "filemanager": True
+    "filemanager": True,
+    "jobmanager": True
 }
 
 def checkTest(key):
@@ -37,12 +38,19 @@ def collectSystemTests(suites):
     else:
         print "@skip: 'storagemanager' tests"
 
-    # file list
+    # file manager
     if checkTest("filemanager"):
         import test.unittest_filemanager as unittest_filemanager
         suites.addTest(unittest_filemanager.loadSuites())
     else:
         print "@skip: 'filemanager' tests"
+
+    # job manager
+    if checkTest("jobmanager"):
+        import test.unittest_jobmanager as unittest_jobmanager
+        suites.addTest(unittest_jobmanager.loadSuites())
+    else:
+        print "@skip: 'jobmanager' tests"
 
 if __name__ == '__main__':
     args = sys.argv[2:]
