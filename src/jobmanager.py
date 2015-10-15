@@ -43,7 +43,7 @@ class JobManager(object):
         # parse options correctly, job accepts already parsed options as
         # key-value pairs, e.g. spark.shuffle.spill=true
         # we do not fail, if there are no options
-        uid = "spark-" + uuid.uuid4().hex
+        uid = "spark_" + uuid.uuid4().hex
         updatedOptions = self.parseOptions(options)
         # add driver and executor memory, because we specify them as completely separate options
         # we also override any other config options for executor / driver memory
@@ -53,9 +53,9 @@ class JobManager(object):
 
     # creates Job instance, fails if anything is wrong with a job.
     def createJob(self, sparkjob):
-        uid = "job-" + uuid.uuid4().hex
+        uid = "job_" + uuid.uuid4().hex
         status = "CREATED"
         duration = "MEDIUM"
         # store start time as unix timestamp in ms
-        starttime = long(time.time() * 1000)
-        return Job(uid, status, starttime, duration, sparkjob)
+        submittime = long(time.time() * 1000)
+        return Job(uid, status, submittime, duration, sparkjob)

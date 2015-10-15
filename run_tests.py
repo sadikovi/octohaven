@@ -10,7 +10,8 @@ RUN_TESTS = {
     "job": True,
     "storagemanager": True,
     "filemanager": True,
-    "jobmanager": True
+    "jobmanager": True,
+    "utils": True
 }
 
 def checkTest(key):
@@ -51,6 +52,13 @@ def collectSystemTests(suites):
         suites.addTest(unittest_jobmanager.loadSuites())
     else:
         print "@skip: 'jobmanager' tests"
+
+    # utils
+    if checkTest("utils"):
+        import test.unittest_utils as unittest_utils
+        suites.addTest(unittest_utils.loadSuites())
+    else:
+        print "@skip: 'utils' tests"
 
 if __name__ == '__main__':
     args = sys.argv[2:]

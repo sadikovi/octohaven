@@ -71,7 +71,7 @@ class SparkJob(object):
         return cls(uid, name, masterurl, entrypoint, jar, options)
 
 class Job(object):
-    def __init__(self, uid, status, starttime, duration, sparkjob):
+    def __init__(self, uid, status, submittime, duration, sparkjob):
         if status not in STATUSES:
             raise StandardError("Status " + status + " is not supported")
         if duration not in DURATIONS:
@@ -81,7 +81,7 @@ class Job(object):
         # internal properties
         self.uid = uid
         self.status = status
-        self.starttime = long(starttime)
+        self.submittime = long(submittime)
         self.duration = duration
         # Spark job
         self.sparkjob = sparkjob
@@ -95,7 +95,7 @@ class Job(object):
         return {
             "uid": self.uid,
             "status": self.status,
-            "starttime": self.starttime,
+            "submittime": self.submittime,
             "duration": self.duration,
             "sparkjob": self.sparkjob.toDict()
         }
@@ -104,7 +104,7 @@ class Job(object):
     def fromDict(cls, object):
         uid = object["uid"]
         status = object["status"]
-        starttime = object["starttime"]
+        submittime = object["submittime"]
         duration = object["duration"]
         sparkjob = SparkJob.fromDict(object["sparkjob"])
-        return cls(uid, status, starttime, duration, sparkjob)
+        return cls(uid, status, submittime, duration, sparkjob)

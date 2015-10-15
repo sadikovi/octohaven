@@ -87,6 +87,28 @@ class StorageManagerTestSuite(unittest.TestCase):
         allJobs = storageManager.allJobs()
         self.assertEqual(removedJob.uid not in [job.uid for job in allJobs], True)
 
+    def test_registerJob(self):
+        storageManager = StorageManager(self.connector)
+        job = self.newJob()
+        storageManager.registerJob(job)
+        # check job for status
+        got = storageManager.jobsForStatus(job.status)
+        self.assertEqual(len(got) == 1 and got[0].uid == job.uid, True)
+        # check job for all statuses
+        got = storageManager.allJobs()
+        self.assertEqual(len(got) == 1 and got[0].uid == job.uid, True)
+
+    def test_limitJobs(self):
+        storageManager = StorageManager(self.connector)
+        numJobs = 10
+        jobs = [self.newJob() for i in range(numJobs)]
+        for job in jobs:
+            storageManager.registerJob(job)
+        got = storageManager.jobsForStatus(job.status, limit=20, sort=True)
+        self.assertEqual(len(got), numJobs)
+        got = storageManager.jobsForStatus(job.status, limit=3, sort=True)
+        self.assertEqual(len(got), 3)
+
 # Load test suites
 def _suites():
     return [

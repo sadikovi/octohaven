@@ -51,7 +51,7 @@ class JobManagerTestSuite(unittest.TestCase):
         sparkJob = jobManager.createSparkJob(self.name, self.entrypoint, self.jar,
             self.driverMemory, self.executorMemory, options)
         # check
-        self.assertEqual(sparkJob.uid.startswith("spark-"), True)
+        self.assertEqual(sparkJob.uid.startswith("spark_"), True)
         self.assertEqual(sparkJob.name, self.name)
         self.assertEqual(sparkJob.entrypoint, self.entrypoint)
         self.assertEqual(sparkJob.jar, self.jar)
@@ -77,10 +77,10 @@ class JobManagerTestSuite(unittest.TestCase):
         sparkJob = jobManager.createSparkJob(self.name, self.entrypoint, self.jar,
             self.driverMemory, self.executorMemory, self.options)
         job = jobManager.createJob(sparkJob)
-        self.assertEqual(job.uid.startswith("job-"), True)
+        self.assertEqual(job.uid.startswith("job_"), True)
         self.assertEqual(job.status, "CREATED")
         self.assertEqual(job.duration, "MEDIUM")
-        self.assertEqual(type(job.starttime) is LongType and job.starttime > 0, True)
+        self.assertEqual(type(job.submittime) is LongType and job.submittime > 0, True)
         self.assertEqual(type(job.sparkjob), SparkJob)
 
 # Load test suites

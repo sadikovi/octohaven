@@ -1,10 +1,7 @@
 #!/usr/bin/env python
 
 import paths
-import os
-import sys
-import urllib
-import json
+import os, sys, urllib, json
 from urlparse import urlparse
 from BaseHTTPServer import HTTPServer, BaseHTTPRequestHandler
 import sparkheartbeat
@@ -81,8 +78,10 @@ class APICall(object):
                 # retrieve jobs for status
                 # we are expecting one parameter starting with "status="
                 if "status" in self.query:
+                    limit = intOrElse(self.query["limit"], -1) if "limit" in self.query else None
+                    sort = boolOrElse(self.query["sort"], True) if "sort" in self.query else None
                     status = self.query["status"]
-                    jobs = self.storageManager.jobsForStatus(status)
+                    jobs = self.storageManager.jobsForStatus(status, limit, sort)
                     self.sendSuccess({"jobs": [job.toDict() for job in jobs]})
                 else:
                     self.sendError("expected 'status' parameter")
@@ -98,9 +97,24 @@ class APICall(object):
                 if "content" not in self.query or not self.query["content"]:
                     self.sendError("Job information expected, got empty input")
                 else:
+                    raw = self.query["content"].strip()
                     # resolve and validate some of the parameters
                     # create job and store it using StorageManager
-                    self.sendSuccess({"msg": "Job has been created"})
+                    data = jsonOrElse(raw, None)
+                    if not data:
+                        raise StandardError("Corrupt json data: " + raw)
+                    name = data["name"]
+                    entry = data["mainClass"]
+                    dmem, emem = data["driverMemory"], data["executorMemory"]
+                    options = data["options"]
+                    jar = self.fileManager.resolveRelativePath(data["jar"])
+                    # create Spark job and octohaven job
+                    sparkjob = self.jobManager.createSparkJob(name, entry, jar, dmem, emem, options)
+                    job = self.jobManager.createJob(sparkjob)
+                    # register job in Redis for a status
+                    self.storageManager.registerJob(job)
+                    # all is good, send back job id to track
+                    self.sendSuccess({"msg": "Job has been created", "jobid": job.uid})
             # if there is no reponse by the end of the block, we raise an error, as response was not
             # prepared for user or there were holes in logic flow
             if not self.response:

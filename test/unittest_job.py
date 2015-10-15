@@ -25,10 +25,10 @@ class JobSentinel(object):
     def job():
         uid = str(uuid.uuid4())
         status = "WAITING"
-        starttime = long(time.time())
+        submittime = long(time.time())
         duration = "MEDIUM"
         sparkjob = JobSentinel.sparkJob()
-        return Job(uid, status, starttime, duration, sparkjob)
+        return Job(uid, status, submittime, duration, sparkjob)
 
 class JobCheckTestSuite(unittest.TestCase):
     def test_validateMemory(self):
@@ -130,7 +130,7 @@ class JobTestSuite(unittest.TestCase):
     def setUp(self):
         self.uid = str(uuid.uuid4())
         self.status = "WAITING"
-        self.starttime = long(time.time())
+        self.submittime = long(time.time())
         self.duration = "MEDIUM"
         self.sparkjob = JobSentinel.sparkJob()
 
@@ -138,20 +138,20 @@ class JobTestSuite(unittest.TestCase):
         pass
 
     def test_create(self):
-        job = Job(self.uid, self.status, self.starttime, self.duration, self.sparkjob)
+        job = Job(self.uid, self.status, self.submittime, self.duration, self.sparkjob)
         self.assertEqual(job.uid, self.uid)
         self.assertEqual(job.status, self.status)
-        self.assertEqual(job.starttime, self.starttime)
+        self.assertEqual(job.submittime, self.submittime)
         self.assertEqual(job.duration, self.duration)
         self.assertEqual(job.sparkjob, self.sparkjob)
         # check passing wrong status and duration
         with self.assertRaises(StandardError):
-            Job(self.uid, "WRONG_STATUS", self.starttime, self.duration, self.sparkjob)
+            Job(self.uid, "WRONG_STATUS", self.submittime, self.duration, self.sparkjob)
         with self.assertRaises(StandardError):
-            Job(self.uid, self.status, self.starttime, "WRONG_DURATION", self.sparkjob)
+            Job(self.uid, self.status, self.submittime, "WRONG_DURATION", self.sparkjob)
 
     def test_updateStatus(self):
-        job = Job(self.uid, self.status, self.starttime, self.duration, self.sparkjob)
+        job = Job(self.uid, self.status, self.submittime, self.duration, self.sparkjob)
         self.assertEqual(job.status, self.status)
         job.updateStatus("SUBMITTED")
         self.assertEqual(job.status, "SUBMITTED")
@@ -160,21 +160,21 @@ class JobTestSuite(unittest.TestCase):
             job.updateStatus("WRONG_STATUS")
 
     def test_convertToDict(self):
-        job = Job(self.uid, self.status, self.starttime, self.duration, self.sparkjob)
+        job = Job(self.uid, self.status, self.submittime, self.duration, self.sparkjob)
         obj = job.toDict()
         self.assertEqual(obj["uid"], self.uid)
         self.assertEqual(obj["status"], self.status)
-        self.assertEqual(obj["starttime"], self.starttime)
+        self.assertEqual(obj["submittime"], self.submittime)
         self.assertEqual(obj["duration"], self.duration)
         self.assertEqual(obj["sparkjob"], self.sparkjob.toDict())
 
     def test_convertFromDict(self):
-        job = Job(self.uid, self.status, self.starttime, self.duration, self.sparkjob)
+        job = Job(self.uid, self.status, self.submittime, self.duration, self.sparkjob)
         obj = job.toDict()
         copy = Job.fromDict(obj)
         self.assertEqual(copy.uid, self.uid)
         self.assertEqual(copy.status, self.status)
-        self.assertEqual(copy.starttime, self.starttime)
+        self.assertEqual(copy.submittime, self.submittime)
         self.assertEqual(copy.duration, self.duration)
         self.assertEqual(copy.sparkjob.toDict(), self.sparkjob.toDict())
 
