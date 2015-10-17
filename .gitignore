@@ -58,3 +58,6 @@ target/
 
 # SASS cache
 .sass-cache/
+
+# temp folders
+temp/
