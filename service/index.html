@@ -22,16 +22,18 @@
             <div class="columns">
                 <div class="one-fourth column">
                     <nav class="menu">
-                        <div class="menu-heading">
-                            Octohaven
-                        </div>
+                        <div class="menu-heading">Octohaven</div>
                         <div class="menu-item" id="octohaven-spark-server">
                             <span class="text-mute">Status:</span>
                             <span class="text-mute" id="octohaven-spark-server-status">Pending...</span>
                         </div>
-                        <a class="menu-item" href="/create">
-                            Create new job
-                        </a>
+                        <a class="menu-item" href="/create">Create new job</a>
+                        <div class="menu-heading">Filter jobs</div>
+                        <a class="menu-item" href="#" id="octohaven-jobs-all">ALL</a>
+                        <a class="menu-item" href="#" id="octohaven-jobs-created">CREATED</a>
+                        <a class="menu-item" href="#" id="octohaven-jobs-waiting">WAITING</a>
+                        <a class="menu-item" href="#" id="octohaven-jobs-submitted">SUBMITTED</a>
+                        <a class="menu-item" href="#" id="octohaven-jobs-closed">CLOSED</a>
                     </nav>
                 </div>
                 <div class="three-fourths column">
@@ -46,15 +48,10 @@
                         </div>
                     </div>
                     <div class="attached secondary segment">
-                        <h1 class="text-thin">
-                            Job history
-                        </h1>
+                        <h1 class="text-thin">Job history</h1>
+                        <h4 class="text-thin text-mute">Shows last 30 jobs</h4>
                     </div>
                     <div class="bottom attached segment" id="octohaven-jobs-history">
-                        <div class="blankslate">
-                            <h1 class="text-thin">No jobs found :(</h1>
-                            <p>You can <a href="/create">create a new job</a></p>
-                        </div>
                     </div>
                 </div>
             </div>
@@ -63,6 +60,7 @@
         <script type="text/javascript" src="js/utilities/loader.js"></script>
         <script type="text/javascript" src="js/utilities/mapper.js"></script>
         <script type="text/javascript" src="js/api.js"></script>
-        <script type="text/javascript" src="js/index.js"></script>
+        <script type="text/javascript" src="js/status.js"></script>
+        <script type="text/javascript" src="js/jobs.js"></script>
     </body>
 </html>

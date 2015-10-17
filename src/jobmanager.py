@@ -2,7 +2,7 @@
 
 import paths
 import uuid, re, time
-from job import Job, JobCheck, SparkJob
+from job import Job, JobCheck, SparkJob, STATUSES, CAN_CLOSE_STATUSES
 from types import DictType, StringType
 from utils import *
 
@@ -59,3 +59,11 @@ class JobManager(object):
         # store start time as unix timestamp in ms
         submittime = long(time.time() * 1000)
         return Job(uid, status, submittime, duration, sparkjob)
+
+    # closes job safely
+    def closeJob(self, job):
+        if type(job) is not Job:
+            raise StandardError("Expected Job, got %s" % str(type(job)))
+        if job.status not in CAN_CLOSE_STATUSES:
+            raise StandardError("Cannot close job with a status %s" % job.status)
+        job.updateStatus("CLOSED")

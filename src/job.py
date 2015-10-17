@@ -4,6 +4,8 @@ import os, re
 from utils import *
 
 STATUSES = ["CREATED", "WAITING", "SUBMITTED", "CLOSED"]
+# list of statuses that use can close before they are submitted
+CAN_CLOSE_STATUSES = ["CREATED", "WAITING"]
 DURATIONS = ["LONG", "MEDIUM", "QUICK"]
 
 class JobCheck(object):

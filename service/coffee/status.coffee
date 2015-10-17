@@ -4,6 +4,8 @@ serverMasterAddress = document.getElementById("octohaven-spark-master-address")
 unless serverStatus and serverUIAddress and serverMasterAddress
     throw new Error("Server entries are unrecognized")
 
+_util = @util
+
 ################################################################
 # Request Spark Cluster status and set all the elements.
 ################################################################
@@ -14,15 +16,15 @@ setStatus = (status) ->
     serverStatus.className = ""
     if status == false
         serverStatus.innerHTML = "#{@Status.STATUS_PENDING}"
-        @util.addClass(serverStatus, "text-mute")
+        _util.addClass(serverStatus, "text-mute")
     else if status == 0
-        @util.addClass(serverStatus, "text-green")
+        _util.addClass(serverStatus, "text-green")
         serverStatus.innerHTML = "#{@Status.STATUS_READY}"
     else if status == -1
-        @util.addClass(serverStatus, "text-yellow")
+        _util.addClass(serverStatus, "text-yellow")
         serverStatus.innerHTML = "#{@Status.STATUS_BUSY}"
     else
-        @util.addClass(serverStatus, "text-red")
+        _util.addClass(serverStatus, "text-red")
         serverStatus.innerHTML = "#{@Status.STATUS_UNREACHABLE}"
 
 # setting Spark UI address
@@ -52,7 +54,3 @@ reloadStatus = ->
 
 # reload status
 reloadStatus?()
-
-################################################################
-# Request all jobs from the server
-################################################################

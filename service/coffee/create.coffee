@@ -206,11 +206,14 @@ files("")
 setLoadStatus = (load) ->
     if load then _util.addClass(statusBar, "loading") else _util.removeClass(statusBar, "loading")
 
-setTextStatus = (text, ok) ->
+setSubmitStatus = (ok, internal) ->
     statusBar.innerHTML = ""
     mode = if ok then "success-box" else "error-box"
-    obj = type: "div", cls: mode, title: "#{text}"
+    obj = type: "div", cls: mode, children: internal
     _mapper.parseMapForParent(obj, statusBar)
+
+setTextStatus = (ok, text) ->
+    setSubmitStatus(ok, type: "span", title: "#{text}")
 
 submitJob = (job) ->
     setLoadStatus(true)
@@ -225,9 +228,17 @@ submitJob = (job) ->
     resolver = new JobResolver
     resolver.submit JSON.stringify(settings), null, (ok, content) ->
         setLoadStatus(false)
-        job.setStatus(JOB_CREATE) unless ok
-        msg = if content then content["content"]["msg"] else "Something went wrong :("
-        setTextStatus(msg, ok)
+        if ok
+            # extract job id
+            msg = content["content"]["msg"]
+            jobid = content["content"]["jobid"]
+            body = type: "span", title: "#{msg}. ", children:
+                type: "a", title: "View details", href: "/job?=#{jobid}"
+            setSubmitStatus(ok, body)
+        else
+            job.setStatus(JOB_CREATE)
+            msg = if content then content["content"]["msg"] else "Something went wrong :("
+            setTextStatus(ok, msg)
 
 # attach click event on button, so we can submit
 _util.addEventListener submitBtn, "click", (e) ->

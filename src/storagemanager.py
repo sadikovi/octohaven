@@ -2,6 +2,7 @@
 
 from redisconnector import RedisConnector
 from job import Job
+from utils import *
 
 # Storage manager maintains history and addition of jobs
 class StorageManager(object):
@@ -11,6 +12,11 @@ class StorageManager(object):
         if type(connector) is not RedisConnector:
             raise StandardError("Connector type " + str(type(connector)) + "is not supported")
         self.connector = connector
+
+    @private
+    def checkJob(self, job):
+        if type(job) is not Job:
+            raise StandardError("Expected Job instance, got " + str(type(job)))
 
     # returns Job instance, if key exists, otherwise None
     def jobForUid(self, uid):
@@ -35,10 +41,11 @@ class StorageManager(object):
     def allJobs(self, limit=20, sort=True):
         return self.jobsForStatus(self.ALL_JOBS_KEY, limit, sort)
 
+    # save job and add it to global keyspace
     def saveJob(self, job):
-        if type(job) is not Job:
-            raise StandardError("Expected Job instance, got " + str(type(job)))
+        self.checkJob(job)
         self.connector.store(job.uid, job.toDict())
+        self.addJobForStatus(self.ALL_JOBS_KEY, job.uid)
 
     def addJobForStatus(self, status, uid):
         self.connector.storeCollection(status, [uid])
@@ -46,8 +53,18 @@ class StorageManager(object):
     def removeJobFromStatus(self, status, uid):
         self.connector.removeFromCollection(status, [uid])
 
-    # convenience method to save job and add it for a current status
-    def registerJob(self, job):
-        self.saveJob(job)
-        self.addJobForStatus(self.ALL_JOBS_KEY, job.uid)
+    # register job for a current status
+    # if save is True, we also update job instance in Redis
+    def registerJob(self, job, save=True):
+        self.checkJob(job)
+        if save:
+            self.saveJob(job)
         self.addJobForStatus(job.status, job.uid)
+
+    # remove job from current status (usually for an update)
+    # if save is True, we also update job instance in Redis
+    def unregisterJob(self, job, save=True):
+        self.checkJob(job)
+        if save:
+            self.saveJob(job)
+        self.removeJobFromStatus(job.status, job.uid)

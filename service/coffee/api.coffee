@@ -73,3 +73,39 @@ class JobResolver
             after?(false, json)
 
 @JobResolver ?= JobResolver
+
+# class to fetch jobs for a certain status and limit
+class JobLoader
+    constructor: ->
+
+    get: (status, limit, before, after) ->
+        before?()
+        loader.sendrequest "get", "/api/v1/jobs?status=#{status}&limit=#{limit}", {}, null
+        , (success, response) ->
+            json = util.jsonOrElse(response)
+            after?(!!json, json)
+        , (error, response) ->
+            json = util.jsonOrElse(response)
+            after?(false, json)
+
+    close: (jobid, before, after) ->
+        before?()
+        loader.sendrequest "get", "/api/v1/close?jobid=#{jobid}", {}, null
+        , (success, response) ->
+            json = util.jsonOrElse(response)
+            after?(!!json, json)
+        , (error, response) ->
+            json = util.jsonOrElse(response)
+            after?(false, json)
+
+    getJob: (jobid, before, after) ->
+        before?()
+        loader.sendrequest "get", "/api/v1/job?jobid=#{jobid}", {}, null
+        , (success, response) ->
+            json = util.jsonOrElse(response)
+            after?(!!json, json)
+        , (error, response) ->
+            json = util.jsonOrElse(response)
+            after?(false, json)
+
+@JobLoader ?= JobLoader

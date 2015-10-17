@@ -10,7 +10,7 @@
         <meta name="author" content="">
 
         <title>
-            Create a job &middot; Octohaven
+            Job details &middot; Octohaven
         </title>
 
         <link rel="icon" type="image/x-icon" href="img/favicon.ico">
@@ -22,7 +22,9 @@
             <div class="columns">
                 <div class="one-fourth column">
                     <nav class="menu">
-                        <div class="menu-heading">Octohaven</div>
+                        <div class="menu-heading">
+                            Octohaven
+                        </div>
                         <div class="menu-item" id="octohaven-spark-server">
                             <span class="text-mute">Status:</span>
                             <span class="text-mute" id="octohaven-spark-server-status">Pending...</span>
@@ -42,24 +44,9 @@
                         </div>
                     </div>
                     <div class="attached secondary segment">
-                        <h1 class="text-thin">Create a new Spark job</h1>
+                        <h1 class="text-thin">Job details</h1>
                     </div>
-                    <div class="attached segment" id="octohaven-job-settings">
-                    </div>
-                    <div class="attached secondary segment">
-                        <div class="segment">
-                            <code class="text-emphasized" id="octohaven-selected-jar">Select .jar file below</code>
-                        </div>
-                        <div class="breadcrumb" id="octohaven-filelist-breadcrumbs">
-                        </div>
-                        <div class="menu text-mono" id="octohaven-filelist-files">
-                        </div>
-                    </div>
-                    <div class="attached segment" id="octohaven-validation-status">
-                    </div>
-                    <div class="bottom attached segment">
-                        <a class="btn btn-primary" id="octohaven-submit-job">Submit a job</a>
-                        <a class="btn" href="/" id="octohaven-cancel-job">Cancel</a>
+                    <div class="bottom attached segment" id="octohaven-job-details">
                     </div>
                 </div>
             </div>
@@ -67,10 +54,8 @@
         <script type="text/javascript" src="js/utilities/util.js"></script>
         <script type="text/javascript" src="js/utilities/loader.js"></script>
         <script type="text/javascript" src="js/utilities/mapper.js"></script>
-        <script type="text/javascript" src="js/utilities/namer.js"></script>
-        <script type="text/javascript" src="js/fasteditor.js"></script>
         <script type="text/javascript" src="js/api.js"></script>
         <script type="text/javascript" src="js/status.js"></script>
-        <script type="text/javascript" src="js/create.js"></script>
+        <script type="text/javascript" src="js/jobdetails.js"></script>
     </body>
 </html>

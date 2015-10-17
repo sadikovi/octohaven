@@ -122,6 +122,33 @@
       return obj;
     };
 
+    Util.prototype.humanReadableTime = function(timestamp, locale) {
+      var date, diff, now, _ref;
+      if (locale == null) {
+        locale = "en-nz";
+      }
+      _ref = [new Date, new Date(timestamp)], now = _ref[0], date = _ref[1];
+      diff = (now.getTime() - date.getTime()) / 1000.0;
+      if ((0 < diff && diff < 60)) {
+        return "less than a minute ago";
+      } else if ((60 <= diff && diff < 60 * 60)) {
+        return (Math.floor(diff / 60)) + " minutes ago";
+      } else if ((60 * 60 <= diff && diff < 24 * 60 * 60)) {
+        return (Math.floor(diff / 60 / 60)) + " hours ago";
+      } else {
+        return "" + (date.toLocaleString(locale));
+      }
+    };
+
+    Util.prototype.timestampToDate = function(timestamp, locale) {
+      var date;
+      if (locale == null) {
+        locale = "en-nz";
+      }
+      date = new Date(timestamp);
+      return "" + (date.toLocaleString(locale));
+    };
+
     return Util;
 
   })();

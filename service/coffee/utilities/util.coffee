@@ -57,5 +57,25 @@ class Util
             obj = def
         return obj
 
+    humanReadableTime: (timestamp, locale="en-nz") ->
+        [now, date] = [new Date, new Date timestamp]
+        diff = (now.getTime() - date.getTime()) / 1000.0
+        if 0 < diff < 60
+            # display seconds
+            "less than a minute ago"
+        else if 60 <= diff < 60*60
+            # display minutes
+            "#{Math.floor diff/60} minutes ago"
+        else if 60*60 <= diff < 24*60*60
+            # display hours
+            "#{Math.floor diff/60/60} hours ago"
+        else
+            # display full date
+            "#{date.toLocaleString(locale)}"
+
+    timestampToDate: (timestamp, locale="en-nz") ->
+        date = new Date timestamp
+        "#{date.toLocaleString(locale)}"
+
 # init global util
 @util ?= new Util

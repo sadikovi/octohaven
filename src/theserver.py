@@ -17,7 +17,8 @@ API_V1 = "/api/v1"
 REQUEST_TABLE = {
     "": "index.html",
     "/": "index.html",
-    "create": "create.html"
+    "create": "create.html",
+    "job": "job.html"
 }
 # root directory for http server
 ROOT = paths.SERV_PATH
@@ -85,6 +86,14 @@ class APICall(object):
                     self.sendSuccess({"jobs": [job.toDict() for job in jobs]})
                 else:
                     self.sendError("expected 'status' parameter")
+            elif self.path.endswith("%s/job" % API_V1):
+                # get job for id
+                jobid = self.query["jobid"] if "jobid" in self.query else None
+                job = self.storageManager.jobForUid(jobid)
+                if not job:
+                    self.sendError("No job found for id: %s" % str(jobid))
+                else:
+                    self.sendSuccess({"job": job.toDict()})
             elif self.path.endswith("%s/breadcrumbs" % API_V1):
                 path = self.query["path"] if "path" in self.query else ""
                 data = self.fileManager.breadcrumbs(path, asdict=True)
@@ -111,10 +120,21 @@ class APICall(object):
                     # create Spark job and octohaven job
                     sparkjob = self.jobManager.createSparkJob(name, entry, jar, dmem, emem, options)
                     job = self.jobManager.createJob(sparkjob)
-                    # register job in Redis for a status
+                    # save and register job in Redis for a status
                     self.storageManager.registerJob(job)
                     # all is good, send back job id to track
                     self.sendSuccess({"msg": "Job has been created", "jobid": job.uid})
+            elif self.path.endswith("%s/close" % API_V1):
+                jobid = self.query["jobid"] if "jobid" in self.query else None
+                job = self.storageManager.jobForUid(jobid)
+                if not job:
+                    self.sendError("No job found for id: %s" % str(jobid))
+                else:
+                    # change status on "Closed", it will raise an error, if something is wrong
+                    self.storageManager.unregisterJob(job)
+                    self.jobManager.closeJob(job)
+                    self.storageManager.registerJob(job)
+                    self.sendSuccess({"msg": "Job has been updated", "jobid": job.uid})
             # if there is no reponse by the end of the block, we raise an error, as response was not
             # prepared for user or there were holes in logic flow
             if not self.response:
