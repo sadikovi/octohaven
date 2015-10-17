@@ -65,6 +65,14 @@ class APICall(object):
     def sendSuccess(self, content):
         self.response = {"code": 200, "status": "OK", "content": content}
 
+    # process method for different API methods:
+    # - GET /api/v1/sparkstatus: fetching Spark cluster status
+    # - GET /api/v1/jobs: listing jobs for a status
+    # - GET /api/v1/job: fetch job for an id
+    # - POST /api/v1/submit: create a new job
+    # - GET /api/v1/close: close existing job, if possible
+    # - GET /api/v1/breadcrumbs: list a directory traversal for a specific path
+    # - GET /api/v1/list: list folders and files for a specific path
     def process(self):
         try:
             if self.path.endswith("%s/sparkstatus" % API_V1):
@@ -94,15 +102,8 @@ class APICall(object):
                     self.sendError("No job found for id: %s" % str(jobid))
                 else:
                     self.sendSuccess({"job": job.toDict()})
-            elif self.path.endswith("%s/breadcrumbs" % API_V1):
-                path = self.query["path"] if "path" in self.query else ""
-                data = self.fileManager.breadcrumbs(path, asdict=True)
-                self.sendSuccess({"breadcrumbs": data})
-            elif self.path.endswith("%s/list" % API_V1):
-                path = self.query["path"] if "path" in self.query else ""
-                data = self.fileManager.list(path, sort=True, asdict=True)
-                self.sendSuccess({"list": data})
             elif self.path.endswith("%s/submit" % API_V1):
+                # submit a new job
                 if "content" not in self.query or not self.query["content"]:
                     self.sendError("Job information expected, got empty input")
                 else:
@@ -125,6 +126,7 @@ class APICall(object):
                     # all is good, send back job id to track
                     self.sendSuccess({"msg": "Job has been created", "jobid": job.uid})
             elif self.path.endswith("%s/close" % API_V1):
+                # close a job
                 jobid = self.query["jobid"] if "jobid" in self.query else None
                 job = self.storageManager.jobForUid(jobid)
                 if not job:
@@ -135,6 +137,16 @@ class APICall(object):
                     self.jobManager.closeJob(job)
                     self.storageManager.registerJob(job)
                     self.sendSuccess({"msg": "Job has been updated", "jobid": job.uid})
+            elif self.path.endswith("%s/breadcrumbs" % API_V1):
+                # return breadcrumbs for a path
+                path = self.query["path"] if "path" in self.query else ""
+                data = self.fileManager.breadcrumbs(path, asdict=True)
+                self.sendSuccess({"breadcrumbs": data})
+            elif self.path.endswith("%s/list" % API_V1):
+                # list folders and files for a path
+                path = self.query["path"] if "path" in self.query else ""
+                data = self.fileManager.list(path, sort=True, asdict=True)
+                self.sendSuccess({"list": data})
             # if there is no reponse by the end of the block, we raise an error, as response was not
             # prepared for user or there were holes in logic flow
             if not self.response:
