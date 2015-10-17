@@ -42,7 +42,12 @@ if [ -n "$USE_DOCKER" ]; then
 fi
 
 # make sure that we are setting Redis test DB
+# we cannot allow to use the same DB for testing and running app, because some tests flush DB.
 REDIS_TEST_DB="15"
+if [ "$REDIS_TEST_DB" == "$REDIS_DB" ]; then
+    echo "[ERROR] Test DB should not match actual DB. Please set different REDIS_TEST_DB"
+    exit 1
+fi
 
 echo "[INFO] Running tests..."
 eval "$WHICH_PYTHON $ROOT_DIR/run_tests.py test $REDIS_HOST $REDIS_PORT $REDIS_TEST_DB"

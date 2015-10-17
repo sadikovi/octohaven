@@ -131,7 +131,7 @@ class APICall(object):
                     self.sendError("No job found for id: %s" % str(jobid))
                 else:
                     # change status on "Closed", it will raise an error, if something is wrong
-                    self.storageManager.unregisterJob(job)
+                    self.storageManager.unregisterJob(job, save=False)
                     self.jobManager.closeJob(job)
                     self.storageManager.registerJob(job)
                     self.sendSuccess({"msg": "Job has been updated", "jobid": job.uid})

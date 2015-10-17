@@ -4,7 +4,7 @@ import unittest
 import os
 from paths import ROOT_PATH
 from types import LongType
-from src.job import SparkJob
+from src.job import SparkJob, Job, STATUSES, CAN_CLOSE_STATUSES
 from src.jobmanager import JobManager
 
 class JobManagerTestSuite(unittest.TestCase):
@@ -82,6 +82,30 @@ class JobManagerTestSuite(unittest.TestCase):
         self.assertEqual(job.duration, "MEDIUM")
         self.assertEqual(type(job.submittime) is LongType and job.submittime > 0, True)
         self.assertEqual(type(job.sparkjob), SparkJob)
+
+    def test_closeJob(self):
+        # test for non-job entries
+        jobManager = JobManager(self.masterurl)
+        with self.assertRaises(StandardError):
+            jobManager.closeJob({})
+        with self.assertRaises(StandardError):
+            jobManager.closeJob([])
+        with self.assertRaises(StandardError):
+            jobManager.closeJob("job")
+        # test for already closed or submitted jobs
+        sparkJob = jobManager.createSparkJob(self.name, self.entrypoint, self.jar,
+            self.driverMemory, self.executorMemory, self.options)
+        job = jobManager.createJob(sparkJob)
+        for x in STATUSES:
+            if x not in CAN_CLOSE_STATUSES:
+                job.updateStatus(x)
+                with self.assertRaises(StandardError):
+                    jobManager.closeJob(job)
+        # test closing job
+        job = jobManager.createJob(sparkJob)
+        self.assertEqual(job.status, "CREATED")
+        jobManager.closeJob(job)
+        self.assertEqual(job.status, "CLOSED")
 
 # Load test suites
 def _suites():

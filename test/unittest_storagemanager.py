@@ -70,9 +70,8 @@ class StorageManagerTestSuite(unittest.TestCase):
         storageManager = StorageManager(self.connector)
         jobs = [self.newJob() for i in range(10)]
         for job in jobs:
-            storageManager.addJobForStatus(storageManager.ALL_JOBS_KEY, job.uid)
-            storageManager.addJobForStatus(job.status, job.uid)
             storageManager.saveJob(job)
+            storageManager.addJobForStatus(job.status, job.uid)
         allJobs = storageManager.allJobs()
         self.assertEqual(sorted([a.uid for a in allJobs]), sorted([b.uid for b in jobs]))
         results = dict([(status, 0) for status in STATUSES])
@@ -97,6 +96,24 @@ class StorageManagerTestSuite(unittest.TestCase):
         # check job for all statuses
         got = storageManager.allJobs()
         self.assertEqual(len(got) == 1 and got[0].uid == job.uid, True)
+
+    def test_registerJobWithoutSave(self):
+        # check not saving job
+        storageManager = StorageManager(self.connector)
+        job = self.newJob()
+        storageManager.registerJob(job, save=False)
+        got = storageManager.jobsForStatus(job.status)
+        self.assertEqual(got, [])
+
+    def test_unregisterJob(self):
+        storageManager = StorageManager(self.connector)
+        job = self.newJob()
+        storageManager.registerJob(job)
+        got = storageManager.jobsForStatus(job.status)
+        self.assertEqual(len(got) == 1 and got[0].uid == job.uid, True)
+        storageManager.unregisterJob(job)
+        got = storageManager.jobsForStatus(job.status)
+        self.assertEqual(len(got) == 0, True)
 
     def test_limitJobs(self):
         storageManager = StorageManager(self.connector)

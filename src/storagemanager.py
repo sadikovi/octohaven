@@ -33,6 +33,9 @@ class StorageManager(object):
         if jobs is None:
             return []
         jobs = [self.jobForUid(uid) for uid in jobs]
+        # ther are some situations where job is registered, but it is not saved. I think we should
+        # filter out these cases
+        jobs = [j for j in jobs if j is not None]
         if sort:
             # sort jobs by submit time in decreasing order (new jobs first)
             jobs = sorted(jobs, cmp=lambda x, y: cmp(x.submittime, y.submittime), reverse=True)
@@ -65,6 +68,7 @@ class StorageManager(object):
     # if save is True, we also update job instance in Redis
     def unregisterJob(self, job, save=True):
         self.checkJob(job)
+        # this looks a little bit of a concern and superfluous
         if save:
             self.saveJob(job)
         self.removeJobFromStatus(job.status, job.uid)
