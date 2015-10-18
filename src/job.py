@@ -62,6 +62,21 @@ class SparkJob(object):
             "options": self.options
         }
 
+    # returns shell command to execute as a list of arguments
+    def execCommand(self):
+        # spark-submit --master sparkurl --conf "" --conf "" --class entrypoint jar
+        sparkSubmit = ["spark-submit"]
+        name = ["--name", "%s" % self.name]
+        master = ["--master", "%s" % self.masterurl]
+        conf = [["--conf", "%s=%s" % (key, value)] for key, value in self.options.items()]
+        # flatten conf
+        conf = [num for elem in conf for num in elem]
+        entrypoint = ["--class", "%s" % self.entrypoint]
+        jar = ["%s" % self.jar]
+        # construct exec command for shell
+        cmd = sparkSubmit + name + master + conf + entrypoint + jar
+        return cmd
+
     @classmethod
     def fromDict(cls, object):
         uid = object["uid"]
@@ -101,6 +116,11 @@ class Job(object):
             "duration": self.duration,
             "sparkjob": self.sparkjob.toDict()
         }
+
+    # returns shell command to execute as a list of arguments
+    # method exists for adding more functionality before/after executing Spark job
+    def execCommand(self):
+        return self.sparkjob.execCommand()
 
     @classmethod
     def fromDict(cls, object):

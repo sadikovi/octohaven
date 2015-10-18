@@ -4,6 +4,7 @@ import paths
 import sys
 import time
 from theserver import SimpleHandler, RichHTTPServer
+from scheduler import Scheduler
 
 # we require some parameters to be set up before running service
 # this includes:
@@ -66,24 +67,34 @@ Options are:
     if not jar_folder:
         raise StandardError("Jar folder must be set and be a valid directory")
 
-    server = RichHTTPServer
-    httpd = server(host, int(port), SimpleHandler, {
+    # global settings necessary to run application
+    settings = {
         "SPARK_UI_ADDRESS": spark_ui_address,
         "SPARK_MASTER_ADDRESS": spark_master_address,
         "JAR_FOLDER": jar_folder,
         "REDIS_HOST": redis_host,
         "REDIS_PORT": redis_port,
         "REDIS_DB": redis_db
-    })
+    }
+
+    # prepare server
+    server = RichHTTPServer
+    httpd = server(host, int(port), SimpleHandler, settings)
+    # prepare scheduler
+    scheduler = Scheduler(settings)
 
     print "[INFO] Spark UI address is set to %s" % spark_ui_address
     print "[INFO] Spark Master address is set to %s" % spark_master_address
     print "[INFO] Jar folder is set to %s" % jar_folder
     print "[INFO] Redis host and port are set to %s:%s" % (redis_host, redis_port)
     print "[INFO] Using Redis db %s" % redis_db
+    print "[INFO] Starting up scheduler"
+    scheduler.run()
     print time.asctime(), "Serving HTTP on %s:%s ..." % (host, port)
     try:
         httpd.serve_forever()
     except KeyboardInterrupt:
+        scheduler.stop()
+        print "Stop scheduler"
         httpd.server_close()
         print time.asctime(), "Stop serving on %s:%s ..." % (host, port)

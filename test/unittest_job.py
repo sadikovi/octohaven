@@ -126,6 +126,12 @@ class SparkJobTestSuite(unittest.TestCase):
         self.assertEqual(newSparkJob.jar, self.jar)
         self.assertEqual(newSparkJob.options, self.options)
 
+    def test_execCommand(self):
+        sparkJob = SparkJob(self.uid, self.name, self.masterurl, self.entrypoint, self.jar,
+            self.options)
+        cmd = sparkJob.execCommand()
+        self.assertEqual(len(cmd), 16)
+
 class JobTestSuite(unittest.TestCase):
     def setUp(self):
         self.uid = str(uuid.uuid4())

@@ -59,7 +59,7 @@ class CurrentJob
     getOption: (key) -> if key of @settings then @settings[key] else null
 
 # initialise job
-currentJob = new CurrentJob(_namer.generate(), "org.test.Main", "8g", "8g", "#")
+currentJob = new CurrentJob(_namer.generate(), "org.test.Main", "8g", "8g", "")
 
 ################################################################
 # Build job settings
