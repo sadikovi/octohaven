@@ -35,14 +35,14 @@ want to use Docker for Redis, you will have to specify host, port, db of the run
 # Build and test
 There is no building project really, you just run tests to verify that Python modules work. For
 front-end you will be asked to install `coffee`, `sass` to compile scripts, if you have not already.
-```
+```shell
 # to build front-end scripts - CoffeeScript and SCSS
 $ bin/compile.sh
 ```
 
 To run tests execute command below. Be aware, that tests use db `15` of Redis instance, so you use
 it for something else, change value to some other in `bin/test.sh`
-```
+```shell
 # run Python tests
 $ bin/test.sh
 ```
