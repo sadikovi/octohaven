@@ -12,7 +12,7 @@ Allows you to select `jar` file and specify Spark conf parameters. Does not have
 job parameters, but there is an issue for that.
 
 # Install
-Super simple installation and no dependencies, except Python 2.7.x, and Redis
+Super simple installation and no dependencies, except Python 2.7.x, and Redis.
 Uses Docker to install Redis, but can use your own installation, see [Configuration](#configuration)
 
 Download repository and run scripts from `sbin` directory.
@@ -40,8 +40,9 @@ front-end you will be asked to install `coffee`, `sass` to compile scripts, if y
 $ bin/compile.sh
 ```
 
-To run tests execute command below. Be aware, that tests use db `15` of Redis instance, so you use
-it for something else, change value to some other in `bin/test.sh`
+To run tests execute command below. Be aware, that tests use db `15` of Redis instance, thus if
+you use it for something else, change value to some other in `bin/test.sh`, as tests call `flush()`
+for test db.
 ```shell
 # run Python tests
 $ bin/test.sh
