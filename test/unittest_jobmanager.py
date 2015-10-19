@@ -107,6 +107,15 @@ class JobManagerTestSuite(unittest.TestCase):
         jobManager.closeJob(job)
         self.assertEqual(job.status, "CLOSED")
 
+    def test_parseJobConf(self):
+        jobManager = JobManager(self.masterurl)
+        # removing quotes is kind of weird
+        variations = ["", "ls -lh /data", "-h --ignore=\"some true\"", "\"some true\""]
+        res = [[], ["ls", "-lh", "/data"], ["-h", "--ignore=some true"], ["some true"]]
+        for index in range(len(variations)):
+            jobconf = jobManager.parseJobConf(variations[index])
+            self.assertEqual(jobconf, res[index])
+
 # Load test suites
 def _suites():
     return [

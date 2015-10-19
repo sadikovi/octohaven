@@ -40,13 +40,14 @@
   statuses = [JOB_CREATE, JOB_SUBMIT];
 
   CurrentJob = (function() {
-    function CurrentJob(name, mainClass, driverMemory, executorMemory, options) {
+    function CurrentJob(name, mainClass, driverMemory, executorMemory, options, jobconf) {
       this.settings = {
         name: "" + name,
         mainClass: "" + mainClass,
         driverMemory: "" + driverMemory,
         executorMemory: "" + executorMemory,
-        options: "" + options
+        options: "" + options,
+        jobconf: "" + jobconf
       };
       this.jar = {
         elem: null,
@@ -102,7 +103,7 @@
 
   })();
 
-  currentJob = new CurrentJob(_namer.generate(), "org.test.Main", "8g", "8g", "");
+  currentJob = new CurrentJob(_namer.generate(), "org.test.Main", "8g", "8g", "", "");
 
   jobSettingElem = function(name, desc, value, canChange, onValueChanged) {
     var block, body, changer, header, span, trigger;
@@ -178,6 +179,10 @@
       }), jobSettingElem("Options", "Additional settings, e.g. JVM, networking, shuffle...", currentJob.getOption("options"), true, function(ok, value) {
         if (ok) {
           return currentJob.setOption("options", value);
+        }
+      }), jobSettingElem("Job options", "Specific job [not Spark] options to pass to entrypoint", currentJob.getOption("jobconf"), true, function(ok, value) {
+        if (ok) {
+          return currentJob.setOption("jobconf", value);
         }
       })
     ]
@@ -323,37 +328,37 @@
   submitJob = function(job) {
     var resolver;
     setLoadStatus(true);
-    if (job.getStatus() !== JOB_CREATE) {
-      setTextStatus("You cannot resubmit the job", false);
-      setLoadStatus(false);
-      return false;
+    if (job.getStatus() === JOB_CREATE) {
+      job.setStatus(JOB_SUBMIT);
+      settings = job.settings;
+      settings["jar"] = job.jar.path;
+      resolver = new JobResolver;
+      return resolver.submit(JSON.stringify(settings), null, function(ok, content) {
+        var body, jobid, msg;
+        setLoadStatus(false);
+        if (ok) {
+          msg = content["content"]["msg"];
+          jobid = content["content"]["jobid"];
+          body = {
+            type: "span",
+            title: msg + ". ",
+            children: {
+              type: "a",
+              title: "View details",
+              href: "/job?=" + jobid
+            }
+          };
+          return setSubmitStatus(ok, body);
+        } else {
+          job.setStatus(JOB_CREATE);
+          msg = content ? content["content"]["msg"] : "Something went wrong :(";
+          return setTextStatus(ok, msg);
+        }
+      });
+    } else {
+      setTextStatus(false, "You cannot resubmit the job");
+      return setLoadStatus(false);
     }
-    job.setStatus(JOB_SUBMIT);
-    settings = job.settings;
-    settings["jar"] = job.jar.path;
-    resolver = new JobResolver;
-    return resolver.submit(JSON.stringify(settings), null, function(ok, content) {
-      var body, jobid, msg;
-      setLoadStatus(false);
-      if (ok) {
-        msg = content["content"]["msg"];
-        jobid = content["content"]["jobid"];
-        body = {
-          type: "span",
-          title: msg + ". ",
-          children: {
-            type: "a",
-            title: "View details",
-            href: "/job?=" + jobid
-          }
-        };
-        return setSubmitStatus(ok, body);
-      } else {
-        job.setStatus(JOB_CREATE);
-        msg = content ? content["content"]["msg"] : "Something went wrong :(";
-        return setTextStatus(ok, msg);
-      }
-    });
   };
 
   _util.addEventListener(submitBtn, "click", function(e) {

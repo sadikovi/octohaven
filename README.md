@@ -7,14 +7,16 @@ Super simple Apache Spark job server.
 - [Configuration](#configuration)
 - [Build and test](#build-and-test)
 
-# Overview
-Allows you to select `jar` file and specify Spark conf parameters. Does not have ability to specify
-job parameters, but there is an issue for that.
+## Overview
+Allows you to select `jar` file and specify Spark conf parameters. You can schedule jobs to run
+after some time passed, pass job parameters along with Spark configuration and etc, though you
+cannot monitor job and see progress yet.
 
-# Install
+## Install
 Super simple installation and no dependencies, except Python 2.7.x, and Redis.
 Uses Docker to install Redis, but can use your own installation, see [Configuration](#configuration)
 
+## Run
 Download repository and run scripts from `sbin` directory.
 To run service execute `start.sh` script, to stop service - `stop.sh`
 ```shell
@@ -27,12 +29,12 @@ $ sbin/start.sh
 $ sbin/stop.sh
 ```
 
-# Configuration
+## Configuration
 Configuration lives in `sbin/config.sh`. Options are pretty self-explanatory, comments tell what
 options mean. It is recommended to use Docker, because it just makes life easier, but if you do not
 want to use Docker for Redis, you will have to specify host, port, db of the running instance.
 
-# Build and test
+## Build and test
 There is no building project really, you just run tests to verify that Python modules work. For
 front-end you will be asked to install `coffee`, `sass` to compile scripts, if you have not already.
 ```shell

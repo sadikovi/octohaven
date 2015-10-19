@@ -23,7 +23,7 @@ statuses = [JOB_CREATE, JOB_SUBMIT]
 
 # description of the current job (including settings, status, and jar file)
 class CurrentJob
-    constructor: (name, mainClass, driverMemory, executorMemory, options) ->
+    constructor: (name, mainClass, driverMemory, executorMemory, options, jobconf) ->
         # general job settings
         @settings =
             name: "#{name}"
@@ -31,6 +31,7 @@ class CurrentJob
             driverMemory: "#{driverMemory}"
             executorMemory: "#{executorMemory}"
             options: "#{options}"
+            jobconf: "#{jobconf}"
         # jar settings
         @jar = elem: null, path: ""
         # current job status
@@ -59,7 +60,7 @@ class CurrentJob
     getOption: (key) -> if key of @settings then @settings[key] else null
 
 # initialise job
-currentJob = new CurrentJob(_namer.generate(), "org.test.Main", "8g", "8g", "")
+currentJob = new CurrentJob(_namer.generate(), "org.test.Main", "8g", "8g", "", "")
 
 ################################################################
 # Build job settings
@@ -113,6 +114,9 @@ settings =
         jobSettingElem("Options", "Additional settings, e.g. JVM, networking, shuffle...",
             currentJob.getOption("options"), true,
             (ok, value) -> currentJob.setOption("options", value) if ok)
+        jobSettingElem("Job options", "Specific job [not Spark] options to pass to entrypoint",
+            currentJob.getOption("jobconf"), true,
+            (ok, value) -> currentJob.setOption("jobconf", value) if ok)
     ]
 
 _mapper.parseMapForParent(settings, jobCanvas)
@@ -217,28 +221,28 @@ setTextStatus = (ok, text) ->
 
 submitJob = (job) ->
     setLoadStatus(true)
-    if job.getStatus() != JOB_CREATE
-        setTextStatus("You cannot resubmit the job", false)
+    if job.getStatus() == JOB_CREATE
+        job.setStatus(JOB_SUBMIT)
+        # extracting latest changes from the current job
+        settings = job.settings
+        settings["jar"] = job.jar.path
+        resolver = new JobResolver
+        resolver.submit JSON.stringify(settings), null, (ok, content) ->
+            setLoadStatus(false)
+            if ok
+                # extract job id
+                msg = content["content"]["msg"]
+                jobid = content["content"]["jobid"]
+                body = type: "span", title: "#{msg}. ", children:
+                    type: "a", title: "View details", href: "/job?=#{jobid}"
+                setSubmitStatus(ok, body)
+            else
+                job.setStatus(JOB_CREATE)
+                msg = if content then content["content"]["msg"] else "Something went wrong :("
+                setTextStatus(ok, msg)
+    else
+        setTextStatus(false, "You cannot resubmit the job")
         setLoadStatus(false)
-        return false
-    job.setStatus(JOB_SUBMIT)
-    # extracting latest changes from the current job
-    settings = job.settings
-    settings["jar"] = job.jar.path
-    resolver = new JobResolver
-    resolver.submit JSON.stringify(settings), null, (ok, content) ->
-        setLoadStatus(false)
-        if ok
-            # extract job id
-            msg = content["content"]["msg"]
-            jobid = content["content"]["jobid"]
-            body = type: "span", title: "#{msg}. ", children:
-                type: "a", title: "View details", href: "/job?=#{jobid}"
-            setSubmitStatus(ok, body)
-        else
-            job.setStatus(JOB_CREATE)
-            msg = if content then content["content"]["msg"] else "Something went wrong :("
-            setTextStatus(ok, msg)
 
 # attach click event on button, so we can submit
 _util.addEventListener submitBtn, "click", (e) ->

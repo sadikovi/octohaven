@@ -118,8 +118,11 @@ class APICall(object):
                     dmem, emem = data["driverMemory"], data["executorMemory"]
                     options = data["options"]
                     jar = self.fileManager.resolveRelativePath(data["jar"])
+                    # job specific configuration options
+                    jobconf = data["jobconf"]
                     # create Spark job and octohaven job
-                    sparkjob = self.jobManager.createSparkJob(name, entry, jar, dmem, emem, options)
+                    sparkjob = self.jobManager.createSparkJob(
+                        name, entry, jar, dmem, emem, options, jobconf)
                     job = self.jobManager.createJob(sparkjob)
                     # save and register job in Redis for a status
                     self.storageManager.registerJob(job)

@@ -53,6 +53,7 @@ if _util.isArray(searchstr) and searchstr.length == 2
                 entrypoint = job["sparkjob"]["entrypoint"]
                 masterurl = job["sparkjob"]["masterurl"]
                 options = ("#{x} = #{y}" for x, y of job["sparkjob"]["options"])
+                jobconf = ("#{x}" for x in job["sparkjob"]["jobconf"])
                 jar = job["sparkjob"]["jar"]
                 submit = job["submittime"]
 
@@ -85,6 +86,10 @@ if _util.isArray(searchstr) and searchstr.length == 2
                     row(property(
                         column(contentHeader("Options"), false),
                         column(contentList(options), true)
+                    )),
+                    row(property(
+                        column(contentHeader("Job conf"), false),
+                        column(contentList(jobconf), true)
                     ))
                 ]
                 _mapper.parseMapForParent(rowsElem, jobDetailsElem)

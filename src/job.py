@@ -38,13 +38,16 @@ class JobCheck(object):
         return jar
 
 class SparkJob(object):
-    def __init__(self, uid, name, masterurl, entrypoint, jar, options):
+    def __init__(self, uid, name, masterurl, entrypoint, jar, options, jobconf=[]):
         self.uid = uid
         self.name = name
         self.masterurl = JobCheck.validateMasterUrl(masterurl)
         self.entrypoint = JobCheck.validateEntrypoint(entrypoint)
         self.jar = JobCheck.validateJarPath(jar)
         self.options = {}
+        # jobconf is a job configuration relevant to the jar running,
+        # another words, parameters for the main class of the jar
+        self.jobconf = jobconf
         # perform options check
         for (key, value) in options.items():
             if key == "spark.driver.memory" or key == "spark.executor.memory":
@@ -59,7 +62,8 @@ class SparkJob(object):
             "masterurl": self.masterurl,
             "entrypoint": self.entrypoint,
             "jar": self.jar,
-            "options": self.options
+            "options": self.options,
+            "jobconf": self.jobconf
         }
 
     # returns shell command to execute as a list of arguments
@@ -73,19 +77,22 @@ class SparkJob(object):
         conf = [num for elem in conf for num in elem]
         entrypoint = ["--class", "%s" % self.entrypoint]
         jar = ["%s" % self.jar]
+        # jobconf
+        jobconf = ["%s" % elem for elem in self.jobconf]
         # construct exec command for shell
-        cmd = sparkSubmit + name + master + conf + entrypoint + jar
+        cmd = sparkSubmit + name + master + conf + entrypoint + jar + jobconf
         return cmd
 
     @classmethod
-    def fromDict(cls, object):
-        uid = object["uid"]
-        name = object["name"]
-        masterurl = object["masterurl"]
-        entrypoint = object["entrypoint"]
-        jar = object["jar"]
-        options = object["options"]
-        return cls(uid, name, masterurl, entrypoint, jar, options)
+    def fromDict(cls, obj):
+        uid = obj["uid"]
+        name = obj["name"]
+        masterurl = obj["masterurl"]
+        entrypoint = obj["entrypoint"]
+        jar = obj["jar"]
+        options = obj["options"]
+        jobconf = obj["jobconf"] if "jobconf" in obj else []
+        return cls(uid, name, masterurl, entrypoint, jar, options, jobconf)
 
 class Job(object):
     def __init__(self, uid, status, submittime, duration, sparkjob):
@@ -123,10 +130,10 @@ class Job(object):
         return self.sparkjob.execCommand()
 
     @classmethod
-    def fromDict(cls, object):
-        uid = object["uid"]
-        status = object["status"]
-        submittime = object["submittime"]
-        duration = object["duration"]
-        sparkjob = SparkJob.fromDict(object["sparkjob"])
+    def fromDict(cls, obj):
+        uid = obj["uid"]
+        status = obj["status"]
+        submittime = obj["submittime"]
+        duration = obj["duration"]
+        sparkjob = SparkJob.fromDict(obj["sparkjob"])
         return cls(uid, status, submittime, duration, sparkjob)

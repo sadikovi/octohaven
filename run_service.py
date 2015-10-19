@@ -81,7 +81,7 @@ Options are:
     server = RichHTTPServer
     httpd = server(host, int(port), SimpleHandler, settings)
     # prepare scheduler
-    scheduler = Scheduler(settings)
+    # scheduler = Scheduler(settings)
 
     print "[INFO] Spark UI address is set to %s" % spark_ui_address
     print "[INFO] Spark Master address is set to %s" % spark_master_address
@@ -89,12 +89,12 @@ Options are:
     print "[INFO] Redis host and port are set to %s:%s" % (redis_host, redis_port)
     print "[INFO] Using Redis db %s" % redis_db
     print "[INFO] Starting up scheduler"
-    scheduler.run()
+    # scheduler.run()
     print time.asctime(), "Serving HTTP on %s:%s ..." % (host, port)
     try:
         httpd.serve_forever()
     except KeyboardInterrupt:
-        scheduler.stop()
+        # scheduler.stop()
         print "Stop scheduler"
         httpd.server_close()
         print time.asctime(), "Stop serving on %s:%s ..." % (host, port)

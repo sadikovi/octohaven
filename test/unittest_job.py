@@ -113,6 +113,7 @@ class SparkJobTestSuite(unittest.TestCase):
         self.assertEqual(obj["entrypoint"], self.entrypoint)
         self.assertEqual(obj["jar"], self.jar)
         self.assertEqual(obj["options"], self.options)
+        self.assertEqual(obj["jobconf"], [])
 
     def test_convertFromDict(self):
         sparkJob = SparkJob(self.uid, self.name, self.masterurl, self.entrypoint, self.jar,
@@ -125,12 +126,40 @@ class SparkJobTestSuite(unittest.TestCase):
         self.assertEqual(newSparkJob.entrypoint, self.entrypoint)
         self.assertEqual(newSparkJob.jar, self.jar)
         self.assertEqual(newSparkJob.options, self.options)
+        self.assertEqual(obj["jobconf"], [])
+
+    def test_convertFromDictWithJobConf(self):
+        jobconf = ["--test.input='/data'", "--test.log=true", "-h", "--quiet"]
+        sparkJob = SparkJob(self.uid, self.name, self.masterurl, self.entrypoint, self.jar,
+            self.options, jobconf)
+        obj = sparkJob.toDict()
+        newSparkJob = SparkJob.fromDict(obj)
+        self.assertEqual(newSparkJob.uid, self.uid)
+        self.assertEqual(newSparkJob.name, self.name)
+        self.assertEqual(newSparkJob.masterurl, self.masterurl)
+        self.assertEqual(newSparkJob.entrypoint, self.entrypoint)
+        self.assertEqual(newSparkJob.jar, self.jar)
+        self.assertEqual(newSparkJob.options, self.options)
+        self.assertEqual(obj["jobconf"], jobconf)
 
     def test_execCommand(self):
         sparkJob = SparkJob(self.uid, self.name, self.masterurl, self.entrypoint, self.jar,
             self.options)
         cmd = sparkJob.execCommand()
         self.assertEqual(len(cmd), 16)
+
+    def test_sparkJobWithJobConf(self):
+        jobconf = ["--test.input='/data'", "--test.log=true", "-h", "--quiet"]
+        sparkJob = SparkJob(self.uid, self.name, self.masterurl, self.entrypoint, self.jar,
+            self.options, jobconf)
+        self.assertEqual(sparkJob.jobconf, jobconf)
+
+    def test_execCommandWithJobConf(self):
+        jobconf = ["--test.input='/data'", "--test.log=true", "-h", "--quiet"]
+        sparkJob = SparkJob(self.uid, self.name, self.masterurl, self.entrypoint, self.jar,
+            self.options, jobconf)
+        cmd = sparkJob.execCommand()
+        self.assertEqual(len(cmd), 20)
 
 class JobTestSuite(unittest.TestCase):
     def setUp(self):
