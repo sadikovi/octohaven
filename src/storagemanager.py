@@ -23,7 +23,7 @@ class StorageManager(object):
         obj = self.connector.get(uid)
         return Job.fromDict(obj) if obj is not None else None
 
-    def jobsForStatus(self, status, limit=20, sort=True, reverse=True):
+    def jobsForStatus(self, status, limit=20, sort=True, reverse=True, sortPriority=False):
         # set to default limit, so we never raise an error
         limit = 20 if not limit or limit < 0 else limit
         sort = True if sort is None else sort
@@ -38,7 +38,11 @@ class StorageManager(object):
         jobs = [j for j in jobs if j is not None]
         if sort:
             # sort jobs by submit time in decreasing order (new jobs first)
-            jobs = sorted(jobs, cmp=lambda x, y: cmp(x.submittime, y.submittime), reverse=reverse)
+            jobs = sorted(jobs, cmp=lambda x, y: cmp(x.createtime, y.createtime), reverse=reverse)
+        if sortPriority:
+            # sort jobs by priority, lowest is first
+            # it is required by scheduler, as we do not want to miss some delayed jobs
+            jobs = sorted(jobs, cmp=lambda x, y: cmp(x.priority, y.priority))
         return jobs[:limit]
 
     def allJobs(self, limit=20, sort=True):

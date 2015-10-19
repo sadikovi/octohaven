@@ -55,6 +55,7 @@ if _util.isArray(searchstr) and searchstr.length == 2
                 options = ("#{x} = #{y}" for x, y of job["sparkjob"]["options"])
                 jobconf = ("#{x}" for x in job["sparkjob"]["jobconf"])
                 jar = job["sparkjob"]["jar"]
+                create = job["createtime"]
                 submit = job["submittime"]
 
                 # build rows
@@ -65,6 +66,10 @@ if _util.isArray(searchstr) and searchstr.length == 2
                     )),
                     row(property(
                         column(contentHeader("Created"), false),
+                        column(type: "span", title: "#{_util.timestampToDate(create)}", true)
+                    )),
+                    row(property(
+                        column(contentHeader("Expected run"), false),
                         column(type: "span", title: "#{_util.timestampToDate(submit)}", true)
                     )),
                     row(property(

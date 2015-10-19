@@ -8,7 +8,8 @@ _loader = @loader
 _jobloader = new @JobLoader
 
 # job statuses
-[ALL, CREATED, SUBMITTED, WAITING, CLOSED] = ["ALL", "CREATED", "SUBMITTED", "WAITING", "CLOSED"]
+[ALL, CREATED, SUBMITTED, WAITING, CLOSED, DELAYED] =
+    ["ALL", "CREATED", "SUBMITTED", "WAITING", "CLOSED", "DELAYED"]
 
 ################################################################
 # Request all jobs from the server
@@ -26,8 +27,10 @@ blankslateWithMsg = (header, msg) ->
 
 statusColumn = (status, colour, islarge=false) ->
     updatedClass = if islarge then "one-fourth column" else "one-eigth column"
-    title = type: "span", cls: "#{colour}", title: "#{status}"
-    elem = type: "div", cls: "#{updatedClass}", children: title
+    statusText = type: "span", cls: "#{colour}", title: "#{status}"
+    statusSection = type: "div", cls: "section", children: statusText
+    statusElem = type: "div", cls: "breadcrumb", children: statusSection
+    elem = type: "div", cls: "#{updatedClass}", children: statusElem
     _mapper.parseMapForParent(elem)
 
 buttonColumn = (btnTitle, action, islarge=false) ->
@@ -62,7 +65,7 @@ statusColour = (status) ->
 row = (jobObj) ->
     uid = jobObj["uid"]
     # submit time is in milliseconds
-    submittime = jobObj["submittime"]
+    submittime = jobObj["createtime"]
     status = jobObj["status"]
     name = jobObj["sparkjob"]["name"]
     # build columns
@@ -115,6 +118,7 @@ reloadJobs = (status, limit = 30) ->
 all = document.getElementById("octohaven-jobs-all")
 created = document.getElementById("octohaven-jobs-created")
 waiting = document.getElementById("octohaven-jobs-waiting")
+delayed = document.getElementById("octohaven-jobs-delayed")
 submitted = document.getElementById("octohaven-jobs-submitted")
 closed = document.getElementById("octohaven-jobs-closed")
 
@@ -122,6 +126,7 @@ resetLabels = ->
     _util.removeClass(all, "selected")
     _util.removeClass(created, "selected")
     _util.removeClass(waiting, "selected")
+    _util.removeClass(delayed, "selected")
     _util.removeClass(submitted, "selected")
     _util.removeClass(closed, "selected")
 
@@ -138,6 +143,7 @@ actionLabel = (e, elem, label) ->
 _util.addEventListener(all, "click", (e) -> actionLabel(e, all, ALL))
 _util.addEventListener(created, "click", (e) -> actionLabel(e, created, CREATED))
 _util.addEventListener(waiting, "click", (e) -> actionLabel(e, waiting, WAITING))
+_util.addEventListener(delayed, "click", (e) -> actionLabel(e, delayed, DELAYED))
 _util.addEventListener(submitted, "click", (e) -> actionLabel(e, submitted, SUBMITTED))
 _util.addEventListener(closed, "click", (e) -> actionLabel(e, closed, CLOSED))
 

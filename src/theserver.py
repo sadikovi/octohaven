@@ -120,10 +120,12 @@ class APICall(object):
                     jar = self.fileManager.resolveRelativePath(data["jar"])
                     # job specific configuration options
                     jobconf = data["jobconf"]
+                    # delay for a job to schedule, in seconds
+                    delay = int(data["delay"]) if "delay" in data else 0
                     # create Spark job and octohaven job
                     sparkjob = self.jobManager.createSparkJob(
                         name, entry, jar, dmem, emem, options, jobconf)
-                    job = self.jobManager.createJob(sparkjob)
+                    job = self.jobManager.createJob(sparkjob, delay)
                     # save and register job in Redis for a status
                     self.storageManager.registerJob(job)
                     # all is good, send back job id to track

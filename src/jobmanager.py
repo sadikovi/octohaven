@@ -3,7 +3,7 @@
 import paths
 import uuid, re, time, shlex
 from job import Job, JobCheck, SparkJob, STATUSES, CAN_CLOSE_STATUSES
-from types import DictType, StringType
+from types import DictType, StringType, IntType
 from utils import *
 
 # purpose of job manager is providing simple interface of creating job as a result
@@ -74,13 +74,18 @@ class JobManager(object):
         return SparkJob(uid, name, self.masterurl, entrypoint, jar, updatedOptions, updatedJobConf)
 
     # creates Job instance, fails if anything is wrong with a job.
-    def createJob(self, sparkjob):
+    # delay is an offset in seconds to run job after some time
+    def createJob(self, sparkjob, delay=0):
+        if type(delay) is not IntType:
+            raise StandardError("Delay is expected to be of IntType, got " + str(type(delay)))
         uid = "job_" + uuid.uuid4().hex
-        status = "CREATED"
+        status = "CREATED" if delay <= 0 else "DELAYED"
         duration = "MEDIUM"
         # store start time as unix timestamp in ms
-        submittime = long(time.time() * 1000)
-        return Job(uid, status, submittime, duration, sparkjob)
+        createtime = long(time.time() * 1000)
+        # reevaluate submit time considering delay
+        scheduletime = createtime if delay <= 0 else (createtime + delay * 1000)
+        return Job(uid, status, createtime, scheduletime, duration, sparkjob)
 
     # closes job safely
     def closeJob(self, job):

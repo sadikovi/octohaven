@@ -1,10 +1,11 @@
 #!/usr/bin/env python
 
+import time
 from Queue import PriorityQueue
 from types import IntType
 from threading import Timer, Lock
 from subprocess import Popen
-from job import Job
+from job import Job, DEFAULT_PRIORITY
 from redisconnector import RedisConnector, RedisConnectionPool
 from storagemanager import StorageManager
 import sparkheartbeat
@@ -21,6 +22,29 @@ lock = Lock()
 def fetch(scheduler):
     try:
         lock.acquire()
+        # current time in milliseconds
+        currTime = long(time.time() * 1000)
+        # calculate min and max boundaries for checking delayed job
+        minT, maxT = currTime - scheduler.fetchInterval/10, currTime + scheduler.fetchInterval
+        # Pre-step of checking DELAYED jobs. We need to check them every time, fetch runs, because
+        # we do not want to miss the window. fetch 50 times pool size jobs (should be changed)
+        print "[INFO] Checking DELAYED jobs"
+        delayed = scheduler.fetchStatus("DELAYED", scheduler.poolSize * 50)
+        print "[INFO] Fetched %s DELAYED jobs" % str(len(delayed))
+        if len(delayed) > 0:
+            # update status on waiting and priority
+            # in this case we also fetch jobs that were overdue and not necessary need to be run.
+            due = [j for j in delayed if j and j.submittime <= maxT]
+            for dueJob in due:
+                print "[WARN] Updated job %s to run as soon as possible" % dueJob.uid
+                scheduler.storageManager.unregisterJob(dueJob, save=False)
+                dueJob.updateStatus("WAITING")
+                dueJob.updatePriority(dueJob.priority - 1)
+                scheduler.storageManager.registerJob(dueJob)
+        # proper scheduling fetch
+        # fetches WAITING jobs first, sorting them by priority, then CREATED, if we have free slots.
+        # if there is a delayed job that was updated as waiting, it will be queued and run as fast
+        # as possible. If pool is full, then we will have to wait for the next free slot.
         numJobs = scheduler.poolSize - scheduler.pool.qsize()
         if numJobs > 0:
             print "[INFO] Requesting %s jobs" % str(numJobs)
@@ -31,7 +55,7 @@ def fetch(scheduler):
                 add = scheduler.fetchStatus("CREATED", numJobs)
                 arr = arr + add
             for job in arr:
-                scheduler.add(job)
+                scheduler.add(job, job.priority)
         else:
             print "[INFO] No new jobs were added"
         print "[INFO] Updated queue size: %s" % str(scheduler.pool.qsize())
@@ -118,7 +142,7 @@ class Scheduler(object):
     @private
     def fetchStatus(self, status, numJobs):
         return self.storageManager.jobsForStatus(status, limit=numJobs,
-            sort=True, reverse=False)
+            sort=True, reverse=False, sortPriority=True)
 
     @private
     def hasNext(self):

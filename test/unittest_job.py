@@ -3,7 +3,7 @@
 import unittest
 import os, uuid, time
 from paths import ROOT_PATH
-from src.job import Job, SparkJob, JobCheck
+from src.job import Job, SparkJob, JobCheck, DEFAULT_PRIORITY
 
 class JobSentinel(object):
     @staticmethod
@@ -25,12 +25,20 @@ class JobSentinel(object):
     def job():
         uid = str(uuid.uuid4())
         status = "WAITING"
+        createtime = long(time.time())
         submittime = long(time.time())
         duration = "MEDIUM"
         sparkjob = JobSentinel.sparkJob()
-        return Job(uid, status, submittime, duration, sparkjob)
+        return Job(uid, status, createtime, submittime, duration, sparkjob)
 
 class JobCheckTestSuite(unittest.TestCase):
+    def validatePriority(self):
+        self.assertEqual(JobCheck.validatePriority(100), 100)
+        self.assertEqual(JobCheck.validatePriority(1), 1)
+        self.assertEqual(JobCheck.validatePriority(0), 0)
+        with self.assertRaises(StandardError):
+            self.assertEqual(JobCheck.validatePriority(-1), -1)
+
     def test_validateMemory(self):
         memory = ["8gb", "8g", "512mb", "512m", "1024M", "16G", "2pb"]
         for entry in memory:
@@ -59,11 +67,11 @@ class JobCheckTestSuite(unittest.TestCase):
                 JobCheck.validateMasterUrl(entry)
 
     def test_validateJarPath(self):
-        entries = [os.path.join(ROOT_PATH, "test", "resources", "dummy.jar")]
+        entries = [os.path.join(ROOT_PATH, "test", "resources", "dummy.jar"),
+            os.path.join(ROOT_PATH, "absolute", "dummy.jar")]
         for entry in entries:
             self.assertEqual(JobCheck.validateJarPath(entry), entry)
         entries = [os.path.join("local", "dummy.jar"),
-            os.path.join(ROOT_PATH, "absolute", "dummy.jar"),
             os.path.join("test", "resources", "dummy.jar")]
         for entry in entries:
             with self.assertRaises(StandardError):
@@ -165,6 +173,7 @@ class JobTestSuite(unittest.TestCase):
     def setUp(self):
         self.uid = str(uuid.uuid4())
         self.status = "WAITING"
+        self.createtime = long(time.time())
         self.submittime = long(time.time())
         self.duration = "MEDIUM"
         self.sparkjob = JobSentinel.sparkJob()
@@ -173,20 +182,25 @@ class JobTestSuite(unittest.TestCase):
         pass
 
     def test_create(self):
-        job = Job(self.uid, self.status, self.submittime, self.duration, self.sparkjob)
+        job = Job(self.uid, self.status, self.createtime, self.submittime,
+            self.duration, self.sparkjob)
         self.assertEqual(job.uid, self.uid)
         self.assertEqual(job.status, self.status)
         self.assertEqual(job.submittime, self.submittime)
         self.assertEqual(job.duration, self.duration)
         self.assertEqual(job.sparkjob, self.sparkjob)
+        self.assertEqual(job.priority, DEFAULT_PRIORITY)
         # check passing wrong status and duration
         with self.assertRaises(StandardError):
-            Job(self.uid, "WRONG_STATUS", self.submittime, self.duration, self.sparkjob)
+            Job(self.uid, "WRONG_STATUS", self.createtime, self.submittime,
+                self.duration, self.sparkjob)
         with self.assertRaises(StandardError):
-            Job(self.uid, self.status, self.submittime, "WRONG_DURATION", self.sparkjob)
+            Job(self.uid, self.status, self.createtime, self.submittime,
+                "WRONG_DURATION", self.sparkjob)
 
     def test_updateStatus(self):
-        job = Job(self.uid, self.status, self.submittime, self.duration, self.sparkjob)
+        job = Job(self.uid, self.status, self.createtime, self.submittime,
+            self.duration, self.sparkjob)
         self.assertEqual(job.status, self.status)
         job.updateStatus("SUBMITTED")
         self.assertEqual(job.status, "SUBMITTED")
@@ -195,23 +209,29 @@ class JobTestSuite(unittest.TestCase):
             job.updateStatus("WRONG_STATUS")
 
     def test_convertToDict(self):
-        job = Job(self.uid, self.status, self.submittime, self.duration, self.sparkjob)
+        job = Job(self.uid, self.status, self.createtime, self.submittime,
+            self.duration, self.sparkjob)
         obj = job.toDict()
         self.assertEqual(obj["uid"], self.uid)
         self.assertEqual(obj["status"], self.status)
+        self.assertEqual(obj["createtime"], self.createtime)
         self.assertEqual(obj["submittime"], self.submittime)
         self.assertEqual(obj["duration"], self.duration)
         self.assertEqual(obj["sparkjob"], self.sparkjob.toDict())
+        self.assertEqual(obj["priority"], DEFAULT_PRIORITY)
 
     def test_convertFromDict(self):
-        job = Job(self.uid, self.status, self.submittime, self.duration, self.sparkjob)
+        job = Job(self.uid, self.status, self.createtime, self.submittime,
+            self.duration, self.sparkjob, 1)
         obj = job.toDict()
         copy = Job.fromDict(obj)
         self.assertEqual(copy.uid, self.uid)
         self.assertEqual(copy.status, self.status)
+        self.assertEqual(copy.createtime, self.createtime)
         self.assertEqual(copy.submittime, self.submittime)
         self.assertEqual(copy.duration, self.duration)
         self.assertEqual(copy.sparkjob.toDict(), self.sparkjob.toDict())
+        self.assertEqual(copy.priority, job.priority)
 
 # Load test suites
 def _suites():

@@ -32,6 +32,7 @@ class CurrentJob
             executorMemory: "#{executorMemory}"
             options: "#{options}"
             jobconf: "#{jobconf}"
+            delay: "#{delay}"
         # jar settings
         @jar = elem: null, path: ""
         # current job status
@@ -202,6 +203,34 @@ files = (dir) ->
 # initial call with an empty directory == ROOT
 breadcrumbs("")
 files("")
+
+################################################################
+# Delay job
+################################################################
+delayNow = document.getElementById("octohaven-job-delay-now")
+delayNow.diff = 0
+delay10min = document.getElementById("octohaven-job-delay-10min")
+delay10min.diff = 10*60
+delay30min = document.getElementById("octohaven-job-delay-30min")
+delay30min.diff = 30*60
+delay1hr = document.getElementById("octohaven-job-delay-1hr")
+delay1hr.diff = 1*60*60
+delay3hrs = document.getElementById("octohaven-job-delay-3hrs")
+delay3hrs.diff = 3*60*60
+
+delays = [delayNow, delay10min, delay30min, delay1hr, delay3hrs]
+
+changeDelay = (delay) ->
+    currentJob.setOption("delay", delay.diff)
+    _util.removeClass(each, "selected") for each in delays
+    _util.addClass(delay, "selected")
+
+for delay in delays
+    _util.addEventListener delay, "click", (e) ->
+        changeDelay(@)
+        e.preventDefault()
+        e.stopPropagation()
+changeDelay(delayNow)
 
 ################################################################
 # Submit job

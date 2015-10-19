@@ -1,14 +1,23 @@
 #!/usr/bin/env python
 
 import os, re
+from types import IntType
 from utils import *
 
-STATUSES = ["CREATED", "WAITING", "SUBMITTED", "CLOSED"]
+STATUSES = ["CREATED", "WAITING", "DELAYED", "SUBMITTED", "CLOSED"]
 # list of statuses that use can close before they are submitted
-CAN_CLOSE_STATUSES = ["CREATED", "WAITING"]
+CAN_CLOSE_STATUSES = ["CREATED", "WAITING", "DELAYED"]
 DURATIONS = ["LONG", "MEDIUM", "QUICK"]
+DEFAULT_PRIORITY = 100
 
 class JobCheck(object):
+
+    @staticmethod
+    def validatePriority(value):
+        if type(value) is not IntType or value < 0:
+            raise StandardError("Priority is incorrect: %s" % str(value))
+        return value
+
     @staticmethod
     def validateMemory(value):
         groups = re.match(r"^(\d+)(k|kb|m|mb|g|gb|t|tb|p|pb)$", value.lower())
@@ -32,7 +41,8 @@ class JobCheck(object):
 
     @staticmethod
     def validateJarPath(jar):
-        ok = os.path.isabs(jar) and os.path.exists(jar) and jar.lower().endswith(".jar")
+        # do not validate on existence, only on path structure
+        ok = os.path.isabs(jar) and jar.lower().endswith(".jar")
         if not ok:
             raise StandardError("Path " + jar + " is not valid")
         return jar
@@ -95,7 +105,8 @@ class SparkJob(object):
         return cls(uid, name, masterurl, entrypoint, jar, options, jobconf)
 
 class Job(object):
-    def __init__(self, uid, status, submittime, duration, sparkjob):
+    def __init__(self, uid, status, createtime, submittime, duration, sparkjob,
+        priority=DEFAULT_PRIORITY):
         if status not in STATUSES:
             raise StandardError("Status " + status + " is not supported")
         if duration not in DURATIONS:
@@ -105,23 +116,31 @@ class Job(object):
         # internal properties
         self.uid = uid
         self.status = status
+        self.createtime = long(createtime)
         self.submittime = long(submittime)
         self.duration = duration
         # Spark job
         self.sparkjob = sparkjob
+        # default job priority
+        self.priority = JobCheck.validatePriority(priority)
 
     def updateStatus(self, newStatus):
         if newStatus not in STATUSES:
             raise StandardError("Status " + newStatus + " is not supported")
         self.status = newStatus
 
+    def updatePriority(self, newPriority):
+        self.priority = JobCheck.validatePriority(newPriority)
+
     def toDict(self):
         return {
             "uid": self.uid,
             "status": self.status,
+            "createtime": self.createtime,
             "submittime": self.submittime,
             "duration": self.duration,
-            "sparkjob": self.sparkjob.toDict()
+            "sparkjob": self.sparkjob.toDict(),
+            "priority": self.priority
         }
 
     # returns shell command to execute as a list of arguments
@@ -133,7 +152,9 @@ class Job(object):
     def fromDict(cls, obj):
         uid = obj["uid"]
         status = obj["status"]
+        createtime = obj["createtime"]
         submittime = obj["submittime"]
         duration = obj["duration"]
         sparkjob = SparkJob.fromDict(obj["sparkjob"])
-        return cls(uid, status, submittime, duration, sparkjob)
+        priority = obj["priority"] if "priority" in obj else DEFAULT_PRIORITY
+        return cls(uid, status, createtime, submittime, duration, sparkjob, priority)

@@ -126,7 +126,7 @@
     _jobloader.getJob(jobid, function() {
       return jobDetailsElem.innerHTML = "";
     }, function(ok, json) {
-      var entrypoint, jar, job, jobconf, masterurl, msg, name, options, rowsElem, status, submit, view, x, y;
+      var create, entrypoint, jar, job, jobconf, masterurl, msg, name, options, rowsElem, status, submit, view, x, y;
       if (ok) {
         job = json["content"]["job"];
         name = job["sparkjob"]["name"];
@@ -154,12 +154,16 @@
           return _results;
         })();
         jar = job["sparkjob"]["jar"];
+        create = job["createtime"];
         submit = job["submittime"];
         rowsElem = {
           type: "div",
           cls: "segments",
           children: [
             row(property(column(contentHeader("Spark job name"), false), column(contentValue(name), true))), row(property(column(contentHeader("Created"), false), column({
+              type: "span",
+              title: "" + (_util.timestampToDate(create))
+            }, true))), row(property(column(contentHeader("Expected run"), false), column({
               type: "span",
               title: "" + (_util.timestampToDate(submit))
             }, true))), row(property(column(contentHeader("Status"), false), column(contentValue(status), true))), row(property(column(contentHeader("Entrypoint"), false), column(contentValue(entrypoint), true))), row(property(column(contentHeader("Spark URL"), false), column(contentValue(masterurl), true))), row(property(column(contentHeader("Jar file"), false), column(contentValue(jar), true))), row(property(column(contentHeader("Options"), false), column(contentList(options), true))), row(property(column(contentHeader("Job conf"), false), column(contentList(jobconf), true)))
