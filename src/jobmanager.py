@@ -2,18 +2,31 @@
 
 import paths
 import uuid, re, time, shlex
-from job import Job, JobCheck, SparkJob, STATUSES, CAN_CLOSE_STATUSES
 from types import DictType, StringType, IntType
+from job import *
+from storagemanager import StorageManager
+from sparkmodule import SparkModule
 from utils import *
+
+# key to store history of all the jobs in the system
+ALL_JOBS_KEY = "ALL"
 
 # purpose of job manager is providing simple interface of creating job as a result
 # of request / loading from storage. It is not responsible for scheduling jobs though.
+# takes SparkModule and StorageManager as parameters to provide unified interface.
 class JobManager(object):
-    def __init__(self, masterurl):
-        self.masterurl = JobCheck.validateMasterUrl(masterurl)
+    def __init__(self, sparkModule, storageManager):
+        if type(sparkModule) is not SparkModule:
+            raise StandardError("Expected SparkModule, got " + str(type(sparkModule)))
+        if type(storageManager) is not StorageManager:
+            raise StandardError("Expected StorageManager, got " + str(type(storageManager)))
+        self.sparkModule = sparkModule
+        self.storageManager = storageManager
+
 
     @private
     def parseOptions(self, options):
+        # parses Spark conf options
         # we process only "--conf" options ignoring everything else.
         # probably, should be extended to parse all the Spark command-line arguments.
         updatedOptions = {}
@@ -40,6 +53,8 @@ class JobManager(object):
 
     @private
     def parseJobConf(self, jobconf):
+        # parses job (not Spark) options that go after .jar file to feed into main function of
+        # entrypoint
         updatedJobConf = []
         if type(jobconf) is StringType:
             # job configuration options are passed as string.
@@ -58,39 +73,69 @@ class JobManager(object):
         return updatedJobConf
 
     # method is also called in theserver.py to create separate Spark job
-    def createSparkJob(self, name, entrypoint, jar, driverMemory, executorMemory, options,
-        jobconf=""):
+    # - name => a friendly name of a job
+    # - entrypoint => a main class of the jar file
+    # - jar => a path to the jar file
+    # - driverMemory => a amount of driver memory for the job
+    # - executorMemory => an amount of executor memory for the job
+    # - opts => additional Spark options
+    # - jobconf => additional specific job (not Spark) options
+    def createSparkJob(self, name, entrypoint, jar, driverMemory, executorMemory, opts, jobconf=""):
         # parse options correctly, job accepts already parsed options as
         # key-value pairs, e.g. spark.shuffle.spill=true
         # we do not fail, if there are no options
         uid = "spark_" + uuid.uuid4().hex
-        updatedOptions = self.parseOptions(options)
+        masterurl = self.sparkModule.masterAddress
+        updatedOptions = self.parseOptions(opts)
         # we also parse job configuration options, the same principle really
         updatedJobConf = self.parseJobConf(jobconf)
         # add driver and executor memory, because we specify them as completely separate options
         # we also override any other config options for executor / driver memory
-        updatedOptions["spark.driver.memory"] = driverMemory
-        updatedOptions["spark.executor.memory"] = executorMemory
-        return SparkJob(uid, name, self.masterurl, entrypoint, jar, updatedOptions, updatedJobConf)
+        updatedOpts["spark.driver.memory"] = driverMemory
+        updatedOpts["spark.executor.memory"] = executorMemory
+        return SparkJob(uid, name, masterurl, entrypoint, jar, updatedOpts, updatedJobConf)
 
     # creates Job instance, fails if anything is wrong with a job.
-    # delay is an offset in seconds to run job after some time
+    # - sparkjob => an instance of SparkJob class
+    # - delay => an offset in seconds to run job after some time
     def createJob(self, sparkjob, delay=0):
         if type(delay) is not IntType:
             raise StandardError("Delay is expected to be of IntType, got " + str(type(delay)))
         uid = "job_" + uuid.uuid4().hex
-        status = "CREATED" if delay <= 0 else "DELAYED"
-        duration = "MEDIUM"
+        status = CREATED if delay <= 0 else DELAYED
+        duration = MEDIUM
         # store start time as unix timestamp in ms
         createtime = long(time.time() * 1000)
         # reevaluate submit time considering delay
         scheduletime = createtime if delay <= 0 else (createtime + delay * 1000)
         return Job(uid, status, createtime, scheduletime, duration, sparkjob)
 
-    # closes job safely
+    # saves job into storage and registers job for a specific + global status
+    def saveJob(self, job):
+        self.storageManager.saveJob(job)
+        self.storageManager.addJobForStatus(ALL_JOBS_KEY, job.uid)
+        self.storageManager.addJobForStatus(job.status, job.uid)
+
+    # change job status to any arbitrary allowed status
+    # - job => job to change status for
+    # - newStatus => new status to update
+    # - validationRule => validation rule for a new status
+    # - pushToStorage => if True updates data in storage
+    def changeStatus(self, job, newStatus, validationRule=None, pushToStorage=True):
+        JobCheck.validateJob(job)
+        oldStatus = job.status
+        if newStatus != oldStatus and validationRule and validationRule(newStatus)
+            job.updateStatus(newStatus)
+            if pushToStorage:
+                self.storageManager.removeJobFromStatus(oldStatus, job.uid)
+                self.storageManager.addJobForStatus(newStatus, job.uid)
+
+    # closes job safely, checks whether status can be changed on CLOSED
     def closeJob(self, job):
-        if type(job) is not Job:
-            raise StandardError("Expected Job, got %s" % str(type(job)))
-        if job.status not in CAN_CLOSE_STATUSES:
-            raise StandardError("Cannot close job with a status %s" % job.status)
-        job.updateStatus("CLOSED")
+        def validate(status):
+            if status not in CAN_CLOSE_STATUSES:
+                raise StandardError("Cannot close job with a status %s" % status)
+        self.changeStatus(job, CLOSED, validate, True)
+
+    def jobForUid(self, uid):
+        return self.storageManager.jobForUid(uid)

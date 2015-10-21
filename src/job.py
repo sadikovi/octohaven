@@ -4,13 +4,43 @@ import os, re
 from types import IntType
 from utils import *
 
-STATUSES = ["CREATED", "WAITING", "DELAYED", "SUBMITTED", "CLOSED"]
-# list of statuses that use can close before they are submitted
-CAN_CLOSE_STATUSES = ["CREATED", "WAITING", "DELAYED"]
-DURATIONS = ["LONG", "MEDIUM", "QUICK"]
-DEFAULT_PRIORITY = 100
+# Job statuses that are supported
+# Hierarchy of statuses:
+# CREATED - job created to run as soon as possible
+# DELAYED - job is delayed to run in n seconds
+# WAITING - job is scheduled, and put into scheduler's pool
+# SUBMITTED - job is successfully submitted
+# CLOSED - job is closed before running
+# Job can be closed as long as it's status is closable one
+# CREATED / DELAYED -> WAITING -> SUBMITTED / CLOSED
 
+CREATED = "CREATED"
+DELAYED = "DELAYED"
+WAITING = "WAITING"
+SUBMITTED = "SUBMITTED"
+CLOSED = "CLOSED"
+# list of all statuses
+STATUSES = [CREATED, DELAYED, WAITING, SUBMITTED, CLOSED]
+# list of statuses that use can close before they are submitted
+CAN_CLOSE_STATUSES = [CREATED, DELAYED, WAITING]
+
+# duration of the job
+LONG = "LONG"
+MEDIUM = "MEDIUM"
+QUICK = "QUICK"
+DURATIONS = [LONG, MEDIUM, QUICK]
+# default priority for a job
+DEFAULT_PRIORITY = 100
+# job id key as a Spark job option
+SPARK_UID_KEY = "spark.octohaven.jobId"
+
+# Validation class to encapsulate all the checks that we have for Job and SparkJob
 class JobCheck(object):
+    @staticmethod
+    def validateJob(value):
+        if type(job) is not Job:
+            raise StandardError("Expected Job instance, got " + str(type(value)))
+        return value
 
     @staticmethod
     def validatePriority(value):
@@ -40,6 +70,13 @@ class JobCheck(object):
         return masterurl
 
     @staticmethod
+    def validateUiUrl(uiurl):
+        groups = re.match(r"^http://([\w\.-]+):\d+$", uiurl)
+        if groups is None:
+            raise StandardError("Spark UI URL is incorrect: " + uiurl)
+        return uiurl
+
+    @staticmethod
     def validateJarPath(jar):
         # do not validate on existence, only on path structure
         ok = os.path.isabs(jar) and jar.lower().endswith(".jar")
@@ -47,6 +84,7 @@ class JobCheck(object):
             raise StandardError("Path " + jar + " is not valid")
         return jar
 
+# Spark job to consolidate all the settings to launch spark-submit script
 class SparkJob(object):
     def __init__(self, uid, name, masterurl, entrypoint, jar, options, jobconf=[]):
         self.uid = uid
@@ -83,6 +121,9 @@ class SparkJob(object):
         name = ["--name", "%s" % self.name]
         master = ["--master", "%s" % self.masterurl]
         conf = [["--conf", "%s=%s" % (key, value)] for key, value in self.options.items()]
+        # we add our own option with Spark job id, so we can resolve job -> Spark job connection
+        # this option is hidden from user and should be updated and passed when we build cmd
+        uidConf = ["--conf", "%s=%s" % (SPARK_UID_KEY, self.uid)]
         # flatten conf
         conf = [num for elem in conf for num in elem]
         entrypoint = ["--class", "%s" % self.entrypoint]
@@ -90,7 +131,7 @@ class SparkJob(object):
         # jobconf
         jobconf = ["%s" % elem for elem in self.jobconf]
         # construct exec command for shell
-        cmd = sparkSubmit + name + master + conf + entrypoint + jar + jobconf
+        cmd = sparkSubmit + name + master + conf + uidConf + entrypoint + jar + jobconf
         return cmd
 
     @classmethod
