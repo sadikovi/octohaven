@@ -50,13 +50,9 @@ fi
 eval "$WHICH_PYTHON $ROOT_DIR/run_service.py \
     --port=$OCTOHAVEN_PORT \
     --spark-ui-address=$OCTOHAVEN_SPARK_UI_ADDRESS \
+    --spark-ui-run-address=$OCTOHAVEN_SPARK_UI_RUN_ADDRESS \
     --spark-master-address=$OCTOHAVEN_SPARK_MASTER_ADDRESS \
     --redis-host=$REDIS_HOST \
     --redis-port=$REDIS_PORT \
     --redis-db=$REDIS_DB \
     --jar-folder=$JAR_FOLDER"
-
-echo "root: $ROOT_DIR"
-echo "octohaven port: $OCTOHAVEN_PORT"
-echo "python: $WHICH_PYTHON"
-echo "docker: $WHICH_DOCKER"
