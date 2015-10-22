@@ -17,13 +17,14 @@ export JAR_FOLDER="/Users/sadikovi/developer/octohaven/test/resources/filelist"
 # Docker Redis settings
 ## if USE_DOCKER is non-empty, app will try pulling image with REDIS_VERSION, if it does not
 ## already exist, and spin up or start existing container REDIS_CONTAINER. Otherwise, it will
-## ignore Docker and will try connecting to the REDIS_HOST specified below.
+## ignore Docker and will try connecting to the Redis settings section specified below.
 export USE_DOCKER="YES"
 export REDIS_VERSION="3.0.0"
 export REDIS_CONTAINER="octohaven-redis-container"
 # Redis settings
-## Redis host will be set to Docker ip address automatically, if USE_DOCKER is non-empty.
-## Otherwise, it will try connecting to the host specified
+## If Docker is used (USE_DOCKER is non-empty) Redis host will be assigned as container host
+## (Docker ip address) automatically, and port will be bound to the REDIS_PORT specified.
+## Otherwise, it will use REDIS_HOST and REDIS_PORT to connect to Redis instance running.
 export REDIS_HOST="sandbox"
 # Redis port
 export REDIS_PORT="6379"

@@ -18,7 +18,7 @@ Uses Docker to install Redis, but can use your own installation, see [Configurat
 
 ## Run
 Download repository and run scripts from `sbin` directory.
-To run service execute `start.sh` script, to stop service - `stop.sh`
+To run service execute `start.sh` script, to stop service - `stop.sh`.
 ```shell
 # start service, this will load configuration from config.sh
 $ sbin/start.sh
@@ -28,6 +28,9 @@ $ sbin/start.sh
 # stop service
 $ sbin/stop.sh
 ```
+
+Application will be available on `localhost:33900` or whatever port you specify in configuration
+file.
 
 ## Configuration
 Configuration lives in `sbin/config.sh`. Options are pretty self-explanatory, comments tell what
