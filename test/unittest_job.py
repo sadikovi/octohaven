@@ -3,7 +3,7 @@
 import unittest
 import os, uuid, time
 from paths import ROOT_PATH
-from src.job import Job, SparkJob, JobCheck, DEFAULT_PRIORITY
+from src.job import *
 
 class JobSentinel(object):
     @staticmethod
@@ -24,15 +24,15 @@ class JobSentinel(object):
     @staticmethod
     def job():
         uid = str(uuid.uuid4())
-        status = "WAITING"
+        status = WAITING
         createtime = long(time.time())
         submittime = long(time.time())
-        duration = "MEDIUM"
+        duration = MEDIUM
         sparkjob = JobSentinel.sparkJob()
         return Job(uid, status, createtime, submittime, duration, sparkjob)
 
 class JobCheckTestSuite(unittest.TestCase):
-    def validatePriority(self):
+    def test_validatePriority(self):
         self.assertEqual(JobCheck.validatePriority(100), 100)
         self.assertEqual(JobCheck.validatePriority(1), 1)
         self.assertEqual(JobCheck.validatePriority(0), 0)
@@ -56,6 +56,15 @@ class JobCheckTestSuite(unittest.TestCase):
         for entry in entries:
             with self.assertRaises(StandardError):
                 JobCheck.validateEntrypoint(entry)
+
+    def test_validateUiUrl(self):
+        ui = ["http://localhost:8080", "http://sandbox:38080", "http://192.168.99.100:8080"]
+        for entry in ui:
+            self.assertEqual(JobCheck.validateUiUrl(entry), entry)
+        ui = ["https://localhost:8020", "http://192.168.99.100"]
+        for entry in ui:
+            with self.assertRaises(StandardError):
+                JobCheck.validateUiUrl(entry)
 
     def test_validateMasterUrl(self):
         master = ["spark://local:7077", "spark://chcs240.co.nz:7079", "spark://192.168.0.1:8080"]
@@ -153,8 +162,10 @@ class SparkJobTestSuite(unittest.TestCase):
     def test_execCommand(self):
         sparkJob = SparkJob(self.uid, self.name, self.masterurl, self.entrypoint, self.jar,
             self.options)
-        cmd = sparkJob.execCommand()
-        self.assertEqual(len(cmd), 16)
+        cmd = sparkJob.execCommand({SPARK_UID_KEY: sparkJob.uid})
+        self.assertTrue((SPARK_UID_KEY + "=" + sparkJob.uid) in cmd)
+        # increased number of parameters passed with spark uid key
+        self.assertEqual(len(cmd), 18)
 
     def test_sparkJobWithJobConf(self):
         jobconf = ["--test.input='/data'", "--test.log=true", "-h", "--quiet"]
@@ -166,16 +177,18 @@ class SparkJobTestSuite(unittest.TestCase):
         jobconf = ["--test.input='/data'", "--test.log=true", "-h", "--quiet"]
         sparkJob = SparkJob(self.uid, self.name, self.masterurl, self.entrypoint, self.jar,
             self.options, jobconf)
-        cmd = sparkJob.execCommand()
-        self.assertEqual(len(cmd), 20)
+        cmd = sparkJob.execCommand({SPARK_UID_KEY: sparkJob.uid})
+        self.assertTrue((SPARK_UID_KEY + "=" + sparkJob.uid) in cmd)
+        # increased number of parameters passed with spark uid key
+        self.assertEqual(len(cmd), 22)
 
 class JobTestSuite(unittest.TestCase):
     def setUp(self):
         self.uid = str(uuid.uuid4())
-        self.status = "WAITING"
+        self.status = WAITING
         self.createtime = long(time.time())
         self.submittime = long(time.time())
-        self.duration = "MEDIUM"
+        self.duration = MEDIUM
         self.sparkjob = JobSentinel.sparkJob()
 
     def tearDown(self):
@@ -202,8 +215,8 @@ class JobTestSuite(unittest.TestCase):
         job = Job(self.uid, self.status, self.createtime, self.submittime,
             self.duration, self.sparkjob)
         self.assertEqual(job.status, self.status)
-        job.updateStatus("SUBMITTED")
-        self.assertEqual(job.status, "SUBMITTED")
+        job.updateStatus(SUBMITTED)
+        self.assertEqual(job.status, SUBMITTED)
         # check update of a wrong status
         with self.assertRaises(StandardError):
             job.updateStatus("WRONG_STATUS")

@@ -91,9 +91,9 @@ class JobManager(object):
         updatedJobConf = self.parseJobConf(jobconf)
         # add driver and executor memory, because we specify them as completely separate options
         # we also override any other config options for executor / driver memory
-        updatedOpts["spark.driver.memory"] = driverMemory
-        updatedOpts["spark.executor.memory"] = executorMemory
-        return SparkJob(uid, name, masterurl, entrypoint, jar, updatedOpts, updatedJobConf)
+        updatedOptions["spark.driver.memory"] = driverMemory
+        updatedOptions["spark.executor.memory"] = executorMemory
+        return SparkJob(uid, name, masterurl, entrypoint, jar, updatedOptions, updatedJobConf)
 
     # creates Job instance, fails if anything is wrong with a job.
     # - sparkjob => an instance of SparkJob class
@@ -119,22 +119,24 @@ class JobManager(object):
     # change job status to any arbitrary allowed status
     # - job => job to change status for
     # - newStatus => new status to update
-    # - validationRule => validation rule for a new status
+    # - validationRule => validation rule between old and new statuses, should return boolean
     # - pushToStorage => if True updates data in storage
     def changeStatus(self, job, newStatus, validationRule=None, pushToStorage=True):
         JobCheck.validateJob(job)
         oldStatus = job.status
-        if newStatus != oldStatus and validationRule and validationRule(newStatus)
+        if newStatus != oldStatus and validationRule and validationRule(oldStatus, newStatus):
             job.updateStatus(newStatus)
             if pushToStorage:
                 self.storageManager.removeJobFromStatus(oldStatus, job.uid)
+                self.storageManager.saveJob(job)
                 self.storageManager.addJobForStatus(newStatus, job.uid)
 
     # closes job safely, checks whether status can be changed on CLOSED
     def closeJob(self, job):
-        def validate(status):
-            if status not in CAN_CLOSE_STATUSES:
-                raise StandardError("Cannot close job with a status %s" % status)
+        def validate(oldStatus, newStatus):
+            if oldStatus not in CAN_CLOSE_STATUSES:
+                raise StandardError("Cannot close job with a status %s" % oldStatus)
+            return True
         self.changeStatus(job, CLOSED, validate, True)
 
     def jobForUid(self, uid):

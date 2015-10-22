@@ -21,7 +21,7 @@ class StorageManager(object):
     # - limit => limit results by the number provided, if limit is less than 0, return all results
     # - cmpFunc => comparison function, see Python documentation for details
     def jobsForStatus(self, status, limit=30, cmpFunc=None):
-        doLimit = limit < 0
+        doLimit = limit >= 0
         doSort = cmp is not None
         # fetch all job uids for that status
         jobUids = self.connector.getCollection(status)

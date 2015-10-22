@@ -72,7 +72,7 @@ class StorageManagerTestSuite(unittest.TestCase):
         for job in jobs:
             storageManager.saveJob(job)
             storageManager.addJobForStatus(job.status, job.uid)
-        allJobs = storageManager.allJobs()
+        allJobs = storageManager.jobsForStatus(jobs[0].status)
         self.assertEqual(sorted([a.uid for a in allJobs]), sorted([b.uid for b in jobs]))
         results = dict([(status, 0) for status in STATUSES])
         for job in jobs:
@@ -81,49 +81,19 @@ class StorageManagerTestSuite(unittest.TestCase):
         for status in STATUSES:
             got = storageManager.jobsForStatus(status)
             self.assertEqual(len(got), results[status])
-        removedJob = random.choice(jobs)
-        storageManager.removeJobFromStatus(storageManager.ALL_JOBS_KEY, removedJob.uid)
-        allJobs = storageManager.allJobs()
-        self.assertEqual(removedJob.uid not in [job.uid for job in allJobs], True)
-
-    def test_registerJob(self):
-        storageManager = StorageManager(self.connector)
-        job = self.newJob()
-        storageManager.registerJob(job)
-        # check job for status
-        got = storageManager.jobsForStatus(job.status)
-        self.assertEqual(len(got) == 1 and got[0].uid == job.uid, True)
-        # check job for all statuses
-        got = storageManager.allJobs()
-        self.assertEqual(len(got) == 1 and got[0].uid == job.uid, True)
-
-    def test_registerJobWithoutSave(self):
-        # check not saving job
-        storageManager = StorageManager(self.connector)
-        job = self.newJob()
-        storageManager.registerJob(job, save=False)
-        got = storageManager.jobsForStatus(job.status)
-        self.assertEqual(got, [])
-
-    def test_unregisterJob(self):
-        storageManager = StorageManager(self.connector)
-        job = self.newJob()
-        storageManager.registerJob(job)
-        got = storageManager.jobsForStatus(job.status)
-        self.assertEqual(len(got) == 1 and got[0].uid == job.uid, True)
-        storageManager.unregisterJob(job)
-        got = storageManager.jobsForStatus(job.status)
-        self.assertEqual(len(got) == 0, True)
 
     def test_limitJobs(self):
         storageManager = StorageManager(self.connector)
         numJobs = 10
         jobs = [self.newJob() for i in range(numJobs)]
         for job in jobs:
-            storageManager.registerJob(job)
-        got = storageManager.jobsForStatus(job.status, limit=20, sort=True)
+            storageManager.saveJob(job)
+            storageManager.addJobForStatus(job.status, job.uid)
+        got = storageManager.jobsForStatus(job.status, limit=20)
         self.assertEqual(len(got), numJobs)
-        got = storageManager.jobsForStatus(job.status, limit=3, sort=True)
+        got = storageManager.jobsForStatus(job.status, limit=-1)
+        self.assertEqual(len(got), numJobs)
+        got = storageManager.jobsForStatus(job.status, limit=3)
         self.assertEqual(len(got), 3)
 
 # Load test suites

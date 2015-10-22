@@ -11,7 +11,8 @@ RUN_TESTS = {
     "storagemanager": True,
     "filemanager": True,
     "jobmanager": True,
-    "utils": True
+    "utils": True,
+    "sparkmodule": True
 }
 
 def checkTest(key):
@@ -59,6 +60,13 @@ def collectSystemTests(suites):
         suites.addTest(unittest_utils.loadSuites())
     else:
         print "@skip: 'utils' tests"
+
+    # sparkmodule
+    if checkTest("sparkmodule"):
+        import test.unittest_sparkmodule as unittest_sparkmodule
+        suites.addTest(unittest_sparkmodule.loadSuites())
+    else:
+        print "@skip: 'sparkmodule' tests"
 
 if __name__ == '__main__':
     args = sys.argv[2:]

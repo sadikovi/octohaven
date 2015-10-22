@@ -15,11 +15,13 @@ class UtilsTestSuite(unittest.TestCase):
         self.assertEqual(utils.jsonOrElse("{}", None), {})
         self.assertEqual(utils.jsonOrElse("{\"key\": 1}", None), {"key": 1})
         self.assertEqual(utils.jsonOrElse("{\"key\":}", None), None)
+        self.assertEqual(utils.jsonOrElse("[{\"a\": 1}, {\"b\": {\"c\": 2}}]", None),
+            [{"a": 1}, {"b": {"c": 2}}])
 
     def test_intOrElse(self):
         self.assertEqual(utils.intOrElse("1", -1), 1)
-        self.assertEqual(utils.jsonOrElse("1abs", -1), -1)
-        self.assertEqual(utils.jsonOrElse("", -1), -1)
+        self.assertEqual(utils.intOrElse("1abs", -1), -1)
+        self.assertEqual(utils.intOrElse("", -1), -1)
 
     def test_boolOrElse(self):
         self.assertEqual(utils.boolOrElse("true", False), True)

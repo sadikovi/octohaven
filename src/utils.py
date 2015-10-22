@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import json
-from types import UnicodeType, StringType
+from types import UnicodeType, StringType, DictType, ListType
 
 # private decorator
 def private(f):
@@ -14,13 +14,24 @@ def private(f):
 # raw is a string in json format, value is an alternative in case json fails
 # we also convert all the string values from 'unicode' to 'str'
 def jsonOrElse(raw, value):
+    # updates keys and values recursively to be Python `str`, if possible
+    def utfKeys(obj):
+        if type(obj) is ListType:
+            return [utfKeys(x) for x in obj]
+        elif type(obj) is DictType:
+            updated = {}
+            for key, value in obj.items():
+                newkey = str(key) if type(key) is UnicodeType else key
+                newvalue = utfKeys(value)
+                updated[newkey] = newvalue
+            return updated
+        elif type(obj) is UnicodeType:
+            return str(obj)
+        else:
+            return obj
     try:
         data = json.loads(raw)
-        for key, value in data.items():
-            newkey = str(key) if type(key) is UnicodeType else key
-            newvalue = str(value) if type(value) is UnicodeType else value
-            data[newkey] = newvalue
-        return data
+        return utfKeys(data)
     except ValueError:
         return value
 

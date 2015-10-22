@@ -38,7 +38,7 @@ SPARK_UID_KEY = "spark.octohaven.jobId"
 class JobCheck(object):
     @staticmethod
     def validateJob(value):
-        if type(job) is not Job:
+        if type(value) is not Job:
             raise StandardError("Expected Job instance, got " + str(type(value)))
         return value
 
@@ -115,23 +115,25 @@ class SparkJob(object):
         }
 
     # returns shell command to execute as a list of arguments
-    def execCommand(self):
+    # - additionalOptions => extra options to add to the execute command. They are transient and
+    # therefor will not be saved as job options.
+    def execCommand(self, additionalOptions={}):
         # spark-submit --master sparkurl --conf "" --conf "" --class entrypoint jar
         sparkSubmit = ["spark-submit"]
         name = ["--name", "%s" % self.name]
         master = ["--master", "%s" % self.masterurl]
-        conf = [["--conf", "%s=%s" % (key, value)] for key, value in self.options.items()]
-        # we add our own option with Spark job id, so we can resolve job -> Spark job connection
-        # this option is hidden from user and should be updated and passed when we build cmd
-        uidConf = ["--conf", "%s=%s" % (SPARK_UID_KEY, self.uid)]
-        # flatten conf
+        # update options with `additionalOptions` argument
+        confOptions = self.options.copy()
+        confOptions.update(additionalOptions)
+        # create list of conf options, ready to be used in cmd, flatten conf
+        conf = [["--conf", "%s=%s" % (key, value)] for key, value in confOptions.items()]
         conf = [num for elem in conf for num in elem]
         entrypoint = ["--class", "%s" % self.entrypoint]
         jar = ["%s" % self.jar]
         # jobconf
         jobconf = ["%s" % elem for elem in self.jobconf]
         # construct exec command for shell
-        cmd = sparkSubmit + name + master + conf + uidConf + entrypoint + jar + jobconf
+        cmd = sparkSubmit + name + master + conf + entrypoint + jar + jobconf
         return cmd
 
     @classmethod
@@ -187,7 +189,9 @@ class Job(object):
     # returns shell command to execute as a list of arguments
     # method exists for adding more functionality before/after executing Spark job
     def execCommand(self):
-        return self.sparkjob.execCommand()
+        # we add our own option with Spark job id, so we can resolve job -> Spark job connection
+        # this option is hidden from user and should be updated and passed when we build cmd
+        return self.sparkjob.execCommand({SPARK_UID_KEY: self.uid})
 
     @classmethod
     def fromDict(cls, obj):
