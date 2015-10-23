@@ -8,7 +8,7 @@ from subprocess import Popen
 from job import Job, DEFAULT_PRIORITY
 from redisconnector import RedisConnector, RedisConnectionPool
 from storagemanager import StorageManager
-import sparkheartbeat
+from sparkmodule import SparkModule
 from utils import *
 
 # create lock, it is unnecessary, because of GIL, but it is safe to have it anyway.

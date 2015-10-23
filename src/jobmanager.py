@@ -139,5 +139,17 @@ class JobManager(object):
             return True
         self.changeStatus(job, CLOSED, validate, True)
 
+    # simple wrapper for job extraction by id
     def jobForUid(self, uid):
         return self.storageManager.jobForUid(uid)
+
+    # simple wrapper around `jobsForStatus` method of StorageManager
+    def listJobsForStatus(self, status, limit, sort):
+        def sortFunc(x, y):
+            return x.createtime > y.createtime
+        # status is invalid or does not match global keyspace, raise an error explicitly
+        if status.upper() not in STATUSES and status.upper() != ALL_JOBS_KEY:
+            raise StandardError("Invalid status " + status + " to fetch")
+        limit = limit if type(limit) is IntType else 30
+        cmpFunc = sortFunc if sort else None
+        return self.storageManager.jobsForStatus(status, limit, cmpFunc)

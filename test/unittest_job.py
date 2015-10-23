@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import unittest
-import os, uuid, time
+import os, uuid, time, random
 from paths import ROOT_PATH
 from src.job import *
 
@@ -32,6 +32,14 @@ class JobSentinel(object):
         return Job(uid, status, createtime, submittime, duration, sparkjob)
 
 class JobCheckTestSuite(unittest.TestCase):
+    def test_validateStatus(self):
+        status = random.choice(STATUSES)
+        self.assertEqual(JobCheck.validateStatus(status), status)
+        with self.assertRaises(StandardError):
+            JobCheck.validateStatus(tatus.lower())
+        with self.assertRaises(StandardError):
+            JobCheck.validateStatus("INVALID_STATUS")
+
     def test_validatePriority(self):
         self.assertEqual(JobCheck.validatePriority(100), 100)
         self.assertEqual(JobCheck.validatePriority(1), 1)
@@ -215,8 +223,8 @@ class JobTestSuite(unittest.TestCase):
         job = Job(self.uid, self.status, self.createtime, self.submittime,
             self.duration, self.sparkjob)
         self.assertEqual(job.status, self.status)
-        job.updateStatus(SUBMITTED)
-        self.assertEqual(job.status, SUBMITTED)
+        job.updateStatus(FINISHED)
+        self.assertEqual(job.status, FINISHED)
         # check update of a wrong status
         with self.assertRaises(StandardError):
             job.updateStatus("WRONG_STATUS")
@@ -245,6 +253,21 @@ class JobTestSuite(unittest.TestCase):
         self.assertEqual(copy.duration, self.duration)
         self.assertEqual(copy.sparkjob.toDict(), self.sparkjob.toDict())
         self.assertEqual(copy.priority, job.priority)
+
+    def test_updateSparkAppId(self):
+        job = Job(self.uid, self.status, self.createtime, self.submittime,
+            self.duration, self.sparkjob, 1)
+        self.assertEqual(job.sparkAppId, None)
+        obj = job.toDict()
+        self.assertEqual(obj["sparkappid"], None)
+        self.assertEqual(Job.fromDict(obj).sparkAppId, None)
+        # update status and check that is updated everywhere
+        sparkAppId = "spark_app12345"
+        job.updateSparkAppId(sparkAppId)
+        self.assertEqual(job.sparkAppId, sparkAppId)
+        obj = job.toDict()
+        self.assertEqual(obj["sparkappid"], sparkAppId)
+        self.assertEqual(Job.fromDict(obj).sparkAppId, sparkAppId)
 
 # Load test suites
 def _suites():

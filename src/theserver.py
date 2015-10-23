@@ -4,12 +4,12 @@ import paths
 import os, sys, urllib, json
 from urlparse import urlparse
 from BaseHTTPServer import HTTPServer, BaseHTTPRequestHandler
-import sparkheartbeat
 from redisconnector import RedisConnector, RedisConnectionPool
 from storagemanager import StorageManager
 from filemanager import FileManager
 from jobmanager import JobManager
 from job import Job, SparkJob
+from sparkmodule import SparkModule
 from utils import *
 
 # constants for request mapping
@@ -31,135 +31,156 @@ class APICall(object):
         self.query = dict([pair for pair in [q.split("=", 1) for q in query] if len(pair) == 2])
         self.settings = settings
         # check Spark settings
-        if "SPARK_UI_ADDRESS" not in self.settings or "SPARK_MASTER_ADDRESS" not in self.settings:
-            raise StandardError("Spark UI Address and Spark Master Address must be specified")
-        sparkMasterAddress = settings["SPARK_MASTER_ADDRESS"]
+        if "SPARK_UI_ADDRESS" not in self.settings:
+            raise StandardError("Spark UI Address is not specified")
+        if "SPARK_UI_RUN_ADDRESS" not in self.settings:
+            raise StandardError("Spark UI Address for running applications is not specified")
+        if "SPARK_MASTER_ADDRESS" not in self.settings:
+            raise StandardError("Spark Master Address is not specified")
+        sparkUi = settings["SPARK_UI_ADDRESS"]
+        sparkUiRun = settings["SPARK_UI_RUN_ADDRESS"]
+        sparkMaster = settings["SPARK_MASTER_ADDRESS"]
         # check whether Jar folder is set
         if "JAR_FOLDER" not in self.settings:
             raise StandardError("Jar folder is not set")
         jarFolder = self.settings["JAR_FOLDER"]
         # make connection to Redis
-        if "REDIS_HOST" not in self.settings or "REDIS_PORT" not in self.settings \
-            or "REDIS_DB" not in self.settings:
-            raise StandardError("Redis host, port and db must be specified")
+        if "REDIS_HOST" not in self.settings:
+            raise StandardError("Redis host is not specified")
+        if "REDIS_PORT" not in self.settings:
+            raise StandardError("Redis port is not specified")
+        if "REDIS_DB" not in self.settings:
+            raise StandardError("Redis db is not specified")
         pool = RedisConnectionPool({
             "host": self.settings["REDIS_HOST"],
             "port": int(self.settings["REDIS_PORT"]),
             "db": int(self.settings["REDIS_DB"])
         })
         connector = RedisConnector(pool)
-        self.storageManager = StorageManager(connector)
+        storageManager = StorageManager(connector)
+        self.sparkModule = SparkModule(sparkMaster, sparkUi, sparkUiRun)
         self.fileManager = FileManager(jarFolder)
-        self.jobManager = JobManager(sparkMasterAddress)
+        self.jobManager = JobManager(self.sparkModule, storageManager)
         self.response = None
 
     @private
-    def sendError(self, msg=""):
-        self.response = {"code": 400, "status": "ERROR", "content": {"msg": "%s" % msg}}
+    def error(self, msg=""):
+        return {"code": 400, "status": "ERROR", "content": {"msg": "%s" % msg}}
 
     @private
-    def sendSystemError(self, msg=""):
-        self.response = {"code": 500, "status": "ERROR", "content": {"msg": "%s" % msg}}
+    def systemError(self, msg=""):
+        return {"code": 500, "status": "ERROR", "content": {"msg": "%s" % msg}}
 
     @private
-    def sendSuccess(self, content):
-        self.response = {"code": 200, "status": "OK", "content": content}
+    def success(self, content):
+        return {"code": 200, "status": "OK", "content": content}
 
     # process method for different API methods:
-    # - GET /api/v1/sparkstatus: fetching Spark cluster status
-    # - GET /api/v1/jobs: listing jobs for a status
-    # - GET /api/v1/job: fetch job for an id
-    # - POST /api/v1/submit: create a new job
-    # - GET /api/v1/close: close existing job, if possible
-    # - GET /api/v1/breadcrumbs: list a directory traversal for a specific path
-    # - GET /api/v1/list: list folders and files for a specific path
+    # - GET     /api/v1/spark/status: fetching Spark cluster status
+    # - GET     /api/v1/jobs/list: listing jobs for a status
+    # - GET     /api/v1/job/get: fetch job for an id
+    # - POST    /api/v1/job/submit: create a new job
+    # - GET     /api/v1/job/close: close existing job, if possible
+    # - GET     /api/v1/files/breadcrumbs: list a directory traversal for a specific path
+    # - GET     /api/v1/files/list: list folders and files for a specific path
     def process(self):
         try:
-            if self.path.endswith("%s/sparkstatus" % API_V1):
-                # call Spark heartbeat
-                status = sparkheartbeat.sparkStatus(self.settings["SPARK_UI_ADDRESS"])
-                self.sendSuccess({
-                    "sparkstatus": status,
-                    "spark-ui-address": self.settings["SPARK_UI_ADDRESS"],
-                    "spark-master-address": self.settings["SPARK_MASTER_ADDRESS"]
+            # list of API functions, see comment above. Everything is called in if-else statement
+            # that decides what response to send. If API is undefined we raise a system error 500
+
+            def sparkStatus():
+                status = self.sparkModule.clusterStatus()
+                return self.success({
+                    "status": status,
+                    "spark-ui-address": self.sparkModule.uiAddress,
+                    "spark-master-address": self.sparkModule.masterAddress
                 })
-            elif self.path.endswith("%s/jobs" % API_V1):
-                # retrieve jobs for status
-                # we are expecting one parameter starting with "status="
-                if "status" in self.query:
-                    limit = intOrElse(self.query["limit"], -1) if "limit" in self.query else None
-                    sort = boolOrElse(self.query["sort"], True) if "sort" in self.query else None
-                    status = self.query["status"]
-                    jobs = self.storageManager.jobsForStatus(status, limit, sort)
-                    self.sendSuccess({"jobs": [job.toDict() for job in jobs]})
-                else:
-                    self.sendError("expected 'status' parameter")
-            elif self.path.endswith("%s/job" % API_V1):
-                # get job for id
+
+            def jobsList():
+                if "status" not in self.query:
+                    raise StandardError("Expected 'status' parameter")
+                status = self.query["status"]
+                limit = intOrElse(self.query["limit"], -1) if "limit" in self.query else -1
+                sort = boolOrElse(self.query["sort"], True) if "sort" in self.query else True
+                jobs = self.jobManager.listJobsForStatus(status, limit, sort)
+                return self.success({"jobs": [job.toDict() for job in jobs]})
+
+            def jobGet():
                 jobid = self.query["jobid"] if "jobid" in self.query else None
-                job = self.storageManager.jobForUid(jobid)
+                job = self.jobManager.jobForUid(jobid)
                 if not job:
-                    self.sendError("No job found for id: %s" % str(jobid))
-                else:
-                    self.sendSuccess({"job": job.toDict()})
-            elif self.path.endswith("%s/submit" % API_V1):
+                    raise StandardError("No job found for 'jobid': %s" % str(jobid))
+                return self.success({"job": job.toDict()})
+
+            def jobSubmit():
                 # submit a new job
                 if "content" not in self.query or not self.query["content"]:
-                    self.sendError("Job information expected, got empty input")
-                else:
-                    raw = self.query["content"].strip()
-                    # resolve and validate some of the parameters
-                    # create job and store it using StorageManager
-                    data = jsonOrElse(raw, None)
-                    if not data:
-                        raise StandardError("Corrupt json data: " + raw)
-                    name = data["name"]
-                    entry = data["mainClass"]
-                    dmem, emem = data["driverMemory"], data["executorMemory"]
-                    options = data["options"]
-                    jar = self.fileManager.resolveRelativePath(data["jar"])
-                    # job specific configuration options
-                    jobconf = data["jobconf"]
-                    # delay for a job to schedule, in seconds
-                    delay = int(data["delay"]) if "delay" in data else 0
-                    # create Spark job and octohaven job
-                    sparkjob = self.jobManager.createSparkJob(
-                        name, entry, jar, dmem, emem, options, jobconf)
-                    job = self.jobManager.createJob(sparkjob, delay)
-                    # save and register job in Redis for a status
-                    self.storageManager.registerJob(job)
-                    # all is good, send back job id to track
-                    self.sendSuccess({"msg": "Job has been created", "jobid": job.uid})
-            elif self.path.endswith("%s/close" % API_V1):
-                # close a job
+                    raise StandardError("Job information expected, got empty input")
+                raw = self.query["content"].strip()
+                # resolve and validate some of the parameters
+                # create job and store it using StorageManager
+                data = jsonOrElse(raw, None)
+                if not data:
+                    raise StandardError("Corrupt json data: " + raw)
+                name = data["name"]
+                entry = data["mainClass"]
+                dmem, emem = data["driverMemory"], data["executorMemory"]
+                options = data["options"]
+                jar = self.fileManager.resolveRelativePath(data["jar"])
+                # job specific configuration options
+                jobconf = data["jobconf"]
+                # delay for a job to schedule, in seconds
+                delay = int(data["delay"]) if "delay" in data else 0
+                # create Spark job and octohaven job
+                sparkjob = self.jobManager.createSparkJob(name, entry, jar, dmem, emem, options,
+                    jobconf)
+                job = self.jobManager.createJob(sparkjob, delay)
+                # save and register job in Redis for a status
+                self.jobManager.saveJob(job)
+                # all is good, send back job id to track
+                return self.success({"msg": "Job has been created", "jobid": job.uid})
+
+            def jobClose():
                 jobid = self.query["jobid"] if "jobid" in self.query else None
                 job = self.storageManager.jobForUid(jobid)
                 if not job:
-                    self.sendError("No job found for id: %s" % str(jobid))
-                else:
-                    # change status on "Closed", it will raise an error, if something is wrong
-                    self.storageManager.unregisterJob(job, save=False)
-                    self.jobManager.closeJob(job)
-                    self.storageManager.registerJob(job)
-                    self.sendSuccess({"msg": "Job has been updated", "jobid": job.uid})
-            elif self.path.endswith("%s/breadcrumbs" % API_V1):
+                    raise StandardError("No job found for 'jobid': %s" % str(jobid))
+                self.jobManager.closeJob(job)
+                return self.success({"msg": "Job has been closed", "jobid": job.uid})
+
+            def filesBreadcrumbs():
                 # return breadcrumbs for a path
                 path = self.query["path"] if "path" in self.query else ""
                 data = self.fileManager.breadcrumbs(path, asdict=True)
-                self.sendSuccess({"breadcrumbs": data})
-            elif self.path.endswith("%s/list" % API_V1):
+                return self.success({"breadcrumbs": data})
+
+            def filesList():
                 # list folders and files for a path
                 path = self.query["path"] if "path" in self.query else ""
                 data = self.fileManager.list(path, sort=True, asdict=True)
-                self.sendSuccess({"list": data})
-            # if there is no reponse by the end of the block, we raise an error, as response was not
-            # prepared for user or there were holes in logic flow
-            if not self.response:
-                raise Exception("Response could not be created")
+                return self.success({"list": data})
+
+            if self.path.endswith("%s/spark/status" % API_V1):
+                self.response = sparkStatus()
+            elif self.path.endswith("%s/jobs/list" % API_V1):
+                self.response = jobsList()
+            elif self.path.endswith("%s/job/get" % API_V1):
+                self.response = jobGet()
+            elif self.path.endswith("%s/job/submit" % API_V1):
+                self.response = jobSubmit()
+            elif self.path.endswith("%s/job/close" % API_V1):
+                self.response = jobClose()
+            elif self.path.endswith("%s/files/breadcrumbs" % API_V1):
+                self.response = filesBreadcrumbs()
+            elif self.path.endswith("%s/files/list" % API_V1):
+                self.response = filesList()
+            else:
+                # API does not exist for the type of the query
+                raise Exception("No API for the query: %s" % self.path)
         except StandardError as e:
-            self.sendError(e.message)
+            self.response = self.error(e.message)
         except BaseException as e:
-            self.sendSystemError(e.message)
+            self.response = self.systemError(e.message)
         # return final response
         return self.response
 

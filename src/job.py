@@ -9,18 +9,19 @@ from utils import *
 # CREATED - job created to run as soon as possible
 # DELAYED - job is delayed to run in n seconds
 # WAITING - job is scheduled, and put into scheduler's pool
-# SUBMITTED - job is successfully submitted
+# FINISHED - job is finished, though it can be finished with different status in Spark
 # CLOSED - job is closed before running
 # Job can be closed as long as it's status is closable one
-# CREATED / DELAYED -> WAITING -> SUBMITTED / CLOSED
+# CREATED / DELAYED -> WAITING -> CLOSED / RUNNING -> FINISHED
 
 CREATED = "CREATED"
 DELAYED = "DELAYED"
 WAITING = "WAITING"
-SUBMITTED = "SUBMITTED"
+RUNNING = "RUNNING"
+FINISHED = "FINISHED"
 CLOSED = "CLOSED"
 # list of all statuses
-STATUSES = [CREATED, DELAYED, WAITING, SUBMITTED, CLOSED]
+STATUSES = [CREATED, DELAYED, WAITING, RUNNING, FINISHED, CLOSED]
 # list of statuses that use can close before they are submitted
 CAN_CLOSE_STATUSES = [CREATED, DELAYED, WAITING]
 
@@ -36,6 +37,12 @@ SPARK_UID_KEY = "spark.octohaven.jobId"
 
 # Validation class to encapsulate all the checks that we have for Job and SparkJob
 class JobCheck(object):
+    @staticmethod
+    def validateStatus(value):
+        if value not in STATUSES:
+            raise StandardError("Status " + str(value) + " is not supported")
+        return value
+
     @staticmethod
     def validateJob(value):
         if type(value) is not Job:
@@ -150,15 +157,13 @@ class SparkJob(object):
 class Job(object):
     def __init__(self, uid, status, createtime, submittime, duration, sparkjob,
         priority=DEFAULT_PRIORITY):
-        if status not in STATUSES:
-            raise StandardError("Status " + status + " is not supported")
         if duration not in DURATIONS:
             raise StandardError("Duration " + duration + " is not supported")
         if type(sparkjob) is not SparkJob:
             raise StandardError("Expected SparkJob, got " + str(type(sparkjob)))
         # internal properties
         self.uid = uid
-        self.status = status
+        self.status = JobCheck.validateStatus(status)
         self.createtime = long(createtime)
         self.submittime = long(submittime)
         self.duration = duration
@@ -166,14 +171,17 @@ class Job(object):
         self.sparkjob = sparkjob
         # default job priority
         self.priority = JobCheck.validatePriority(priority)
+        # Spark app id from Spark UI (if possible to fetch)
+        self.sparkAppId = None
 
     def updateStatus(self, newStatus):
-        if newStatus not in STATUSES:
-            raise StandardError("Status " + newStatus + " is not supported")
-        self.status = newStatus
+        self.status = JobCheck.validateStatus(newStatus)
 
     def updatePriority(self, newPriority):
         self.priority = JobCheck.validatePriority(newPriority)
+
+    def updateSparkAppId(self, sparkAppId):
+        self.sparkAppId = sparkAppId
 
     def toDict(self):
         return {
@@ -183,7 +191,8 @@ class Job(object):
             "submittime": self.submittime,
             "duration": self.duration,
             "sparkjob": self.sparkjob.toDict(),
-            "priority": self.priority
+            "priority": self.priority,
+            "sparkappid": self.sparkAppId
         }
 
     # returns shell command to execute as a list of arguments
@@ -202,4 +211,8 @@ class Job(object):
         duration = obj["duration"]
         sparkjob = SparkJob.fromDict(obj["sparkjob"])
         priority = obj["priority"] if "priority" in obj else DEFAULT_PRIORITY
-        return cls(uid, status, createtime, submittime, duration, sparkjob, priority)
+        job = cls(uid, status, createtime, submittime, duration, sparkjob, priority)
+        # discover whether we have Spark app id assigned to the job.
+        if "sparkappid" in obj:
+            job.updateSparkAppId(obj["sparkappid"])
+        return job

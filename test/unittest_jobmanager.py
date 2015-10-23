@@ -147,10 +147,25 @@ class JobManagerTestSuite(unittest.TestCase):
         self.assertEqual(jobManager.jobForUid(job.uid).toDict(), job.toDict())
         self.assertEqual(len(self.storageManager.jobsForStatus(job.status)), 1)
         self.assertEqual(len(self.storageManager.jobsForStatus(ALL_JOBS_KEY)), 1)
-        # try closing job that is submitted
-        jobManager.changeStatus(job, SUBMITTED, lambda x, y: x != y, True)
+        # try closing job that is finished
+        jobManager.changeStatus(job, FINISHED, lambda x, y: x != y, True)
         with self.assertRaises(StandardError):
             jobManager.closeJob(job)
+
+    def test_listJobsForStatus(self):
+        jobManager = JobManager(self.sparkModule, self.storageManager)
+        # status from job statuses
+        status = WAITING
+        jobs = jobManager.listJobsForStatus(status, limit=30, sort=True)
+        self.assertEqual(jobs, [])
+        # status made lowercase
+        status = WAITING.lower()
+        jobs = jobManager.listJobsForStatus(status, limit=30, sort=True)
+        self.assertEqual(jobs, [])
+        # status is invalid
+        with self.assertRaises(StandardError):
+            status = "INVALID"
+            jobManager.listJobsForStatus(status, limit=30, sort=True)
 
 # Load test suites
 def _suites():
