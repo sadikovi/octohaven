@@ -112,9 +112,10 @@ class JobManager(object):
 
     # saves job into storage and registers job for a specific + global status
     def saveJob(self, job):
-        self.storageManager.saveJob(job)
-        self.storageManager.addJobForStatus(ALL_JOBS_KEY, job.uid)
-        self.storageManager.addJobForStatus(job.status, job.uid)
+        JobCheck.validateJob(job)
+        self.storageManager.saveItem(job, klass=Job)
+        self.storageManager.addItemToKeyspace(ALL_JOBS_KEY, job.uid)
+        self.storageManager.addItemToKeyspace(job.status, job.uid)
 
     # change job status to any arbitrary allowed status
     # - job => job to change status for
@@ -127,9 +128,9 @@ class JobManager(object):
         if newStatus != oldStatus and validationRule and validationRule(oldStatus, newStatus):
             job.updateStatus(newStatus)
             if pushToStorage:
-                self.storageManager.removeJobFromStatus(oldStatus, job.uid)
-                self.storageManager.saveJob(job)
-                self.storageManager.addJobForStatus(newStatus, job.uid)
+                self.storageManager.removeItemFromKeyspace(oldStatus, job.uid)
+                self.storageManager.saveItem(job, klass=Job)
+                self.storageManager.addItemToKeyspace(newStatus, job.uid)
 
     # closes job safely, checks whether status can be changed on CLOSED
     def closeJob(self, job):
@@ -141,7 +142,7 @@ class JobManager(object):
 
     # simple wrapper for job extraction by id
     def jobForUid(self, uid):
-        return self.storageManager.jobForUid(uid)
+        return self.storageManager.itemForUid(uid, klass=Job)
 
     # simple wrapper around `jobsForStatus` method of StorageManager
     def listJobsForStatus(self, status, limit, sort):
@@ -152,4 +153,4 @@ class JobManager(object):
             raise StandardError("Invalid status " + status + " to fetch")
         limit = limit if type(limit) is IntType else 30
         cmpFunc = sortFunc if sort else None
-        return self.storageManager.jobsForStatus(status, limit, cmpFunc)
+        return self.storageManager.itemsForKeyspace(status, limit, cmpFunc, klass=Job)

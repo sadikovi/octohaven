@@ -12,7 +12,8 @@ RUN_TESTS = {
     "filemanager": True,
     "jobmanager": True,
     "utils": True,
-    "sparkmodule": True
+    "sparkmodule": True,
+    "template": True
 }
 
 def checkTest(key):
@@ -67,6 +68,13 @@ def collectSystemTests(suites):
         suites.addTest(unittest_sparkmodule.loadSuites())
     else:
         print "@skip: 'sparkmodule' tests"
+
+    # template
+    if checkTest("template"):
+        import test.unittest_template as unittest_template
+        suites.addTest(unittest_template.loadSuites())
+    else:
+        print "@skip: 'template' tests"
 
 if __name__ == '__main__':
     args = sys.argv[2:]

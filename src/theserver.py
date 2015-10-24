@@ -10,6 +10,7 @@ from filemanager import FileManager
 from jobmanager import JobManager
 from job import Job, SparkJob
 from sparkmodule import SparkModule
+from template import TemplateManager
 from utils import *
 
 # constants for request mapping
@@ -61,6 +62,7 @@ class APICall(object):
         self.sparkModule = SparkModule(sparkMaster, sparkUi, sparkUiRun)
         self.fileManager = FileManager(jarFolder)
         self.jobManager = JobManager(self.sparkModule, storageManager)
+        self.templateManager = TemplateManager(storageManager)
         self.response = None
 
     @private
@@ -77,12 +79,15 @@ class APICall(object):
 
     # process method for different API methods:
     # - GET     /api/v1/spark/status: fetching Spark cluster status
-    # - GET     /api/v1/jobs/list: listing jobs for a status
+    # - GET     /api/v1/job/list: listing jobs for a status
     # - GET     /api/v1/job/get: fetch job for an id
     # - POST    /api/v1/job/submit: create a new job
     # - GET     /api/v1/job/close: close existing job, if possible
-    # - GET     /api/v1/files/breadcrumbs: list a directory traversal for a specific path
-    # - GET     /api/v1/files/list: list folders and files for a specific path
+    # - GET     /api/v1/file/breadcrumbs: list a directory traversal for a specific path
+    # - GET     /api/v1/file/list: list folders and files for a specific path
+    # - POST    /api/v1/template/create: create template
+    # - GET     /api/v1/template/delete: delete tempate
+    # - GET     /api/v1/template/list: list all templates
     def process(self):
         try:
             # list of API functions, see comment above. Everything is called in if-else statement
@@ -96,7 +101,7 @@ class APICall(object):
                     "spark-master-address": self.sparkModule.masterAddress
                 })
 
-            def jobsList():
+            def jobList():
                 if "status" not in self.query:
                     raise StandardError("Expected 'status' parameter")
                 status = self.query["status"]
@@ -148,32 +153,65 @@ class APICall(object):
                 self.jobManager.closeJob(job)
                 return self.success({"msg": "Job has been closed", "jobid": job.uid})
 
-            def filesBreadcrumbs():
+            def fileBreadcrumbs():
                 # return breadcrumbs for a path
                 path = self.query["path"] if "path" in self.query else ""
                 data = self.fileManager.breadcrumbs(path, asdict=True)
                 return self.success({"breadcrumbs": data})
 
-            def filesList():
+            def fileList():
                 # list folders and files for a path
                 path = self.query["path"] if "path" in self.query else ""
                 data = self.fileManager.list(path, sort=True, asdict=True)
                 return self.success({"list": data})
 
+            def templateList():
+                arr = self.templateManager.templates()
+                return self.success({"templates": [template.toDict() for template in arr]})
+
+            def templateCreate():
+                if "content" not in self.query or not self.query["content"]:
+                    raise StandardError("Template information expected, got empty input")
+                raw = self.query["content"].strip()
+                data = jsonOrElse(raw, None)
+                if not data:
+                    raise StandardError("Corrupt json data: " + raw)
+                name = data["name"]
+                content = data["content"]
+                template = self.templateManager.createTemplate(name, content)
+                self.templateManager.saveTemplate(template)
+                return self.success({"msg": "Template has been created"})
+
+            def templateDelete():
+                if "templateid" not in self.query:
+                    raise StandardError("Expected 'templateid' parameter")
+                uid = self.query["templateid"]
+                template = self.templateManager.templateForUid(uid)
+                if not template:
+                    raise StandardError("No template found for uid: " + str(uid))
+                self.templateManager.deleteTemplate(template)
+                return self.success({"msg": "Template has been deleted"})
+
             if self.path.endswith("%s/spark/status" % API_V1):
                 self.response = sparkStatus()
-            elif self.path.endswith("%s/jobs/list" % API_V1):
-                self.response = jobsList()
+            elif self.path.endswith("%s/job/list" % API_V1):
+                self.response = jobList()
             elif self.path.endswith("%s/job/get" % API_V1):
                 self.response = jobGet()
             elif self.path.endswith("%s/job/submit" % API_V1):
                 self.response = jobSubmit()
             elif self.path.endswith("%s/job/close" % API_V1):
                 self.response = jobClose()
-            elif self.path.endswith("%s/files/breadcrumbs" % API_V1):
-                self.response = filesBreadcrumbs()
-            elif self.path.endswith("%s/files/list" % API_V1):
-                self.response = filesList()
+            elif self.path.endswith("%s/file/breadcrumbs" % API_V1):
+                self.response = fileBreadcrumbs()
+            elif self.path.endswith("%s/file/list" % API_V1):
+                self.response = fileList()
+            elif self.path.endswith("%s/template/list" % API_V1):
+                self.response = templateList()
+            elif self.path.endswith("%s/template/create" % API_V1):
+                self.response = templateCreate()
+            elif self.path.endswith("%s/template/delete" % API_V1):
+                self.response = templateDelete()
             else:
                 # API does not exist for the type of the query
                 raise Exception("No API for the query: %s" % self.path)

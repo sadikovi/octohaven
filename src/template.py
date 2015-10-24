@@ -14,15 +14,17 @@
 #   }
 # }
 
+import uuid, time
 from types import DictType
 from storagemanager import StorageManager
 
 TEMPLATE_KEYSPACE = "TEMPLATE"
 
 class Template(object):
-    def __init__(self, uid, name, content):
+    def __init__(self, uid, name, createtime, content):
         self.uid = uid
         self.name = name
+        self.createtime = long(createtime)
         if type(content) is not DictType:
             raise StandardError("Template expected DictType, got " + str(type(content)))
         self.content = {}
@@ -34,6 +36,7 @@ class Template(object):
         return {
             "uid": self.uid,
             "name": self.name,
+            "createtime": self.createtime,
             "content": self.content
         }
 
@@ -41,11 +44,38 @@ class Template(object):
     def fromDict(cls, obj):
         uid = obj["uid"]
         name = obj["name"]
+        createtime = obj["createtime"]
         content = obj["content"]
-        return cls(uid, name, content)
+        return cls(uid, name, createtime, content)
 
 class TemplateManager(object):
     def __init__(self, storageManager):
         if type(storageManager) is not StorageManager:
             raise StandardError("Expected StorageManager, got " + str(type(storageManager)))
         self.storageManager = storageManager
+
+    def createTemplate(self, name, content):
+        uid = "template_" + uuid.uuid4().hex
+        # creation time in milliseconds
+        createtime = long(time.time() * 1000)
+        return Template(uid, str(name), createtime, content)
+
+    def saveTemplate(self, template):
+        self.storageManager.saveItem(template, klass=Template)
+        self.storageManager.addItemToKeyspace(TEMPLATE_KEYSPACE, template.uid)
+
+    def templates(self):
+        # we retrieve all the templates, do not limit them.
+        # sort templates by name
+        def func(x, y):
+            return cmp(x.name, y.name)
+        return self.storageManager.itemsForKeyspace(TEMPLATE_KEYSPACE, -1, func, klass=Template)
+
+    def templateForUid(self, uid):
+        return self.storageManager.itemForUid(uid, klass=Template)
+
+    # we do not really delete template, we just remove reference to it from keyspace
+    def deleteTemplate(self, template):
+        if type(template) is not Template:
+            raise StandardError("Expected Template, found " + str(type(template)))
+        self.storageManager.removeItemFromKeyspace(TEMPLATE_KEYSPACE, template.uid)

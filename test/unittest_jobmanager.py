@@ -117,8 +117,8 @@ class JobManagerTestSuite(unittest.TestCase):
         job = jobManager.createJob(sparkJob)
         jobManager.saveJob(job)
         self.assertEqual(jobManager.jobForUid(job.uid).toDict(), job.toDict())
-        self.assertEqual(len(self.storageManager.jobsForStatus(job.status)), 1)
-        self.assertEqual(len(self.storageManager.jobsForStatus(ALL_JOBS_KEY)), 1)
+        self.assertEqual(len(self.storageManager.itemsForKeyspace(job.status)), 1)
+        self.assertEqual(len(self.storageManager.itemsForKeyspace(ALL_JOBS_KEY)), 1)
         with self.assertRaises(StandardError):
             jobManager.saveJob({})
         with self.assertRaises(StandardError):
@@ -133,9 +133,9 @@ class JobManagerTestSuite(unittest.TestCase):
         jobManager.saveJob(job)
         jobManager.changeStatus(job, WAITING, lambda x, y: x != y, True)
         self.assertEqual(jobManager.jobForUid(job.uid).toDict(), job.toDict())
-        self.assertEqual(len(self.storageManager.jobsForStatus(job.status)), 1)
-        self.assertEqual(len(self.storageManager.jobsForStatus(ALL_JOBS_KEY)), 1)
-        self.assertEqual(len(self.storageManager.jobsForStatus(oldStatus)), 0)
+        self.assertEqual(len(self.storageManager.itemsForKeyspace(job.status, klass=Job)), 1)
+        self.assertEqual(len(self.storageManager.itemsForKeyspace(ALL_JOBS_KEY, klass=Job)), 1)
+        self.assertEqual(len(self.storageManager.itemsForKeyspace(oldStatus, klass=Job)), 0)
 
     def test_closeJob(self):
         jobManager = JobManager(self.sparkModule, self.storageManager)
@@ -145,8 +145,8 @@ class JobManagerTestSuite(unittest.TestCase):
         jobManager.saveJob(job)
         jobManager.closeJob(job)
         self.assertEqual(jobManager.jobForUid(job.uid).toDict(), job.toDict())
-        self.assertEqual(len(self.storageManager.jobsForStatus(job.status)), 1)
-        self.assertEqual(len(self.storageManager.jobsForStatus(ALL_JOBS_KEY)), 1)
+        self.assertEqual(len(self.storageManager.itemsForKeyspace(job.status)), 1)
+        self.assertEqual(len(self.storageManager.itemsForKeyspace(ALL_JOBS_KEY)), 1)
         # try closing job that is finished
         jobManager.changeStatus(job, FINISHED, lambda x, y: x != y, True)
         with self.assertRaises(StandardError):
