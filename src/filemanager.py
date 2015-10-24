@@ -114,7 +114,7 @@ class FileManager(object):
     # path can be a directory or file
     def resolveRelativePath(self, path):
         arr = path.split(SEP)
-        if not arr:
+        if len(path) == 0 or not arr or len(arr) == 0:
             raise StandardError("Filepath appears to be empty")
         root = arr[0]
         if root != ROOT:
