@@ -1,10 +1,12 @@
 #!/usr/bin/env python
 
 import paths
-import sys
-import time
+import sys, time, octolog
 from theserver import SimpleHandler, RichHTTPServer
 from scheduler import Scheduler
+
+# init logger
+logger = octolog._logger("run_service:" + __name__)
 
 # we require some parameters to be set up before running service
 # this includes:
@@ -101,6 +103,7 @@ Options are:
     try:
         httpd.serve_forever()
     except KeyboardInterrupt:
+        logger.error("Attempt to stop server")
         # scheduler.stop()
         print "Stop scheduler"
         httpd.server_close()

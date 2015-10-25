@@ -2,6 +2,7 @@
 
 import paths
 import os, sys, urllib, json
+from octolog import Octolog
 from urlparse import urlparse
 from BaseHTTPServer import HTTPServer, BaseHTTPRequestHandler
 from redisconnector import RedisConnector, RedisConnectionPool
@@ -25,7 +26,7 @@ REQUEST_TABLE = {
 ROOT = paths.SERV_PATH
 
 # process only API requests
-class APICall(object):
+class APICall(Octolog, object):
     def __init__(self, path, query, settings):
         self.path = path
         # query is a key-value map
@@ -216,8 +217,10 @@ class APICall(object):
                 # API does not exist for the type of the query
                 raise Exception("No API for the query: %s" % self.path)
         except StandardError as e:
+            self.logger().exception(e.message)
             self.response = self.error(e.message)
         except BaseException as e:
+            self.logger().exception(e.message)
             self.response = self.systemError(e.message)
         # return final response
         return self.response
@@ -239,7 +242,7 @@ class ServeCall(object):
         else:
             return "text/plain"
 
-class SimpleHandler(BaseHTTPRequestHandler):
+class SimpleHandler(BaseHTTPRequestHandler, Octolog):
     def fullPath(self, path):
         path = path.lstrip("/")
         path = REQUEST_TABLE[path] if path in REQUEST_TABLE else path
@@ -271,7 +274,8 @@ class SimpleHandler(BaseHTTPRequestHandler):
                     self.send_header("Content-type", call.mimetype)
                     self.end_headers()
                     self.wfile.write(f.read())
-            except IOError:
+            except IOError as e:
+                self.logger().error("File not found: %s" % call.path)
                 self.send_error(404, "File Not Found: %s" % call.path)
 
     def do_POST(self):
