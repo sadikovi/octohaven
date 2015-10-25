@@ -8,8 +8,8 @@ _loader = @loader
 _jobloader = new @JobLoader
 
 # job statuses
-[ALL, CREATED, FINISHED, WAITING, CLOSED, DELAYED] =
-    ["ALL", "CREATED", "FINISHED", "WAITING", "CLOSED", "DELAYED"]
+[ALL, CREATED, FINISHED, WAITING, CLOSED, DELAYED, RUNNING] =
+    ["ALL", "CREATED", "FINISHED", "WAITING", "CLOSED", "DELAYED", "RUNNING"]
 
 ################################################################
 # Request all jobs from the server
@@ -26,7 +26,7 @@ blankslateWithMsg = (header, msg) ->
     blankslate([header, body])
 
 statusColumn = (status, colour, islarge=false) ->
-    updatedClass = if islarge then "one-fourth column" else "one-eigth column"
+    updatedClass = if islarge then "one-third column" else "one-sixth column"
     statusText = type: "span", cls: "#{colour}", title: "#{status}"
     statusSection = type: "div", cls: "section", children: statusText
     statusElem = type: "div", cls: "breadcrumb", children: statusSection
@@ -34,13 +34,13 @@ statusColumn = (status, colour, islarge=false) ->
     _mapper.parseMapForParent(elem)
 
 buttonColumn = (btnTitle, action, islarge=false) ->
-    updatedClass = if islarge then "one-fourth column" else "one-eigth column"
+    updatedClass = if islarge then "one-third column" else "one-sixth column"
     btn = type: "div", cls: "btn btn-compact", title: "#{btnTitle}", onclick: (e) -> action?(this)
     elem = type: "div", cls: "#{updatedClass}", children: btn
     _mapper.parseMapForParent(elem)
 
 jobColumn = (name, link, prefix, timestamp) ->
-    column = "three-fourths column"
+    column = "two-thirds column"
     # job section
     jobLink = type: "a", href: "#{link}", title: "#{name}"
     jobSuffix = type: "span", cls: "text-mute", title: "@Spark"
@@ -119,6 +119,7 @@ all = document.getElementById("octohaven-jobs-all")
 created = document.getElementById("octohaven-jobs-created")
 waiting = document.getElementById("octohaven-jobs-waiting")
 delayed = document.getElementById("octohaven-jobs-delayed")
+running = document.getElementById("octohaven-jobs-running")
 finished = document.getElementById("octohaven-jobs-finished")
 closed = document.getElementById("octohaven-jobs-closed")
 
@@ -127,6 +128,7 @@ resetLabels = ->
     _util.removeClass(created, "selected")
     _util.removeClass(waiting, "selected")
     _util.removeClass(delayed, "selected")
+    _util.removeClass(running, "selected")
     _util.removeClass(finished, "selected")
     _util.removeClass(closed, "selected")
 
@@ -144,6 +146,7 @@ _util.addEventListener(all, "click", (e) -> actionLabel(e, all, ALL))
 _util.addEventListener(created, "click", (e) -> actionLabel(e, created, CREATED))
 _util.addEventListener(waiting, "click", (e) -> actionLabel(e, waiting, WAITING))
 _util.addEventListener(delayed, "click", (e) -> actionLabel(e, delayed, DELAYED))
+_util.addEventListener(running, "click", (e) -> actionLabel(e, running, RUNNING))
 _util.addEventListener(finished, "click", (e) -> actionLabel(e, finished, FINISHED))
 _util.addEventListener(closed, "click", (e) -> actionLabel(e, closed, CLOSED))
 

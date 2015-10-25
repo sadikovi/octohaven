@@ -290,22 +290,34 @@
       return _mapper.parseMapForParent(row, jobRows);
     };
     addRow(jobOption("Job name", "Friendly job name", job.get("name"), function(ok, value) {
-      return job.set("name", "" + value);
+      if (ok) {
+        return job.set("name", "" + value);
+      }
     }));
     addRow(jobOption("Main class", "Entrypoint for the job", job.get("entrypoint"), function(ok, value) {
-      return job.set("entrypoint", "" + value);
+      if (ok) {
+        return job.set("entrypoint", "" + value);
+      }
     }));
     addRow(jobOption("Driver memory", "Memory for the driver programme", job.get("driver-memory"), function(ok, value) {
-      return job.set("driver-memory", "" + value);
+      if (ok) {
+        return job.set("driver-memory", "" + value);
+      }
     }));
     addRow(jobOption("Executor memory", "Memory for Spark executors", job.get("executor-memory"), function(ok, value) {
-      return job.set("executor-memory", "" + value);
+      if (ok) {
+        return job.set("executor-memory", "" + value);
+      }
     }));
     addRow(jobOption("Options", "Settings, e.g. JVM, networking, shuffle...", job.get("options"), function(ok, value) {
-      return job.set("options", "" + value);
+      if (ok) {
+        return job.set("options", "" + value);
+      }
     }));
     addRow(jobOption("Job options", "Job options to pass to entrypoint", job.get("jobconf"), function(ok, value) {
-      return job.set("jobconf", "" + value);
+      if (ok) {
+        return job.set("jobconf", "" + value);
+      }
     }));
     selectedJarElem.innerHTML = job.get("jar") !== "" ? "" + (job.get("jar")) : "&nbsp;";
     traverse = function(elem) {
@@ -495,8 +507,10 @@
   };
 
   new this.FastEditor(templateButton, function(status, value) {
-    return createTemplate(value, currentJob.settings);
-  }, "Save", "Cancel", "", false);
+    if (status) {
+      return createTemplate(value, currentJob.settings);
+    }
+  }, "Save", "Cancel", "Name of template", false);
 
   currentJob = DEFAULT_TEMPLATE;
 

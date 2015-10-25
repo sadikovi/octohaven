@@ -185,17 +185,17 @@ loadTemplate = (job) ->
     addRow = (row) -> _mapper.parseMapForParent(row, jobRows)
     # build table
     addRow(jobOption("Job name", "Friendly job name", job.get("name"),
-        (ok, value) -> job.set("name", "#{value}")))
+        (ok, value) -> job.set("name", "#{value}") if ok))
     addRow(jobOption("Main class", "Entrypoint for the job", job.get("entrypoint"),
-        (ok, value) -> job.set("entrypoint", "#{value}")))
+        (ok, value) -> job.set("entrypoint", "#{value}") if ok))
     addRow(jobOption("Driver memory", "Memory for the driver programme", job.get("driver-memory"),
-        (ok, value) -> job.set("driver-memory", "#{value}")))
+        (ok, value) -> job.set("driver-memory", "#{value}") if ok))
     addRow(jobOption("Executor memory", "Memory for Spark executors", job.get("executor-memory"),
-        (ok, value) -> job.set("executor-memory", "#{value}")))
+        (ok, value) -> job.set("executor-memory", "#{value}") if ok))
     addRow(jobOption("Options", "Settings, e.g. JVM, networking, shuffle...", job.get("options"),
-        (ok, value) -> job.set("options", "#{value}")))
+        (ok, value) -> job.set("options", "#{value}") if ok))
     addRow(jobOption("Job options", "Job options to pass to entrypoint", job.get("jobconf"),
-        (ok, value) -> job.set("jobconf", "#{value}")))
+        (ok, value) -> job.set("jobconf", "#{value}") if ok))
     # 2. update jar file
     selectedJarElem.innerHTML = if job.get("jar") != "" then "#{job.get("jar")}" else "&nbsp;"
     traverse = (elem) ->
@@ -330,8 +330,8 @@ createTemplate = (name, content) ->
 
 # save template mechanism
 new @FastEditor(templateButton, (status, value) ->
-    createTemplate(value, currentJob.settings)
-, "Save", "Cancel", "", false)
+    createTemplate(value, currentJob.settings) if status
+, "Save", "Cancel", "Name of template", false)
 
 currentJob = DEFAULT_TEMPLATE
 showTemplates()

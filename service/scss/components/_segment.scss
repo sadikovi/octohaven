@@ -65,9 +65,7 @@
         border: 1px solid;
         border-color: #d8d8d8;
 
-        &.blue { border-color: $brand-blue; }
-        &.green { border-color: $brand-green; }
-        &.yellow { border-color: $brand-yellow; }
+        &.blue { border-color: $brand-blue-light; }
     }
 
     &.fixed-height {
