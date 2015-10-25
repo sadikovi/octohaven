@@ -83,6 +83,10 @@
 .btn-compact.btn {
     padding: 6px 12px;
 }
+// micro button
+.btn-micro.btn {
+    padding: 4px 10px;
+}
 
 // anchor button
 a.btn,
@@ -187,7 +191,6 @@ $danger-color-active: darken($brand-red, 5);
     border: none;
     border-radius: inherit;
     vertical-align: middle;
-    padding: 10px 15px;
     font-weight: bold;
     line-height: 1;
     font-style: normal;

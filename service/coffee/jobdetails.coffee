@@ -57,6 +57,7 @@ if _util.isArray(searchstr) and searchstr.length == 2
                 jar = job["sparkjob"]["jar"]
                 create = job["createtime"]
                 submit = job["submittime"]
+                sparkAppId = if job["sparkappid"] then job["sparkappid"] else "None"
 
                 # build rows
                 rowsElem = type: "div", cls: "segments", children: [
@@ -83,6 +84,10 @@ if _util.isArray(searchstr) and searchstr.length == 2
                     row(property(
                         column(contentHeader("Spark URL"), false),
                         column(contentValue(masterurl), true)
+                    )),
+                    row(property(
+                        column(contentHeader("Spark App Id"), false),
+                        column(contentValue(sparkAppId), true)
                     )),
                     row(property(
                         column(contentHeader("Jar file"), false),

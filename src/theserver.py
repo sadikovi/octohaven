@@ -128,8 +128,8 @@ class APICall(object):
                 if not data:
                     raise StandardError("Corrupt json data: " + raw)
                 name = data["name"]
-                entry = data["mainClass"]
-                dmem, emem = data["driverMemory"], data["executorMemory"]
+                entry = data["entrypoint"]
+                dmem, emem = data["driver-memory"], data["executor-memory"]
                 options = data["options"]
                 jar = self.fileManager.resolveRelativePath(data["jar"])
                 # job specific configuration options
@@ -147,7 +147,7 @@ class APICall(object):
 
             def jobClose():
                 jobid = self.query["jobid"] if "jobid" in self.query else None
-                job = self.storageManager.jobForUid(jobid)
+                job = self.jobManager.jobForUid(jobid)
                 if not job:
                     raise StandardError("No job found for 'jobid': %s" % str(jobid))
                 self.jobManager.closeJob(job)

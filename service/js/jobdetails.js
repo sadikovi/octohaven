@@ -126,7 +126,7 @@
     _jobloader.getJob(jobid, function() {
       return jobDetailsElem.innerHTML = "";
     }, function(ok, json) {
-      var create, entrypoint, jar, job, jobconf, masterurl, msg, name, options, rowsElem, status, submit, view, x, y;
+      var create, entrypoint, jar, job, jobconf, masterurl, msg, name, options, rowsElem, sparkAppId, status, submit, view, x, y;
       if (ok) {
         job = json["content"]["job"];
         name = job["sparkjob"]["name"];
@@ -156,6 +156,7 @@
         jar = job["sparkjob"]["jar"];
         create = job["createtime"];
         submit = job["submittime"];
+        sparkAppId = job["sparkappid"] ? job["sparkappid"] : "None";
         rowsElem = {
           type: "div",
           cls: "segments",
@@ -166,7 +167,7 @@
             }, true))), row(property(column(contentHeader("Expected run"), false), column({
               type: "span",
               title: "" + (_util.timestampToDate(submit))
-            }, true))), row(property(column(contentHeader("Status"), false), column(contentValue(status), true))), row(property(column(contentHeader("Entrypoint"), false), column(contentValue(entrypoint), true))), row(property(column(contentHeader("Spark URL"), false), column(contentValue(masterurl), true))), row(property(column(contentHeader("Jar file"), false), column(contentValue(jar), true))), row(property(column(contentHeader("Options"), false), column(contentList(options), true))), row(property(column(contentHeader("Job conf"), false), column(contentList(jobconf), true)))
+            }, true))), row(property(column(contentHeader("Status"), false), column(contentValue(status), true))), row(property(column(contentHeader("Entrypoint"), false), column(contentValue(entrypoint), true))), row(property(column(contentHeader("Spark URL"), false), column(contentValue(masterurl), true))), row(property(column(contentHeader("Spark App Id"), false), column(contentValue(sparkAppId), true))), row(property(column(contentHeader("Jar file"), false), column(contentValue(jar), true))), row(property(column(contentHeader("Options"), false), column(contentList(options), true))), row(property(column(contentHeader("Job conf"), false), column(contentList(jobconf), true)))
           ]
         };
         return _mapper.parseMapForParent(rowsElem, jobDetailsElem);

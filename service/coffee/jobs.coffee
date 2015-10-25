@@ -8,8 +8,8 @@ _loader = @loader
 _jobloader = new @JobLoader
 
 # job statuses
-[ALL, CREATED, SUBMITTED, WAITING, CLOSED, DELAYED] =
-    ["ALL", "CREATED", "SUBMITTED", "WAITING", "CLOSED", "DELAYED"]
+[ALL, CREATED, FINISHED, WAITING, CLOSED, DELAYED] =
+    ["ALL", "CREATED", "FINISHED", "WAITING", "CLOSED", "DELAYED"]
 
 ################################################################
 # Request all jobs from the server
@@ -56,7 +56,7 @@ jobColumn = (name, link, prefix, timestamp) ->
     _mapper.parseMapForParent(elem)
 
 statusColour = (status) ->
-    return "text-blue" if (status == SUBMITTED)
+    return "text-blue" if (status == FINISHED)
     return "text-green" if (status == CREATED)
     return "text-yellow" if (status == WAITING)
     return "text-red" if (status == CLOSED)
@@ -70,7 +70,7 @@ row = (jobObj) ->
     name = jobObj["sparkjob"]["name"]
     # build columns
     jobCol = jobColumn(name, "/job?jobid=#{uid}", "Created ", submittime)
-    showClose = status != SUBMITTED and status != CLOSED
+    showClose = status in [CREATED, DELAYED, WAITING]
     statusCol = statusColumn(status, statusColour(status), !showClose)
     buttonCol = buttonColumn("Close", (e) ->
         e.uid ?= uid
@@ -119,7 +119,7 @@ all = document.getElementById("octohaven-jobs-all")
 created = document.getElementById("octohaven-jobs-created")
 waiting = document.getElementById("octohaven-jobs-waiting")
 delayed = document.getElementById("octohaven-jobs-delayed")
-submitted = document.getElementById("octohaven-jobs-submitted")
+finished = document.getElementById("octohaven-jobs-finished")
 closed = document.getElementById("octohaven-jobs-closed")
 
 resetLabels = ->
@@ -127,7 +127,7 @@ resetLabels = ->
     _util.removeClass(created, "selected")
     _util.removeClass(waiting, "selected")
     _util.removeClass(delayed, "selected")
-    _util.removeClass(submitted, "selected")
+    _util.removeClass(finished, "selected")
     _util.removeClass(closed, "selected")
 
 selectLabel = (elem) ->
@@ -144,7 +144,7 @@ _util.addEventListener(all, "click", (e) -> actionLabel(e, all, ALL))
 _util.addEventListener(created, "click", (e) -> actionLabel(e, created, CREATED))
 _util.addEventListener(waiting, "click", (e) -> actionLabel(e, waiting, WAITING))
 _util.addEventListener(delayed, "click", (e) -> actionLabel(e, delayed, DELAYED))
-_util.addEventListener(submitted, "click", (e) -> actionLabel(e, submitted, SUBMITTED))
+_util.addEventListener(finished, "click", (e) -> actionLabel(e, finished, FINISHED))
 _util.addEventListener(closed, "click", (e) -> actionLabel(e, closed, CLOSED))
 
 # request all statuses

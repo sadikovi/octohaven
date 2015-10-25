@@ -57,6 +57,11 @@ class Util
             obj = def
         return obj
 
+    # parses integer, if fails returns default
+    intOrElse: (int, def=-1) ->
+        a = parseInt(int, 10)
+        return if a then a else def
+
     humanReadableTime: (timestamp, locale="en-nz") ->
         [now, date] = [new Date, new Date timestamp]
         diff = (now.getTime() - date.getTime()) / 1000.0

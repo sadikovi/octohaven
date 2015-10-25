@@ -147,7 +147,7 @@ class JobManager(object):
     # simple wrapper around `jobsForStatus` method of StorageManager
     def listJobsForStatus(self, status, limit, sort):
         def sortFunc(x, y):
-            return x.createtime > y.createtime
+            return -1 * cmp(x.createtime, y.createtime)
         # status is invalid or does not match global keyspace, raise an error explicitly
         if status.upper() not in STATUSES and status.upper() != ALL_JOBS_KEY:
             raise StandardError("Invalid status " + status + " to fetch")

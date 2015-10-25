@@ -34,6 +34,8 @@ DURATIONS = [LONG, MEDIUM, QUICK]
 DEFAULT_PRIORITY = 100
 # job id key as a Spark job option
 SPARK_UID_KEY = "spark.octohaven.jobId"
+# default Spark job name
+DEFAULT_SPARK_NAME = "Just another job"
 
 # Validation class to encapsulate all the checks that we have for Job and SparkJob
 class JobCheck(object):
@@ -95,7 +97,9 @@ class JobCheck(object):
 class SparkJob(object):
     def __init__(self, uid, name, masterurl, entrypoint, jar, options, jobconf=[]):
         self.uid = uid
-        self.name = name
+        # set name, if name is empty then assign default name
+        name = str(name).strip()
+        self.name = name if len(name) > 0 else DEFAULT_SPARK_NAME
         self.masterurl = JobCheck.validateMasterUrl(masterurl)
         self.entrypoint = JobCheck.validateEntrypoint(entrypoint)
         self.jar = JobCheck.validateJarPath(jar)

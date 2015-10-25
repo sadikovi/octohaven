@@ -15,10 +15,11 @@
 # }
 
 import uuid, time
-from types import DictType
+from types import DictType, StringType
 from storagemanager import StorageManager
 
 TEMPLATE_KEYSPACE = "TEMPLATE"
+TEMPLATE_NAME_UNKNOWN = "Unknown"
 
 class Template(object):
     def __init__(self, uid, name, createtime, content):
@@ -56,8 +57,13 @@ class TemplateManager(object):
 
     def createTemplate(self, name, content):
         uid = "template_" + uuid.uuid4().hex
+        # we use default name if current name cannot be resolved
+        name = name if type(name) is StringType and len(name) > 0 else TEMPLATE_NAME_UNKNOWN
         # creation time in milliseconds
         createtime = long(time.time() * 1000)
+        # check that content is a dictionary
+        if type(content) is not DictType:
+            raise StandardError("Content is wrong and cannot be parsed")
         return Template(uid, str(name), createtime, content)
 
     def saveTemplate(self, template):

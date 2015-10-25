@@ -19,7 +19,7 @@ class Status
         # call before function
         before?()
         # send request to find out status
-        loader.sendrequest "get", "/api/v1/sparkstatus", {}, null
+        loader.sendrequest "get", "/api/v1/spark/status", {}, null
         , (code, response) =>
             json = util.jsonOrElse(response)
             if json
@@ -49,11 +49,11 @@ class Filelist
             after?(false, json)
 
     breadcrumbs: (directory, before, after) ->
-        @sendRequest("/api/v1/breadcrumbs?path=#{util.quote(directory)}", before, after)
+        @sendRequest("/api/v1/file/breadcrumbs?path=#{util.quote(directory)}", before, after)
 
     # Files request
     files: (directory, before, after) ->
-        @sendRequest("/api/v1/list?path=#{util.quote(directory)}", before, after)
+        @sendRequest("/api/v1/file/list?path=#{util.quote(directory)}", before, after)
 
 # set class to be global
 @Filelist ?= Filelist
@@ -64,7 +64,7 @@ class JobResolver
 
     submit: (data, before, after) ->
         before?()
-        loader.sendrequest "post", "/api/v1/submit", {}, data
+        loader.sendrequest "post", "/api/v1/job/submit", {}, data
         , (code, response) =>
             json = util.jsonOrElse(response)
             if json then  after?(true, json) else after?(false, json)
@@ -80,7 +80,7 @@ class JobLoader
 
     get: (status, limit, before, after) ->
         before?()
-        loader.sendrequest "get", "/api/v1/jobs?status=#{status}&limit=#{limit}", {}, null
+        loader.sendrequest "get", "/api/v1/job/list?status=#{status}&limit=#{limit}", {}, null
         , (success, response) ->
             json = util.jsonOrElse(response)
             after?(!!json, json)
@@ -90,7 +90,7 @@ class JobLoader
 
     close: (jobid, before, after) ->
         before?()
-        loader.sendrequest "get", "/api/v1/close?jobid=#{jobid}", {}, null
+        loader.sendrequest "get", "/api/v1/job/close?jobid=#{jobid}", {}, null
         , (success, response) ->
             json = util.jsonOrElse(response)
             after?(!!json, json)
@@ -100,7 +100,7 @@ class JobLoader
 
     getJob: (jobid, before, after) ->
         before?()
-        loader.sendrequest "get", "/api/v1/job?jobid=#{jobid}", {}, null
+        loader.sendrequest "get", "/api/v1/job/get?jobid=#{jobid}", {}, null
         , (success, response) ->
             json = util.jsonOrElse(response)
             after?(!!json, json)
@@ -109,3 +109,39 @@ class JobLoader
             after?(false, json)
 
 @JobLoader ?= JobLoader
+
+# loading templates
+class TemplateLoader
+    constructor: ->
+
+    show: (before, after) ->
+        before?()
+        loader.sendrequest "get", "/api/v1/template/list", {}, null
+        , (success, response) ->
+            json = util.jsonOrElse(response)
+            after?(!!json, json)
+        , (error, response) ->
+            json = util.jsonOrElse(response)
+            after?(false, json)
+
+    delete: (tid, before, after) ->
+        before?()
+        loader.sendrequest "get", "/api/v1/template/delete?templateid=#{tid}", {}, null
+        , (success, response) ->
+            json = util.jsonOrElse(response)
+            after?(!!json, json)
+        , (error, response) ->
+            json = util.jsonOrElse(response)
+            after?(false, json)
+
+    create: (data, before, after) ->
+        before?()
+        loader.sendrequest "post", "/api/v1/template/create", {}, data
+        , (success, response) ->
+            json = util.jsonOrElse(response)
+            after?(!!json, json)
+        , (error, response) ->
+            json = util.jsonOrElse(response)
+            after?(false, json)
+
+@TemplateLoader ?= TemplateLoader

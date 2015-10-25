@@ -122,6 +122,19 @@
       return obj;
     };
 
+    Util.prototype.intOrElse = function(int, def) {
+      var a;
+      if (def == null) {
+        def = -1;
+      }
+      a = parseInt(int, 10);
+      if (a) {
+        return a;
+      } else {
+        return def;
+      }
+    };
+
     Util.prototype.humanReadableTime = function(timestamp, locale) {
       var date, diff, now, _ref;
       if (locale == null) {
