@@ -13,7 +13,8 @@ RUN_TESTS = {
     "jobmanager": True,
     "utils": True,
     "sparkmodule": True,
-    "template": True
+    "template": True,
+    "scheduler": True
 }
 
 def checkTest(key):
@@ -75,6 +76,13 @@ def collectSystemTests(suites):
         suites.addTest(unittest_template.loadSuites())
     else:
         print "@skip: 'template' tests"
+
+    # scheduler
+    if checkTest("scheduler"):
+        import test.unittest_scheduler as unittest_scheduler
+        suites.addTest(unittest_scheduler.loadSuites())
+    else:
+        print "@skip: 'scheduler' tests"
 
 if __name__ == '__main__':
     args = sys.argv[2:]

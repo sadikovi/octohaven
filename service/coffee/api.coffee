@@ -24,7 +24,7 @@ class Status
             json = util.jsonOrElse(response)
             if json
                 data = json["content"]
-                [status, uiAddress, masterAddress] = [data["sparkstatus"],
+                [status, uiAddress, masterAddress] = [data["status"],
                     data["spark-ui-address"], data["spark-master-address"]]
                 after?(status, uiAddress, masterAddress)
             else

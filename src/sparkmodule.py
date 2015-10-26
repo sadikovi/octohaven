@@ -4,17 +4,19 @@ import urllib2, json, re
 from types import ListType
 from job import JobCheck, SPARK_UID_KEY
 from webparser import Parser
+from octolog import Octolog
 from utils import *
 
 SPARK_REST_ENDPOINT = "/api/v1"
 SPARK_REST_APPLICATIONS = "/applications"
+SPARK_RES_ENVIRONMENT = "/environment"
 
 # Spark cluster statuses
 FREE = 0
 BUSY = -1
 DOWN = -2
 
-class SparkModule(object):
+class SparkModule(Octolog, object):
     def __init__(self, masterAddress, uiAddress, uiRunAddress):
         # master address to launch applications using "spark-submit"
         self.masterAddress = JobCheck.validateMasterUrl(masterAddress)
@@ -60,14 +62,23 @@ class SparkModule(object):
                     apps.append({"id": appid, "name": name, "completed": completed})
             return apps
 
+    # returns list of running apps on Spark cluster
+    def clusterRunningApps(self):
+        info = self.clusterInfo()
+        if type(info) is ListType:
+            running = [app for app in info if app["completed"] is False]
+            return running
+        return None
+
     # Returns current Spark cluster status
     def clusterStatus(self):
         status = FREE
         info = self.clusterInfo()
-        if not info:
-            return DOWN
-        running = [app for app in info if app["completed"] is False]
-        return FREE if len(running) == 0 else BUSY
+        if type(info) is ListType:
+            running = [app for app in info if app["completed"] is False]
+            return FREE if len(running) == 0 else BUSY
+        self.logger().info("Spark cluster is not running according to %s", str(info))
+        return DOWN
 
     # Returns list of current apps running, each element of an array is a dictionary:
     # {"sparkid": "app-20151022214639-0000", "jobid": "job_129397ahdf34f342b"}
@@ -81,7 +92,7 @@ class SparkModule(object):
         port = self.uiRunPort
         for app in running:
             # ask for running page
-            tempUrl = "http://" + self.uiRunHost + ":" + str(port) + "/environment"
+            tempUrl = "http://" + self.uiRunHost + ":" + str(port) + SPARK_RES_ENVIRONMENT
             data = self.getWebpageData(tempUrl)
             if data:
                 sparkid = self.getValueForKey(self.search(data, "spark.app.id"), "spark.app.id")

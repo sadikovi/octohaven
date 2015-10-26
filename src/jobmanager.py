@@ -23,7 +23,6 @@ class JobManager(object):
         self.sparkModule = sparkModule
         self.storageManager = storageManager
 
-
     @private
     def parseOptions(self, options):
         # parses Spark conf options

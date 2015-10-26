@@ -27,7 +27,7 @@
           json = util.jsonOrElse(response);
           if (json) {
             data = json["content"];
-            _ref = [data["sparkstatus"], data["spark-ui-address"], data["spark-master-address"]], status = _ref[0], uiAddress = _ref[1], masterAddress = _ref[2];
+            _ref = [data["status"], data["spark-ui-address"], data["spark-master-address"]], status = _ref[0], uiAddress = _ref[1], masterAddress = _ref[2];
             return typeof after === "function" ? after(status, uiAddress, masterAddress) : void 0;
           } else {
             return typeof after === "function" ? after(false, false, false) : void 0;

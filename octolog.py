@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import paths, os
+import paths, os, re
 import logging
 import logging.config
 
@@ -19,4 +19,8 @@ def _logger(name):
 
 class Octolog(object):
     def logger(self):
-        return _logger(str(self.__class__))
+        name = str(self.__class__)
+        groups = re.match(r"^<class\s*'([\.\w-]+)'\s*>$", name)
+        if groups:
+            name = groups.group(1)
+        return _logger(name)
