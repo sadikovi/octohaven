@@ -65,7 +65,10 @@
         border: 1px solid;
         border-color: #d8d8d8;
 
-        &.blue { border-color: $brand-blue-light; }
+        &.blue {
+            border-color: #c1dce8;
+            background-color: #f5fafe;
+        }
     }
 
     &.fixed-height {

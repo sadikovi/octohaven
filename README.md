@@ -13,12 +13,14 @@ after some time passed, pass job parameters along with Spark configuration and e
 cannot monitor job and see progress yet.
 
 ## Install
-Super simple installation and no dependencies, except Python 2.7.x, and Redis.
+Super simple install and no dependencies, except Python 2.7.x, and Redis.
 Uses Docker to install Redis, but can use your own installation, see [Configuration](#configuration)
 
 ## Run
 Download repository and run scripts from `sbin` directory.
-To run service execute `start.sh` script, to stop service - `stop.sh`.
+To run service execute `start.sh` script, to stop service - `stop.sh`. Application will be
+available on `localhost:33900` or whatever port you will have specified in `config.sh`.
+
 ```shell
 # start service, this will load configuration from config.sh
 $ sbin/start.sh
@@ -34,20 +36,20 @@ file.
 
 ## Configuration
 Configuration lives in `sbin/config.sh`. Options are pretty self-explanatory, comments tell what
-options mean. It is recommended to use Docker, because it just makes life easier, but if you do not
-want to use Docker for Redis, you will have to specify host, port, db of the running instance.
+options mean. It is recommended to use Docker, as it makes life easier, but you also have an
+option to specify host, port, db of the running instance.
 
 ## Build and test
 There is no building project really, you just run tests to verify that Python modules work. For
-front-end you will be asked to install `coffee`, `sass` to compile scripts, if you have not already.
+front-end you will be asked to install `coffee`, `sass` to compile scripts.
 ```shell
 # to build front-end scripts - CoffeeScript and SCSS
 $ bin/compile.sh
 ```
 
-To run tests execute command below. Be aware, that tests use db `15` of Redis instance, thus if
-you use it for something else, change value to some other in `bin/test.sh`, as tests call `flush()`
-for test db.
+To run tests execute command below. Be aware, that tests use db `15` of Redis instance, although it
+will check whether your production db and test db have the same number, it is worth changing it, if
+your db also uses db '15', you can do it by changing db in configuration or `bin/test.sh`.
 ```shell
 # run Python tests
 $ bin/test.sh
