@@ -282,7 +282,7 @@ class Scheduler(Octolog, object):
     def run(self):
         if self.isRunning:
             self.logger().warning("Scheduler is already running")
-        self.logger().warning("Scheduler is running")
+        self.logger().info("Scheduler is running")
         self.isRunning = True
         fetch(self)
         runJob(self)

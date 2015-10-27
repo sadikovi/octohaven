@@ -48,6 +48,7 @@ fi
 
 # start serving
 eval "$WHICH_PYTHON $ROOT_DIR/run_service.py \
+    --host=$OCTOHAVEN_HOST \
     --port=$OCTOHAVEN_PORT \
     --spark-ui-address=$OCTOHAVEN_SPARK_UI_ADDRESS \
     --spark-ui-run-address=$OCTOHAVEN_SPARK_UI_RUN_ADDRESS \

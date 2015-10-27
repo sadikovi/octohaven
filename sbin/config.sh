@@ -1,7 +1,8 @@
 #!/bin/bash
 # Octohaven app settings
-## Octohaven application port to service web pages and all, application will be available
-## at "localhost:OCTOHAVEN_PORT"
+## Octohaven application host and port to service web pages and all, application will be available
+## at "OCTOHAVEN_HOST:OCTOHAVEN_PORT"
+export OCTOHAVEN_HOST="localhost"
 export OCTOHAVEN_PORT="33900"
 # Octohaven Spark settings
 # Spark full master address to execute Spark jobs on a cluster
