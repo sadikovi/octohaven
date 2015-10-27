@@ -4,6 +4,8 @@ Super simple Apache Spark job server.
 - [Overview](#overview)
 - [Install](#install)
 - [Run](#run)
+    - [Quick test](#quick-test)
+    - [Spark job logs](#spark-job-logs)
 - [Configuration](#configuration)
 - [Build and test](#build-and-test)
 
@@ -33,6 +35,36 @@ $ sbin/stop.sh
 
 Application will be available on `localhost:33900` or whatever port you specify in configuration
 file.
+
+### Quick test
+There is a jar file in distribution, so you can try running sample Spark job out of the box.
+Settings are:
+- **entrypoint** org.test.SparkSum
+- **jar** projectDir/test/resources/filelist/prod/start-sbt-app_2.10-0.0.1.jar
+- **jobconf** any number up to max integer
+
+Job will report sum of numbers between 0 and number specified.
+
+### Spark job logs
+Each job saves `stdout` and `stderr` results in global log folder `projectDir/apache/spark/logs`.
+Folder is created for each job with `job.uid` as name, with structure as follows:
+- folder (job uid)
+    - `stdout` (process stdout)
+    - `stderr` (process stderr)
+    - `_metadata` (job information, e.g. uid, name, options and etc.)
+
+Here is an example:
+```shell
++-- apache/spark/logs/
+    +-- job_02488ad5381f416ea271f20359756874/
+        +-- _metadata
+        +-- stderr
+        +-- stdout
+    +-- job_6efada24b5484e9bb835f6dd379168cd/
+        +-- _metadata
+        +-- stderr
+        +-- stdout
+```
 
 ## Configuration
 Configuration lives in `sbin/config.sh`. Options are pretty self-explanatory, comments tell what
