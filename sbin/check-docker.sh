@@ -19,3 +19,6 @@ if [ -z "$DOCKER_OK" ]; then
     echo "[ERROR] Problems with Docker daemon. Try restarting service"
     exit 1
 fi
+
+# extract docker server version
+export DOCKER_SERVER_VERSION=$(docker version --format '{{.Server.Version}}')
