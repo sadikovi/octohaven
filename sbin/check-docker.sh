@@ -14,7 +14,7 @@ if [ -z "$WHICH_DOCKER_MACHINE" ]; then
 fi
 
 # check that docker daemon is running and available
-DOCKER_OK="$(docker version | grep Server:)"
+DOCKER_OK="$(docker version | grep Server)"
 if [ -z "$DOCKER_OK" ]; then
     echo "[ERROR] Problems with Docker daemon. Try restarting service"
     exit 1
