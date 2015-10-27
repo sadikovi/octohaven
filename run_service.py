@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import paths
-import sys, time, octolog
+import sys, time, octolog, os
 from theserver import SimpleHandler, RichHTTPServer
 from scheduler import Scheduler
 
@@ -71,8 +71,11 @@ Options are:
         raise StandardError("Spark UI running address must be set, e.g. http://localhost:4040")
     if not spark_master_address:
         raise StandardError("Spark Master address must be set, e.g. spark://local:7077")
-    if not jar_folder:
-        raise StandardError("Jar folder must be set and be a valid directory")
+    # check whether jar_folder is an absolute path and exists
+    jar_folder = os.path.abspath(jar_folder) if jar_folder else None
+    if not jar_folder or not os.path.exists(jar_folder):
+        raise StandardError("Jar folder must be set " + \
+            "and be a valid directory, got %s" % str(jar_folder))
 
     # global settings necessary to run application
     settings = {

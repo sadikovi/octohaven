@@ -55,12 +55,6 @@ if [ -n "$USE_DOCKER" ]; then
     fi
 fi
 
-# check that jar folder exists
-if [ ! -d "$JAR_FOLDER" ]; then
-    echo "[ERROR] $JAR_FOLDER does not exist"
-    exit 1
-fi
-
 # start serving
 eval "$WHICH_PYTHON $ROOT_DIR/run_service.py \
     --host=$OCTOHAVEN_HOST \
