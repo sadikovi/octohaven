@@ -7,6 +7,7 @@ $container-padding: 20px;
     padding-right: $container-padding;
     margin-right: auto;
     margin-left: auto;
+    @include clearfix;
 
     &.fixed { width: $container-width; }
 

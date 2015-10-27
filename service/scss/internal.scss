@@ -5,6 +5,7 @@
 
 // Basecoat
 @import "./basecoat/normalize";
+@import "./basecoat/mixins";
 @import "./basecoat/base";
 @import "./basecoat/fonts";
 @import "./basecoat/type";
@@ -24,3 +25,4 @@
 @import "./components/container";
 @import "./components/divider";
 @import "./components/truncate";
+@import "./components/footer";
