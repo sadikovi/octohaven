@@ -1,10 +1,11 @@
 #!/usr/bin/env python
 
-import time
+import os, time
 from Queue import PriorityQueue
 from types import IntType
 from threading import Timer, Lock
 from subprocess import Popen, PIPE
+from paths import LOGS_PATH
 from octolog import Octolog
 from job import *
 from redisconnector import RedisConnector, RedisConnectionPool
@@ -149,10 +150,8 @@ def runJob(scheduler):
                     else:
                         scheduler.logger().info("Submitting the job %s", job.uid)
                         scheduler.updateJob(job, RUNNING, job.priority)
-                        cmd = job.execCommand()
-                        scheduler.logger().info("Executing command: %s", str(cmd))
                         # run command with NO_WAIT
-                        processid = Popen(cmd).pid
+                        processid = scheduler.executeSparkJob(job)
                         # Add link "process id - job id"
                         link = Link(processid, job.uid)
                         storage.saveItem(link, klass=Link)
@@ -206,7 +205,7 @@ class Scheduler(Octolog, object):
         # interval in seconds to fetch data from storage
         self.fetchInterval = 11.0
         # run job interval in seconds
-        self.runJobInterval = 3.0
+        self.runJobInterval = 5.0
         # maximal number of jobs allowed to run simultaneously
         self.maxRunningJobs = 1
         # whether timers are running
@@ -271,6 +270,36 @@ class Scheduler(Octolog, object):
             return -1
         # otherwise we always return 0 for now
         return 0
+
+    # execute Spark job commmand in NO_WAIT mode.
+    # Also specify stdout and stderr folders for a job
+    # Returns process id for a job
+    def executeSparkJob(self, job):
+        cmd = job.execCommand()
+        self.logger().info("Executing command: %s", str(cmd))
+        # open output and error files in folder specific for that jobid
+        out, err = None, None
+        try:
+            # make directory for the Spark job
+            jobDir = os.path.join(LOGS_PATH, str(job.uid))
+            os.makedirs(jobDir)
+            # create metadata file with job settings
+            metadataPath = os.path.join(jobDir, "_metadata")
+            with open(metadataPath, 'wb') as f:
+                f.write(str(job.toDict()))
+            # create files
+            outPath = os.path.join(jobDir, "stdout")
+            errPath = os.path.join(jobDir, "stderr")
+            out = open(outPath, "wb")
+            err = open(errPath, "wb")
+        except:
+            self.logger().exception("Error happened during creation of stdout and stderr for " + \
+                "job id %s. Using default None values" % job.uid)
+            out = None
+            err = None
+        # run process
+        processid = Popen(cmd, stdout=out, stderr=err, close_fds=True).pid
+        return processid
 
     def get(self):
         if not self.hasNext():
