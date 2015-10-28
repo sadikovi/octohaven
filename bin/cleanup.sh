@@ -8,4 +8,18 @@ for f in $(find "$ROOT_DIR" -name "*.pyc" -type f); do
     echo "- Removing $f"
     rm "$f"
 done
+# delete service logs
+echo "[INFO] Removing 'octohaven-service.log' files"
+for f in $(find "$ROOT_DIR" -name "octohaven-service.log*" -type f); do
+    echo "- Removing $f"
+    rm "$f"
+done
+# delete apache/spark/logs dir and all subfolders
+echo "[INFO] Removing 'apache/spark/logs' directory for Spark job logs"
+OCTOHAVEN_SPARK_LOGS_DIR="$ROOT_DIR/apache/spark/logs"
+for f in $(find "$OCTOHAVEN_SPARK_LOGS_DIR" -name "job*" -type d); do
+    echo "- Removing $f"
+    rm -r "$f"
+done
+# ... and we are done
 echo "[INFO] Done"
