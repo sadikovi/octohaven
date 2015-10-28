@@ -48,6 +48,7 @@ if _util.isArray(searchstr) and searchstr.length == 2
         , (ok, json) ->
             if ok
                 job = json["content"]["job"]
+                uid = job["uid"]
                 name = job["sparkjob"]["name"]
                 status = job["status"]
                 entrypoint = job["sparkjob"]["entrypoint"]
@@ -61,6 +62,10 @@ if _util.isArray(searchstr) and searchstr.length == 2
 
                 # build rows
                 rowsElem = type: "div", cls: "segments", children: [
+                    row(property(
+                        column(contentHeader("Job id"), false),
+                        column(contentValue(uid), true)
+                    )),
                     row(property(
                         column(contentHeader("Spark job name"), false),
                         column(contentValue(name), true)

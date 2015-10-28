@@ -126,9 +126,10 @@
     _jobloader.getJob(jobid, function() {
       return jobDetailsElem.innerHTML = "";
     }, function(ok, json) {
-      var create, entrypoint, jar, job, jobconf, masterurl, msg, name, options, rowsElem, sparkAppId, status, submit, view, x, y;
+      var create, entrypoint, jar, job, jobconf, masterurl, msg, name, options, rowsElem, sparkAppId, status, submit, uid, view, x, y;
       if (ok) {
         job = json["content"]["job"];
+        uid = job["uid"];
         name = job["sparkjob"]["name"];
         status = job["status"];
         entrypoint = job["sparkjob"]["entrypoint"];
@@ -161,7 +162,7 @@
           type: "div",
           cls: "segments",
           children: [
-            row(property(column(contentHeader("Spark job name"), false), column(contentValue(name), true))), row(property(column(contentHeader("Created"), false), column({
+            row(property(column(contentHeader("Job id"), false), column(contentValue(uid), true))), row(property(column(contentHeader("Spark job name"), false), column(contentValue(name), true))), row(property(column(contentHeader("Created"), false), column({
               type: "span",
               title: "" + (_util.timestampToDate(create))
             }, true))), row(property(column(contentHeader("Expected run"), false), column({
