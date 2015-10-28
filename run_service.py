@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import paths
-import sys, time, octolog, os
+import sys, time, octolog, os, platform
 from theserver import SimpleHandler, RichHTTPServer
 from scheduler import Scheduler
 
@@ -33,6 +33,11 @@ def getOrElse(params, key, default):
     return params[key] if key in params else default
 
 if __name__ == '__main__':
+    # check operating system that we are running server on. Restrict OS to Linux or OS X
+    if platform.system() == "Windows":
+        print "[ERROR] Windows OS is not supported currently. Use OS X or any Linux distribution"
+        sys.exit(1)
+    # process configuration options
     args = sys.argv[1:]
     if not args:
         print """

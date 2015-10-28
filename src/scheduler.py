@@ -31,7 +31,6 @@ class Link(object):
 
     @classmethod
     def fromDict(cls, obj):
-        uid = obj["uid"]
         processid = obj["processid"]
         jobid = obj["jobid"]
         return cls(processid, jobid)
