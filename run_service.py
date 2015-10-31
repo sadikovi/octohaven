@@ -3,7 +3,7 @@
 import paths
 import sys, time, octolog, os, platform
 from theserver import SimpleHandler, RichHTTPServer
-from scheduler import Scheduler
+from scheduler import Scheduler, fetchTimer, runTimer
 
 # init logger
 logger = octolog._logger("run_service:" + __name__)

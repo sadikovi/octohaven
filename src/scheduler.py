@@ -49,6 +49,7 @@ class Link(object):
 
 # timer thread for fetching jobs
 fetchTimer = None
+# timer thread for running jobs
 runTimer = None
 
 def fetch(scheduler):
@@ -345,6 +346,4 @@ class Scheduler(Octolog, object):
     # stop timers and scheduler
     def stop(self):
         self.isRunning = False
-        fetchTimer = fetchTimer.cancel() if fetchTimer else None
-        runTimer = runTimer.cancel() if runTimer else None
         self.logger().info("Scheduler is stopped")
