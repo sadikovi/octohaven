@@ -27,9 +27,10 @@ sys.path.append(TEST_PATH)
 ## set system path to the Apache Spark logs folder (just for reference)
 sys.path.append(LOGS_PATH)
 
-# Creating folder for Spark jobs logs
-CREATE_LOGS_FOLDER = True
-# in order to create folder for Spark logs for each job, we create folders recursively and
+# In order to create folder for Spark logs for each job, we create folders recursively and
 # check path on existence
-if CREATE_LOGS_FOLDER and not os.path.exists(LOGS_PATH):
+if not os.path.exists(LOGS_PATH):
     os.makedirs(LOGS_PATH)
+# also check that we can write into that folder
+if not os.access(LOGS_PATH, os.W_OK):
+    raise IOError("No writing permissions for logs directory %s" % LOGS_PATH)
