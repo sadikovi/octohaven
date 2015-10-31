@@ -14,9 +14,10 @@
 #   }
 # }
 
-import uuid, time
+import uuid
 from types import DictType, StringType
 from storagemanager import StorageManager
+from utils import *
 
 TEMPLATE_KEYSPACE = "TEMPLATE"
 TEMPLATE_NAME_UNKNOWN = "Unknown"
@@ -60,7 +61,7 @@ class TemplateManager(object):
         # we use default name if current name cannot be resolved
         name = name if type(name) is StringType and len(name) > 0 else TEMPLATE_NAME_UNKNOWN
         # creation time in milliseconds
-        createtime = long(time.time() * 1000)
+        createtime = currentTimeMillis()
         # check that content is a dictionary
         if type(content) is not DictType:
             raise StandardError("Content is wrong and cannot be parsed")

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import json
+import json, time
 from types import UnicodeType, StringType, DictType, ListType
 
 # private decorator
@@ -53,3 +53,7 @@ def boolOrElse(raw, value):
         return bool(pre)
     except ValueError:
         return value
+
+# return current time in milliseconds
+def currentTimeMillis():
+    return long(time.time() * 1000.0)

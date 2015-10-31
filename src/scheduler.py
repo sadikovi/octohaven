@@ -1,8 +1,7 @@
 #!/usr/bin/env python
 
-import os, time
+import os, json
 from Queue import PriorityQueue
-from types import IntType
 from threading import Timer, Lock
 from subprocess import Popen, PIPE
 from paths import LOGS_PATH
@@ -13,61 +12,70 @@ from storagemanager import StorageManager
 from sparkmodule import SparkModule, DOWN
 from utils import *
 
-
-SCHEDULER_UID_PREFIX = "scheduler_prefix"
-SCHEDULER_RUN_POOL = "scheduler_run_pool"
 # create lock, it is unnecessary, because of GIL, but it is safe to have it anyway.
 lock = Lock()
 
 # Link class to keep reference for both process and job
 class Link(object):
-    def __init__(self, processid, jobid):
-        self.uid = processid
-        self.processid = processid
+    def __init__(self, jobid, processid=None, uid=None):
+        self.uid = uid if uid else "link_%s" % jobid
         self.jobid = jobid
+        self.processid = processid
+
+    def isSubmitted(self):
+        return bool(self.processid)
 
     def toDict(self):
-        return {"uid": self.uid, "processid": self.processid, "jobid": self.jobid}
+        return {"uid": self.uid, "jobid": self.jobid, "processid": self.processid}
 
     @classmethod
     def fromDict(cls, obj):
-        processid = obj["processid"]
-        jobid = obj["jobid"]
-        return cls(processid, jobid)
+        uid = obj["uid"] if "uid" in obj else None
+        return cls(obj["jobid"], obj["processid"], uid)
 
-# method populates queue with fresh jobs with statuses WAITING and CREATED
+    @staticmethod
+    def isLink(obj):
+        return True if type(obj) is Link else False
+
+    @staticmethod
+    def validateLink(obj):
+        if not Link.isLink(obj):
+            raise StandardError("Expected Link, got " + str(type(obj)))
+        return obj
+
+#################################################################
+# Scheduler                                                     #
+#################################################################
+
+# timer thread for fetching jobs
+fetchTimer = None
+runTimer = None
+
 def fetch(scheduler):
     try:
         lock.acquire()
-        # current time in milliseconds
-        currTime = long(time.time() * 1000)
-        # calculate min and max boundaries for checking delayed job
-        minT, maxT = currTime - scheduler.fetchInterval/10, currTime + scheduler.fetchInterval
-        # Pre-step of checking DELAYED jobs. We need to check them every time, fetch runs, because
-        # we do not want to miss the window
-        scheduler.logger().info("Checking DELAYED jobs")
-        delayed = scheduler.fetchStatus(DELAYED, scheduler.poolSize)
-        scheduler.logger().info("Fetched %s DELAYED jobs", len(delayed))
+        scheduler.logger().info("Starting to fetch jobs that are ready to run...")
+        # Calculate min and max boundaries for checking delayed job
+        maxT = currentTimeMillis() + scheduler.fetchInterval
+        # Check DELAYED jobs. We check them every time, because we do not want to miss window
+        delayed = scheduler.jobsForStatus(DELAYED, scheduler.poolSize)
+        scheduler.logger().info("Fetched %s DELAYED jobs from storage", len(delayed))
         if len(delayed) > 0:
-            # update status on waiting and priority
-            # in this case we also fetch jobs that were overdue and not necessary need to be run.
-            due = [j for j in delayed if j and j.submittime <= maxT]
-            for dueJob in due:
-                scheduler.updateJob(dueJob, WAITING, dueJob.priority - 1)
-                scheduler.logger().info("Updated job %s to run as soon as possible", dueJob.uid)
-        # proper scheduling fetch
-        # fetches WAITING jobs first, sorting them by priority, then CREATED, if we have free slots.
-        # if there is a delayed job that was updated as waiting, it will be queued and run as fast
+            # Update status on waiting and priority, so we ensure that delayed job runs first
+            for job in delayed:
+                if job and job.submittime <= maxT:
+                    scheduler.updateJob(job, WAITING, job.priority - 1)
+                    scheduler.logger().info("Updated job %s to run as soon as possible", job.uid)
+        # Fetches WAITING jobs first, sorting them by priority, then CREATED, if we have free slots.
+        # If there is a delayed job that was updated as waiting, it will be queued and run as fast
         # as possible. If pool is full, then we will have to wait for the next free slot.
         numJobs = scheduler.poolSize - scheduler.pool.qsize()
         if numJobs > 0:
-            scheduler.logger().info("Requested %s jobs from storage", numJobs)
-            arr = scheduler.fetchStatus(WAITING, numJobs)
+            arr = scheduler.jobsForStatus(WAITING, numJobs)
             scheduler.logger().info("Fetched %s WAITING jobs from storage", len(arr))
             if len(arr) < numJobs:
-                # we have to check created jobs
                 numJobs = numJobs - len(arr)
-                add = scheduler.fetchStatus(CREATED, numJobs)
+                add = scheduler.jobsForStatus(CREATED, numJobs)
                 scheduler.logger().info("Fetched %s CREATED jobs from storage", len(add))
                 arr = arr + add
             for job in arr:
@@ -77,86 +85,75 @@ def fetch(scheduler):
                 scheduler.add(job, job.priority)
         else:
             scheduler.logger().info("No new jobs were added")
-        scheduler.logger().info("Updated queue size: %s", scheduler.pool.qsize())
+        scheduler.logger().info("Refreshed queue size: %s", scheduler.pool.qsize())
     finally:
         lock.release()
-        # create timer for a subsequent lookup
+        # Create timer for a subsequent lookup
         fetchTimer = Timer(scheduler.fetchInterval, fetch, [scheduler])
         fetchTimer.daemon = True
         fetchTimer.start()
 
-# takes job from the queue and executes it
 def runJob(scheduler):
     try:
         lock.acquire()
-        storage = scheduler.storageManager
-        # Check every process status available of jobs running, if any
-        links = storage.itemsForKeyspace(SCHEDULER_RUN_POOL, limit=-1, cmpFunc=None, klass=Link)
-        for link in links:
-            if type(link) is not Link:
-                scheduler.logger().error("Could not resolve process link for %s", str(link))
-                storage.removeKeyspace(SCHEDULER_RUN_POOL)
-                # as we removed all the links to the process, we close jobs that were running
-                scheduler.logger().info("Cleaning broken process links")
-                runningJobs = storage.itemsForKeyspace(RUNNING, -1, None, Job)
-                for job in runningJobs:
-                    scheduler.updateJob(job, CLOSED, job.priority)
-                    scheduler.logger().info("Closed job %s, because of a broken link", job.uid)
-                raise StandardError("Could not resolve process link for %s" % str(link))
-            # Update job, if its status has changed: set status FINISHED and remove link
-            processid = link.processid
-            # refresh status
-            exitcode = scheduler.updateProcessStatus(processid)
-            if exitcode < 0:
-                scheduler.logger().info("Process %s is still running", processid)
+        # as a first step, update currently running jobs, and handle some error-like situations
+        # use simple accumulator to find out how many jobs are actually running
+        runningJobs, numRunningJobs = scheduler.jobsForStatus(RUNNING, -1), 0
+        for job in runningJobs:
+            link = scheduler.linkForUid(Link(job.uid).uid)
+            if not link:
+                scheduler.logger("No link found for running job %s. Closing it...", job.uid)
+                scheduler.updateJob(job, CLOSED, job.priority)
+            elif link and not link.isSubmitted():
+                scheduler.logger("Job %s does not have assigned process. Closing it...", job.uid)
+                scheduler.updateJob(job, CLOSED, job.priority)
             else:
-                # process is finished, we need to update job
-                scheduler.logger().info("Process %s finished", processid)
-                jobid = link.jobid
-                job = scheduler.storageManager.itemForUid(jobid, klass=Job)
-                if job:
-                    scheduler.updateJob(job, FINISHED, job.priority)
+                process = link.processid
+                exitcode = scheduler.updateProcessStatus(process)
+                if exitcode < 0:
+                    scheduler.logger().info("Process %s is still running", process)
+                    numRunningJobs += 1
                 else:
-                    scheduler.logger().warning("Job was not found for uid %s, skip update", jobid)
-                # remove process
-                scheduler.storageManager.removeItemFromKeyspace(SCHEDULER_RUN_POOL, processid)
-        # Check whether we need a new job, pull all data again, since we might have found links
-        links = storage.itemsForKeyspace(SCHEDULER_RUN_POOL, -1, None, Link)
-        numFreeSlots = scheduler.maxRunningJobs - len(links)
-        if numFreeSlots > 0:
+                    scheduler.updateJob(job, FINISHED, job.priority)
+                    scheduler.removeLink(link)
+                    scheduler.logger().info("Process %s finished", process)
+        # next step is identifying whether we need to launch a new job
+        # we check our pool first, thus, if we do not have jobs to run,
+        # do not even bother calling Spark API
+        numFreeSlots = scheduler.maxRunningJobs - numRunningJobs
+        if numFreeSlots <= 0:
+            scheduler.logger().info("Skip launching jobs due to max number of jobs running")
+        else:
             scheduler.logger().info("Number of free slots: %s", numFreeSlots)
-            # Check server running apps, if we can actually run a job.
+            if not scheduler.hasNext():
+                scheduler.logger().info("There are no jobs available in scheduler pool")
+                return
+            # Check actual Spark running jobs
             runningApps = scheduler.sparkModule.clusterRunningApps()
             if runningApps is None:
-                scheduler.logger().info("Spark cluster is down. Next time then...")
-            elif len(runningApps) >= scheduler.maxRunningJobs:
+                scheduler.logger().warn("Spark cluster is down. Next time then...")
+                return
+            if len(runningApps) >= scheduler.maxRunningJobs:
                 scheduler.logger().info("Max running apps on cluster is reached. Skipping...")
-            else:
-                # Change status on running and execute command for a job
-                while numFreeSlots > 0:
-                    numFreeSlots = numFreeSlots - 1
-                    job = None
-                    while scheduler.hasNext() and not job:
-                        job = scheduler.get()
-                        # refresh status of the job
-                        verify = storage.itemForUid(job.uid, klass=Job)
-                        if not verify or verify.status != job.status:
-                            scheduler.logger().error("Could not resolve job. Fetching next")
-                            job = None
-                            continue
-                    if not job:
-                        scheduler.logger().info("There are no jobs available in scheduler pool")
+                return
+            # we can run jobs, launch `numFreeSlots` jobs
+            while numFreeSlots > 0:
+                numFreeSlots = numFreeSlots - 1
+                while scheduler.hasNext():
+                    link = scheduler.nextLink()
+                    # refresh status of the job
+                    job = scheduler.jobForUid(link.jobid)
+                    if not job or job.status != WAITING:
+                        scheduler.logger().warn("Cannot resolve job. Fetching next, if available")
+                        job = None
                     else:
-                        scheduler.logger().info("Submitting the job %s", job.uid)
+                        scheduler.logger().info("Running job %s", job.uid)
                         scheduler.updateJob(job, RUNNING, job.priority)
-                        # run command with NO_WAIT
-                        processid = scheduler.executeSparkJob(job)
-                        # Add link "process id - job id"
-                        link = Link(processid, job.uid)
-                        storage.saveItem(link, klass=Link)
-                        storage.addItemToKeyspace(SCHEDULER_RUN_POOL, processid)
-                        scheduler.logger().info("Link is saved %s - %s", processid, job.uid)
-    except BaseException as e:
+                        link.processid = scheduler.executeSparkJob(job)
+                        scheduler.updateLink(link)
+                        scheduler.logger().info("Link is saved: %s", link.toDict())
+                        break
+    except Exception as e:
         scheduler.logger().exception("Runner failed: %s" % e.message)
     finally:
         lock.release()
@@ -165,9 +162,6 @@ def runJob(scheduler):
         runTimer.daemon = True
         runTimer.start()
 
-#################################################################
-# Scheduler                                                     #
-#################################################################
 # super simple scheduler to run Spark jobs in background
 class Scheduler(Octolog, object):
     def __init__(self, settings, poolSize=5):
@@ -204,17 +198,11 @@ class Scheduler(Octolog, object):
         # interval in seconds to fetch data from storage
         self.fetchInterval = 11.0
         # run job interval in seconds
-        self.runJobInterval = 5.0
+        self.runJobInterval = 7.0
         # maximal number of jobs allowed to run simultaneously
         self.maxRunningJobs = 1
         # whether timers are running
         self.isRunning = False
-
-    @private
-    def fetchStatus(self, status, numJobs):
-        def cmpFunc(x, y):
-            return cmp(x.submittime, y.submittime)
-        return self.storageManager.itemsForKeyspace(status, numJobs, cmpFunc, Job)
 
     @private
     def hasNext(self):
@@ -224,22 +212,17 @@ class Scheduler(Octolog, object):
     def isFull(self):
         return self.pool.full()
 
-    # add job to the pool, we do not check job status
-    def add(self, job, priority):
-        JobCheck.validateJob(job)
-        JobCheck.validatePriority(priority)
-        if not self.isFull():
-            uid = "%s-%s" % (SCHEDULER_UID_PREFIX, job.uid)
-            # we do not add job if it has been added before
-            if not self.storageManager.itemForUid(uid):
-                self.pool.put_nowait((priority, job))
-                self.storageManager.saveItem({"uid": uid})
-                self.logger().info("Add job with uid %s and priority %s" % (job.uid, priority))
-            else:
-                self.logger().info("Skip job with uid %s and priority %s" % (job.uid, priority))
-                if not self.hasNext():
-                    self.logger().error("Tried skipping job while pool is empty. Recovering...")
-                    self.storageManager.removeKeyspace(uid)
+    ############################################################
+    ### Scheduler API
+    ############################################################
+    # fetch jobs sorting them by submittime
+    def jobsForStatus(self, status, limit):
+        def cmpFunc(x, y):
+            return cmp(x.submittime, y.submittime)
+        return self.storageManager.itemsForKeyspace(status, limit, cmpFunc, Job)
+
+    def jobForUid(self, uid):
+        return self.storageManager.itemForUid(uid, klass=Job)
 
     def updateJob(self, job, newStatus, newPriority):
         self.storageManager.removeItemFromKeyspace(job.status, job.uid)
@@ -249,6 +232,53 @@ class Scheduler(Octolog, object):
         # resave job and update link
         self.storageManager.saveItem(job, Job)
         self.storageManager.addItemToKeyspace(newStatus, job.uid)
+
+    def linkForUid(self, uid):
+        return self.storageManager.itemForUid(uid, klass=Link)
+
+    def updateLink(self, link):
+        self.storageManager.saveItem(link, klass=Link)
+
+    def nextLink(self):
+        if not self.hasNext():
+            return None
+        tpl = self.pool.get_nowait()
+        return tpl[1]
+
+    def removeLink(self, link):
+        Link.validateLink(link)
+        self.storageManager.removeKeyspace(link.uid)
+
+    # add job to the pool by creating a link
+    # it is a generic method - we do not check job status
+    def add(self, job, priority):
+        JobCheck.validateJob(job)
+        JobCheck.validatePriority(priority)
+        if self.isFull():
+            self.logger().info("Could not add job %s. Queue is full", job.uid)
+            return False
+        # otherwise create a link for that job, and check whether that link exists
+        link = Link(job.uid)
+        dblink = self.linkForUid(link.uid)
+        # it is an odd case when we try adding job, that has already been queued and submitted
+        if dblink and dblink.isSubmitted():
+            self.logger().error("Attempt to resubmit the job. Link dump: %s. Job dump: %s",
+                dblink.toDict(), job.toDict())
+            return False
+        # case when job is already added to queue, thus we do not want to add it again.
+        if dblink and not dblink.isSubmitted():
+            if not self.hasNext():
+                self.logger().error("Tried skipping job while pool is empty. Recovering...")
+                self.removeLink(dblink)
+            else:
+                self.logger().info("Skip job with uid %s and priority %s as it is already in " + \
+                    "the queue", job.uid, priority)
+            return False
+        # once we are here, we know that there is no link currently, therefore we safely queue job
+        self.storageManager.saveItem(link, klass=Link)
+        self.pool.put_nowait((priority, link))
+        self.logger().info("Add job with uid %s, status %s, priority %s", job.uid, job.status,
+            priority)
 
     # check process status, returns:
     # 2: process exited with critical error
@@ -285,7 +315,7 @@ class Scheduler(Octolog, object):
             # create metadata file with job settings
             metadataPath = os.path.join(jobDir, "_metadata")
             with open(metadataPath, 'wb') as f:
-                f.write(str(job.toDict()))
+                f.write(json.dumps(job.toDict()))
             # create files
             outPath = os.path.join(jobDir, "stdout")
             errPath = os.path.join(jobDir, "stderr")
@@ -300,22 +330,21 @@ class Scheduler(Octolog, object):
         processid = Popen(cmd, stdout=out, stderr=err, close_fds=True).pid
         return processid
 
-    def get(self):
-        if not self.hasNext():
-            return None
-        tpl = self.pool.get_nowait()
-        return tpl[1]
-
+    ############################################################
+    ### Scheduler main methods
+    ############################################################
     # run function that starts fetching and job execution
     def run(self):
         if self.isRunning:
-            self.logger().warning("Scheduler is already running")
+            self.stop()
         self.logger().info("Scheduler is running")
         self.isRunning = True
         fetch(self)
         runJob(self)
 
-    # stops timers and scheduler
+    # stop timers and scheduler
     def stop(self):
         self.isRunning = False
+        fetchTimer = fetchTimer.cancel() if fetchTimer else None
+        runTimer = runTimer.cancel() if runTimer else None
         self.logger().info("Scheduler is stopped")

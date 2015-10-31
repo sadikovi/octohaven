@@ -3,6 +3,7 @@
 import unittest
 import paths
 import sys
+import logging
 
 # select what tests to run
 RUN_TESTS = {
