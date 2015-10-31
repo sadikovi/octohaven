@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import paths
-import uuid, re, time, shlex
+import uuid, re, shlex
 from types import DictType, StringType, IntType
 from job import *
 from storagemanager import StorageManager
@@ -104,7 +104,7 @@ class JobManager(object):
         status = CREATED if delay <= 0 else DELAYED
         duration = MEDIUM
         # store start time as unix timestamp in ms
-        createtime = long(time.time() * 1000)
+        createtime = currentTimeMillis()
         # reevaluate submit time considering delay
         scheduletime = createtime if delay <= 0 else (createtime + delay * 1000)
         return Job(uid, status, createtime, scheduletime, duration, sparkjob)

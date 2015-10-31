@@ -56,9 +56,10 @@ jobColumn = (name, link, prefix, timestamp) ->
     _mapper.parseMapForParent(elem)
 
 statusColour = (status) ->
-    return "text-blue" if (status == FINISHED)
     return "text-green" if (status == CREATED)
     return "text-yellow" if (status == WAITING)
+    return "text-teal" if (status == RUNNING)
+    return "text-blue" if (status == FINISHED)
     return "text-red" if (status == CLOSED)
     return "text-mute"
 

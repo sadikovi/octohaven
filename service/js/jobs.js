@@ -139,14 +139,17 @@
   };
 
   statusColour = function(status) {
-    if (status === FINISHED) {
-      return "text-blue";
-    }
     if (status === CREATED) {
       return "text-green";
     }
     if (status === WAITING) {
       return "text-yellow";
+    }
+    if (status === RUNNING) {
+      return "text-teal";
+    }
+    if (status === FINISHED) {
+      return "text-blue";
     }
     if (status === CLOSED) {
       return "text-red";

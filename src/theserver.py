@@ -219,7 +219,7 @@ class APICall(Octolog, object):
         except StandardError as e:
             self.logger().exception(e.message)
             self.response = self.error(e.message)
-        except BaseException as e:
+        except Exception as e:
             self.logger().exception(e.message)
             self.response = self.systemError(e.message)
         # return final response

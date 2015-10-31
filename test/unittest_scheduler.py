@@ -2,7 +2,7 @@
 
 import unittest, os
 from src.redisconnector import RedisConnectionPool, RedisConnector
-from src.scheduler import Scheduler
+from src.scheduler import Scheduler, Link
 from src.job import Job
 from unittest_constants import RedisConst
 from unittest_job import JobSentinel
@@ -46,11 +46,9 @@ class SchedulerTestSuite(unittest.TestCase):
         job1.createtime = now
         job2.createtime = now + 10
         scheduler = Scheduler(self.settings)
-        scheduler.storageManager.saveItem(job1, klass=Job)
-        scheduler.storageManager.saveItem(job2, klass=Job)
-        scheduler.storageManager.addItemToKeyspace(status, job1.uid)
-        scheduler.storageManager.addItemToKeyspace(status, job2.uid)
-        jobs = scheduler.fetchStatus(status, -1)
+        scheduler.updateJob(job1, status, job1.priority)
+        scheduler.updateJob(job2, status, job2.priority)
+        jobs = scheduler.jobsForStatus(status, -1)
         self.assertEqual(len(jobs), 2)
         self.assertEqual([x.uid for x in jobs], [job2.uid, job1.uid])
 
@@ -70,10 +68,14 @@ class SchedulerTestSuite(unittest.TestCase):
         job1 = JobSentinel.job()
         job2 = JobSentinel.job()
         scheduler = Scheduler(self.settings)
-        scheduler.add(job1, job1.priority)
-        scheduler.add(job2, job2.priority)
+        scheduler.add(job1, 100)
+        scheduler.add(job2, 101)
+        jobids, i = [job1.uid, job2.uid], 0
         while scheduler.hasNext():
-            self.assertEqual(type(scheduler.get()), Job)
+            link = scheduler.nextLink()
+            self.assertEqual(type(link), Link)
+            self.assertEqual(link.jobid, jobids[i])
+            i += 1
 
 # Load test suites
 def _suites():
