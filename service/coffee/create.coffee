@@ -208,9 +208,9 @@ loadTemplate = (job) ->
     select = (elem) ->
         file = elem.obj
         if file.tp == "JAR" and file.path == job.get("jar")
-            _util.addClass(elem, "selected")
             if lastSelectedJarElem
                 _util.removeClass(lastSelectedJarElem, "selected")
+            _util.addClass(elem, "selected")
             lastSelectedJarElem = elem
     breadcrumbs("", traverse, select)
     files("", traverse, select)
@@ -250,7 +250,7 @@ submitJob = (job) ->
                 msg = content["content"]["msg"]
                 jobid = content["content"]["jobid"]
                 body = type: "span", title: "#{msg}. ", children:
-                    type: "a", title: "View details", href: "/job?=#{jobid}"
+                    type: "a", title: "View details", href: "/job?jobid=#{jobid}"
                 setSubmitStatus(ok, body)
             else
                 IS_SUBMITTED = false

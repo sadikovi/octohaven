@@ -45,6 +45,8 @@ class Util
         return encodeURIComponent(str).replace /[!'()*]/g, (c) ->
             return '%' + c.charCodeAt(0).toString(16)
 
+    unquote: (str) -> return decodeURIComponent(str)
+
     isArray: (obj) -> Array.isArray(obj) or {}.toString.call(obj) is '[object Array]'
 
     randomid: -> "#{Math.random()}".split(".")[1]
@@ -81,6 +83,21 @@ class Util
     timestampToDate: (timestamp, locale="en-nz") ->
         date = new Date timestamp
         "#{date.toLocaleString(locale)}"
+
+    # return map of parameters from search string (window.location)
+    windowParameters: ->
+        unless window and window.location and window.location.search
+            throw new Error("Window.location is not set properly")
+        searchstr = window.location.search?.trim()
+        arr = (component.split("=", 2) for component in searchstr.split("&"))
+        # unquote keys and values
+        dict = {}
+        for elem in arr
+            str = if elem[0].indexOf("?") == 0 then elem[0].substring(1) else elem[0]
+            key = this.unquote(str)
+            value = this.unquote(elem[1])
+            dict[key] = value
+        dict
 
 # init global util
 @util ?= new Util
