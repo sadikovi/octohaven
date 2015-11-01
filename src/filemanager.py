@@ -164,7 +164,7 @@ class FileManager(object):
     # returns at most number of pages for a file
     def numPages(self, f, chunk=500):
         fileSize = self.endOfFile(f)
-        return math.ceil(fileSize * 1.0 / chunk)
+        return int(math.ceil(fileSize * 1.0 / chunk))
 
     # generic function to read specific chunk of data
     # we always read from beginning
@@ -192,6 +192,7 @@ class FileManager(object):
 
     # reading specific page from start, page number starts with 0 ->
     # offset indicates whether we need to truncate rows up to new line character
+    # chunk is a block to read in bytes
     def readFromStart(self, f, page, chunk=500, offset=0):
         start = chunk * page
         part = self.readFromPosition(f, start, chunk)
@@ -204,6 +205,7 @@ class FileManager(object):
 
     # reading specific page from end, page number starts with 0 ->
     # offset indicates whether we need to truncate rows up to new line character
+    # chunk is a block to read in bytes
     def readFromEnd(self, f, page, chunk=500, offset=0):
         start = self.endOfFile(f) - chunk * (page + 1)
         part = self.readFromPosition(f, start, chunk)

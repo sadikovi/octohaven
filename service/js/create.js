@@ -333,10 +333,10 @@
       var file;
       file = elem.obj;
       if (file.tp === "JAR" && file.path === job.get("jar")) {
-        _util.addClass(elem, "selected");
         if (lastSelectedJarElem) {
           _util.removeClass(lastSelectedJarElem, "selected");
         }
+        _util.addClass(elem, "selected");
         return lastSelectedJarElem = elem;
       }
     };
@@ -390,7 +390,7 @@
             children: {
               type: "a",
               title: "View details",
-              href: "/job?=" + jobid
+              href: "/job?jobid=" + jobid
             }
           };
           return setSubmitStatus(ok, body);

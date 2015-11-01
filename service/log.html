@@ -10,7 +10,7 @@
         <meta name="author" content="">
 
         <title>
-            Job details &middot; Octohaven
+            Job logs &middot; Octohaven
         </title>
 
         <link rel="icon" type="image/x-icon" href="img/favicon.ico">
@@ -28,9 +28,7 @@
                             <span class="text-mute" id="octohaven-spark-server-status">Pending...</span>
                         </div>
                         <a class="menu-item" href="/">Home</a>
-                        <div class="menu-heading">Job logs</div>
-                        <a class="menu-item" href="/log" id="octohaven-job-stdout">stdout</a>
-                        <a class="menu-item" href="/log" id="octohaven-job-stderr">stderr</a>
+                        <a class="menu-item" href="/" id="octohaven-job-link">Back to details</a>
                     </nav>
                 </div>
                 <div class="three-fourths column">
@@ -45,9 +43,11 @@
                         </div>
                     </div>
                     <div class="attached secondary segment">
-                        <h1 class="text-thin">Job details</h1>
+                        <h1 class="text-thin">Job logs</h1>
                     </div>
-                    <div class="bottom attached segment" id="octohaven-job-details">
+                    <div class="attached segment" id="octohaven-job-details">
+                    </div>
+                    <div class="bottom attached segment" id="octohaven-job-logs">
                     </div>
                 </div>
             </div>
@@ -57,6 +57,6 @@
         <script type="text/javascript" src="js/utilities/mapper.js"></script>
         <script type="text/javascript" src="js/api.js"></script>
         <script type="text/javascript" src="js/status.js"></script>
-        <script type="text/javascript" src="js/jobdetails.js"></script>
+        <script type="text/javascript" src="js/log.js"></script>
     </body>
 </html>

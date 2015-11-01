@@ -100,6 +100,10 @@
       });
     };
 
+    Util.prototype.unquote = function(str) {
+      return decodeURIComponent(str);
+    };
+
     Util.prototype.isArray = function(obj) {
       return Array.isArray(obj) || {}.toString.call(obj) === '[object Array]';
     };
@@ -160,6 +164,33 @@
       }
       date = new Date(timestamp);
       return "" + (date.toLocaleString(locale));
+    };
+
+    Util.prototype.windowParameters = function() {
+      var arr, component, dict, elem, key, searchstr, str, value, _i, _len, _ref;
+      if (!(window && window.location && window.location.search)) {
+        throw new Error("Window.location is not set properly");
+      }
+      searchstr = (_ref = window.location.search) != null ? _ref.trim() : void 0;
+      arr = (function() {
+        var _i, _len, _ref1, _results;
+        _ref1 = searchstr.split("&");
+        _results = [];
+        for (_i = 0, _len = _ref1.length; _i < _len; _i++) {
+          component = _ref1[_i];
+          _results.push(component.split("=", 2));
+        }
+        return _results;
+      })();
+      dict = {};
+      for (_i = 0, _len = arr.length; _i < _len; _i++) {
+        elem = arr[_i];
+        str = elem[0].indexOf("?") === 0 ? elem[0].substring(1) : elem[0];
+        key = this.unquote(str);
+        value = this.unquote(elem[1]);
+        dict[key] = value;
+      }
+      return dict;
     };
 
     return Util;

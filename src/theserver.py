@@ -20,10 +20,12 @@ REQUEST_TABLE = {
     "": "index.html",
     "/": "index.html",
     "create": "create.html",
-    "job": "job.html"
+    "job": "job.html",
+    "log": "log.html"
 }
 # root directory for http server
 ROOT = paths.SERV_PATH
+LOGS_DIR = paths.LOGS_PATH
 
 # process only API requests
 class APICall(Octolog, object):
@@ -86,6 +88,7 @@ class APICall(Octolog, object):
     # - GET     /api/v1/job/close: close existing job, if possible
     # - GET     /api/v1/file/breadcrumbs: list a directory traversal for a specific path
     # - GET     /api/v1/file/list: list folders and files for a specific path
+    # - GET     /api/v1/file/log: return output log blocks for a job
     # - POST    /api/v1/template/create: create template
     # - GET     /api/v1/template/delete: delete tempate
     # - GET     /api/v1/template/list: list all templates
@@ -166,6 +169,31 @@ class APICall(Octolog, object):
                 data = self.fileManager.list(path, sort=True, asdict=True)
                 return self.success({"list": data})
 
+            def fileLog():
+                tpe = str(self.query["type"]).lower() if "type" in self.query else None
+                page = intOrElse(self.query["page"], None) if "page" in self.query else 0
+                jobid = self.query["jobid"] if "jobid" in self.query else None
+                if not tpe or (tpe != "stderr" and tpe != "stdout"):
+                    raise StandardError("Unrecognized log mode: %s" % tpe)
+                if page is None:
+                    raise StandardError("Unrecognized page number")
+                job = self.jobManager.jobForUid(jobid)
+                if not job:
+                    raise StandardError("No job found for 'jobid': %s" % str(jobid))
+                # find and check target path (stderr, stdout) under specific job directory
+                targetPath = os.path.join(LOGS_DIR, str(job.uid), tpe)
+                if not os.path.isfile(targetPath):
+                    raise StandardError("No logs found for %s" % job.uid)
+                if not os.access(targetPath, os.R_OK):
+                    raise StandardError("Cannot access file with read permissions: %s" % targetPath)
+                block, numPages = "", -1
+                chunk, offset = 64*1024, 128
+                with open(targetPath, "rb") as f:
+                    numPages = self.fileManager.numPages(f, chunk)
+                    block = self.fileManager.readFromStart(f, page, chunk, offset)
+                return self.success({"jobid": job.uid, "jobname": job.sparkjob.name,
+                    "pages": numPages, "page": page, "block": block, "size": chunk})
+
             def templateList():
                 arr = self.templateManager.templates()
                 return self.success({"templates": [template.toDict() for template in arr]})
@@ -207,6 +235,8 @@ class APICall(Octolog, object):
                 self.response = fileBreadcrumbs()
             elif self.path.endswith("%s/file/list" % API_V1):
                 self.response = fileList()
+            elif self.path.endswith("%s/file/log" % API_V1):
+                self.response = fileLog()
             elif self.path.endswith("%s/template/list" % API_V1):
                 self.response = templateList()
             elif self.path.endswith("%s/template/create" % API_V1):

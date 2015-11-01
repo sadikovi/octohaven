@@ -145,3 +145,20 @@ class TemplateLoader
             after?(false, json)
 
 @TemplateLoader ?= TemplateLoader
+
+# loading log blocks
+class LogReader
+    constructor: ->
+
+    readFromStart: (jobid, type, page, before, after) ->
+        before?()
+        loader.sendrequest "get", "/api/v1/file/log?" +
+            "jobid=#{util.quote(jobid)}&type=#{util.quote(type)}&page=#{util.quote(page)}", {}, null
+        , (success, response) ->
+            json = util.jsonOrElse(response)
+            after?(!!json, json)
+        , (error, response) ->
+            json = util.jsonOrElse(response)
+            after?(false, json)
+
+@LogReader ?= LogReader

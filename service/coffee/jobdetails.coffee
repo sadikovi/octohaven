@@ -35,13 +35,18 @@ row = (property) ->
     rw = type: "div", cls: "segment", children: property
     _mapper.parseMapForParent(rw)
 
+updateLogLinks = (uid) ->
+    # update log links - stderr and stdout - to have uid
+    stdout = document.getElementById("octohaven-job-stdout")
+    stderr = document.getElementById("octohaven-job-stderr")
+    stdout.href = "/log?type=stdout&jobid=#{uid}" if stdout
+    stderr.href = "/log?type=stderr&jobid=#{uid}" if stderr
+
 # extract jobid from url
-unless window.location and window.location.search
-    throw new Error("Window.location is not set properly")
-searchstr = window.location.search?.trim().split("=")
-if _util.isArray(searchstr) and searchstr.length == 2
+params = _util.windowParameters()
+if "jobid" of params
     # extract jobid
-    jobid = searchstr[1]
+    jobid = params["jobid"]
     _jobloader.getJob(jobid
         , ->
             jobDetailsElem.innerHTML = ""
@@ -108,6 +113,9 @@ if _util.isArray(searchstr) and searchstr.length == 2
                     ))
                 ]
                 _mapper.parseMapForParent(rowsElem, jobDetailsElem)
+
+                # update links for job logs
+                updateLogLinks(uid)
             else
                 msg = if json then json["content"]["msg"] else "We know and keep working on that"
                 view = blankslateWithMsg("Something went wrong", msg)
