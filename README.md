@@ -11,8 +11,7 @@ Super simple Apache Spark job server.
 
 ## Overview
 Allows you to select `jar` file and specify Spark conf parameters. You can schedule jobs to run
-after some time passed, pass job parameters along with Spark configuration and etc, though you
-cannot monitor job and see progress yet.
+after some time passed, pass job parameters along with Spark configuration options, view stdout and stderr of the job running and etc. **Does not mess up with your cluster installation and/or scripts**, it is more like a nice feature, which you can turn off any time. Tested with Spark standalone cluster, not sure it will work with Yarn or Mesos.
 
 ## Install
 Super simple install and no dependencies, except Python 2.7.x, and Redis.
@@ -65,6 +64,7 @@ Here is an example:
         +-- stderr
         +-- stdout
 ```
+As mentioned above, you can view logs using web interface.
 
 ## Configuration
 Configuration lives in `sbin/config.sh`. Options are pretty self-explanatory, comments tell what
