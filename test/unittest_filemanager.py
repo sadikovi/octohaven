@@ -8,6 +8,7 @@ from src.filemanager import FileManager, SEP, ROOT, File, Directory, JarFile
 class FileManagerTestSuite(unittest.TestCase):
     def setUp(self):
         self.root = os.path.join(TEST_PATH, "resources", "filelist")
+        self.file = os.path.join(TEST_PATH, "resources", "scheduler.txt")
 
     def tearDown(self):
         pass
@@ -132,6 +133,104 @@ class FileManagerTestSuite(unittest.TestCase):
             manager.resolveRelativePath("")
         with self.assertRaises(StandardError):
             manager.resolveRelativePath("root" + SEP + "another")
+
+    # File reading API
+    def test_endOfFile(self):
+        manager = FileManager(self.root)
+        with open(self.file) as f:
+            self.assertEqual(manager.endOfFile(f), 2249)
+
+    def test_startOfFile(self):
+        manager = FileManager(self.root)
+        with open(self.file) as f:
+            self.assertEqual(manager.startOfFile(f), 0)
+
+    def test_validation(self):
+        manager = FileManager(self.root)
+        # file validation
+        with self.assertRaises(StandardError):
+            manager.validateFile(None)
+        with open(self.file) as f:
+            self.assertEqual(manager.validateFile(f), f)
+        # page validation
+        with self.assertRaises(StandardError):
+            manager.validatePage(None)
+        with self.assertRaises(StandardError):
+            manager.validatePage(-1)
+        with self.assertRaises(StandardError):
+            manager.validatePage(-1.0)
+        self.assertEqual(manager.validatePage(10), 10)
+        # position validation
+        with self.assertRaises(StandardError):
+            manager.validatePosition(None)
+        with self.assertRaises(StandardError):
+            manager.validatePosition(-1)
+        with self.assertRaises(StandardError):
+            manager.validatePosition(-1.0)
+        self.assertEqual(manager.validatePosition(100), 100)
+
+    def test_numPages(self):
+        manager = FileManager(self.root)
+        with open(self.file) as f:
+            self.assertEqual(manager.numPages(f, chunk=1000), 3)
+            self.assertEqual(manager.numPages(f, chunk=500), 5)
+            self.assertEqual(manager.numPages(f, chunk=2249), 1)
+
+    def test_read(self):
+        manager = FileManager(self.root)
+        with open(self.file) as f:
+            with self.assertRaises(StandardError):
+                manager.read(f, -1, 100)
+            with self.assertRaises(StandardError):
+                manager.read(f, 100, 50)
+            block = manager.read(f, 100, 150)
+            self.assertEqual(block, "t or add functionality\n- Some important configurat")
+
+    def test_readFromPosition(self):
+        manager = FileManager(self.root)
+        with self.assertRaises(StandardError):
+            manager.readFromPosition(None, 100, offset=200)
+        with open(self.file) as f:
+            with self.assertRaises(StandardError):
+                manager.readFromPosition(f, -1, offset=200)
+            block = manager.readFromPosition(f, 500, offset=100)
+            self.assertEqual(block, "ules:\n- Fetching jobs that are ready to be run (1)\n- " +
+                "Checking whether we can execute job (2)\n- Actua")
+            block = manager.readFromPosition(f, 500, offset=-100)
+            self.assertEqual(block, "echanism\nthat includes tasks listed above.\nTechnically " +
+                "scheduler is more of combination of three mod")
+
+    def test_readFromStart(self):
+        manager = FileManager(self.root)
+        with open(self.file) as f:
+            block = manager.readFromStart(f, 2, chunk=100, offset=0)
+            self.assertEqual(block, "d to config.sh\n\nThe whole job of scheduler is checking " +
+                "whether cluster is available and running jobs")
+            block = manager.readFromStart(f, 2, chunk=100, offset=100)
+            self.assertEqual(block, "- Some important configuration options should be separated, " +
+                "and possibly moved to config.sh\n\nThe whole job of scheduler is checking " +
+                "whether cluster is available and running jobs, if it is,")
+
+    def test_readFromEnd(self):
+        manager = FileManager(self.root)
+        with open(self.file) as f:
+            block = manager.readFromEnd(f, 1, chunk=100, offset=0)
+            self.assertEqual(block, "g a link.\nWe maintain pool of links. Constantly we check " +
+                "status of those processes. Once process is ")
+            block = manager.readFromEnd(f, 1, chunk=100, offset=100)
+            self.assertEqual(block, "is all good, we execute command. Tracker gets process id " +
+                "and maps to the job id by creating a link.\nWe maintain pool of links. " +
+                "Constantly we check status of those processes. Once process is finished")
+
+    def crop(self):
+        manager = FileManager(self.root)
+        with open(self.file) as f:
+            block = manager.crop(f, 100, 50)
+            self.assertEqual(block, "t or add functionality")
+            block = manager.crop(f, 100, -50)
+            self.assertEqual(block, "- Should be very easy to extend i")
+            block = manager.crop(f, 100, 100)
+            self.assertEqual(block, "t or add functionality")
 
 # Load test suites
 def _suites():

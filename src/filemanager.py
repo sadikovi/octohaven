@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
-import os, re
+import os, re, math
+from types import FileType, IntType
 from utils import *
 
 class File(object):
@@ -123,3 +124,101 @@ class FileManager(object):
         if not self.checkPath(absolutePath):
             raise StandardError("Filepath is not a valid system path: " + absolutePath)
         return absolutePath
+
+    ############################################################
+    ### Reading file API
+    ############################################################
+    # returns overall bytes in a file, also places cursor at the end of file, so you will have to
+    # reposition it, if you want to read from arbitrary place
+    @private
+    def endOfFile(self, f):
+        f.seek(0, 2)
+        return f.tell()
+
+    @private
+    def startOfFile(self, f):
+        return 0
+
+    # validation of file
+    def validateFile(self, f):
+        if type(f) is not FileType:
+            raise StandardError("Expected FileType, got %s" % str(type(f)))
+        return f
+
+    # validation of position
+    def validatePosition(self, pos):
+        if type(pos) is not IntType:
+            raise StandardError("Expected IntType, got %s" % str(type(pos)))
+        if pos < 0:
+            raise StandardError("Position is negative")
+        return pos
+
+    # validation of page
+    def validatePage(self, page):
+        if type(page) is not IntType:
+            raise StandardError("Expected IntType, got %s" % str(type(page)))
+        if page < 0:
+            raise StandardError("Page is negative")
+        return page
+
+    # returns at most number of pages for a file
+    def numPages(self, f, chunk=500):
+        fileSize = self.endOfFile(f)
+        return math.ceil(fileSize * 1.0 / chunk)
+
+    # generic function to read specific chunk of data
+    # we always read from beginning
+    @private
+    def read(self, f, start, end):
+        if start < 0 or end < 0 or start > end:
+            raise StandardError("Wrong boundaries, start: %s, end: %s" % (start, end))
+        f.seek(start, 0)
+        return f.read(end - start)
+
+    # generic method for reading a specific chunk of data from position
+    # offset can be negative which tells us to read block before the position
+    @private
+    def readFromPosition(self, f, pos, offset=500):
+        self.validateFile(f)
+        self.validatePosition(pos)
+        # start is always less than end in this case
+        start, end = (pos, pos + offset) if offset > 0 else (pos + offset, pos)
+        fileSize = self.endOfFile(f)
+        if end < 0 or start > fileSize:
+            return ""
+        start = 0 if start < 0 else start
+        end = fileSize if end > fileSize else end
+        return self.read(f, start, end)
+
+    # reading specific page from start, page number starts with 0 ->
+    # offset indicates whether we need to truncate rows up to new line character
+    def readFromStart(self, f, page, chunk=500, offset=0):
+        start = chunk * page
+        part = self.readFromPosition(f, start, chunk)
+        if len(part) > 0:
+            prefix = self.crop(f, start, -offset)
+            suffix = self.crop(f, start + chunk, offset)
+        else:
+            prefix, suffix = "", ""
+        return prefix + part + suffix
+
+    # reading specific page from end, page number starts with 0 ->
+    # offset indicates whether we need to truncate rows up to new line character
+    def readFromEnd(self, f, page, chunk=500, offset=0):
+        start = self.endOfFile(f) - chunk * (page + 1)
+        part = self.readFromPosition(f, start, chunk)
+        if len(part) > 0:
+            prefix = self.crop(f, start, -offset)
+            suffix = self.crop(f, start + chunk, offset)
+        else:
+            prefix, suffix = "", ""
+        return prefix + part + suffix
+
+    # truncate row by the closest new line character
+    # used to return complete record instead of half of it
+    def crop(self, f, pos, offset):
+        part = self.readFromPosition(f, pos, offset)
+        index = part.find(os.linesep)
+        if index < 0:
+            return part
+        return part[index + 1:] if offset < 0 else part[:index]

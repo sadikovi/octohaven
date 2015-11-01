@@ -1,0 +1,41 @@
+Main points of the design:
+- Scheduler should be self-recoverable.
+- Should be very easy to extend it or add functionality
+- Some important configuration options should be separated, and possibly moved to config.sh
+
+The whole job of scheduler is checking whether cluster is available and running jobs, if it is,
+and monitoring jobs as they run. By scheduler, in this case, we mean global scheduling mechanism
+that includes tasks listed above.
+Technically scheduler is more of combination of three modules:
+- Fetching jobs that are ready to be run (1)
+- Checking whether we can execute job (2)
+- Actually executing job (2)
+- Following job progress (3)
+
+Those modules represent:
+- Fetcher
+- Runner
+- Tracker
+
+And it also means that changes in one, should not affect the others, as they are supposed to be
+built completely isolated of each other. Fetcher only knows that it needs to ask storage manager
+for some jobs with a particular statuses. Runner knows that it needs to pull jobs from a certain
+queue and try executing them. Tracker knows that it needs to pull links that check their status and
+overall existence.
+
+Concept of links:
+Link is simply an object that consists of process id and job id. When we run job, we usually
+execute shell command, which we have a process id for. Once we have started process, we take process
+id and map to job id and save it as a link. The way we store links is interesting: we keep track of
+a set with all the links, and also store them as key-value pairs, so we can access internals.
+
+Example of submitting and scheduling a job:
+Job is created to run immediately. Assuming that we have a free slot in the queue, it will be
+changed to waiting to run. Once it is in the pool, we know that runner can pick it up and execute.
+Before running job, runner makes sure that server is reachable, and there is a free slot in running
+jobs, and/or server is reachable and overall number of jobs is less than maximum allowed. Once it
+is all good, we execute command. Tracker gets process id and maps to the job id by creating a link.
+We maintain pool of links. Constantly we check status of those processes. Once process is finished
+or killed, we get link back, update job for that job id, and remove link.
+
+Working schema:
