@@ -8,14 +8,23 @@ Super simple Apache Spark job server.
     - [Spark job logs](#spark-job-logs)
 - [Configuration](#configuration)
 - [Build and test](#build-and-test)
+- [Contribute](#contribute)
 
 ## Overview
 Allows you to select `jar` file and specify Spark conf parameters. You can schedule jobs to run
-after some time passed, pass job parameters along with Spark configuration options, view stdout and stderr of the job running and etc. **Does not mess up with your cluster installation and/or scripts**, it is more like a nice feature, which you can turn off any time. Tested with Spark standalone cluster, not sure it will work with Yarn or Mesos.
+after some time passed, pass job parameters along with Spark configuration options, view stdout and
+stderr of the job running and etc. **Does not mess up** with your cluster installation and/or scripts,
+it is more like a nice feature, which you can turn off any time. Tested with Spark standalone cluster,
+not sure if it will work with Yarn or Mesos.
+
+Screenshot of the UI:
+![Screenshot](./resources/octohaven-screenshot.jpg)
 
 ## Install
-Super simple install and no dependencies, except Python 2.7.x, and Redis.
-Uses Docker to install Redis, but can use your own installation, see [Configuration](#configuration)
+Super simple installation and no dependencies, except Python 2.7.x, and Redis.
+Uses Docker to set up Redis, but can use your own Redis instance, see [Configuration](#configuration).
+Web UI is built using [Primer](http://primercss.io/) with some modifications to suit my purposes.
+
 
 ## Run
 Download repository and run scripts from `sbin` directory.
@@ -91,3 +100,6 @@ Sometimes it is annoying to see `*.pyc` files everywhere. Run cleanup script to 
 ```shell
 $ bin/cleanup.sh
 ```
+
+## Contribute
+All suggestions, features, issues and PRs are very welcome:)
