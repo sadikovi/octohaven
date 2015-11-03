@@ -4,33 +4,53 @@
 sbin="`dirname "$0"`"
 ROOT_DIR="`cd "$sbin/../"; pwd`"
 
+
+# functions (mainly for processing command-line arguments)
+def_usage() {
+    cat <<EOM
+Usage: $0 [options]
+-d | --daemon   launches service as daemon process, e.g. daemon=true/false
+--usage         displayes usage of the script
+EOM
+    exit 0
+}
+
+def_daemon() {
+    OPTION_USE_DAEMON="${i#*=}"
+    if [ "$OPTION_USE_DAEMON" == "-d" ]; then
+        OPTION_USE_DAEMON="true"
+    elif [ "$OPTION_USE_DAEMON" == "true" ]; then
+        OPTION_USE_DAEMON="true"
+    elif [ "$OPTION_USE_DAEMON" == "false" ]; then
+        OPTION_USE_DAEMON=""
+    else
+        echo "[ERROR] Unrecognized value $OPTION_USE_DAEMON for '--daemon' option"
+        echo "Run '--usage' to display possible options"
+        exit 1
+    fi
+
+    # just some messaging
+    # (mainly for debugging purposes, should be removed once we are happy with this)
+    if [ -n "$OPTION_USE_DAEMON" ]; then
+        echo "[INFO] Will launch service as daemon process"
+    else
+        echo "[INFO] Will launch service as normal process"
+    fi
+}
+
 # command-line options for start-up:
 # -d | --daemon => runs service as a daemon process
 for i in "$@"; do
     case $i in
-        -d|--daemon=*)
-            OPTION_USE_DAEMON="${i#*=}"
-            if [ "$OPTION_USE_DAEMON" == "-d" ]; then
-                OPTION_USE_DAEMON="true"
-            elif [ "$OPTION_USE_DAEMON" == "true" ]; then
-                OPTION_USE_DAEMON="true"
-            elif [ "$OPTION_USE_DAEMON" == "false" ]; then
-                OPTION_USE_DAEMON=""
-            else
-                echo "[ERROR] Unrecognized value $OPTION_USE_DAEMON for '--daemon' option"
-                exit 1
-            fi
-            shift ;;
+        # daemon process on/off
+        -d|--daemon=*) def_daemon
+        shift ;;
+        # display usage
+        --usage) def_usage
+        shift ;;
         *) ;;
     esac
 done
-
-# just some messaging (mainly for debugging purposes, should be removed once we are happy with this)
-if [ -n "$OPTION_USE_DAEMON" ]; then
-    echo "[INFO] Will launch service as daemon process"
-else
-    echo "[INFO] Will launch service as normal process"
-fi
 
 # load default variables (Octohaven and Redis settings)
 . "$ROOT_DIR/sbin/config.sh"

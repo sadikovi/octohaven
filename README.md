@@ -42,12 +42,13 @@ $ sbin/start.sh
 $ sbin/stop.sh
 ```
 
-Note that `start.sh` supports some command-line arguments (again, this is just one option, will add
-more in the future):
+Note that `start.sh` supports some command-line arguments (again, this are just a few options, will
+add more in the future):
 - `-d` or `--daemon=true/false` => launch service as daemon process, which means logging will be
 only available in a log file _octohaven-service.log_. If option is not specified, launches as
 normal process, equivalent to `--daemon=false`. Usage: `sbin/start.sh -d` or
 `sbin/start.sh --daemon=true`
+- `--usage` => displays usage of the script
 
 Application will be available on `localhost:33900` or whatever port you specify in configuration
 file.
