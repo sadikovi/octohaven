@@ -31,6 +31,21 @@ elem = (type, args...) ->
             {type: "span", cls: "text-mute", title: "#{args[0]}"},
             {type: "span", title: "#{args[1]}"}
         ]
+    else if type == "input"
+        # add input box and button with action
+        input = _mapper.parseMapForParent({type: "input", inputtype: "text", cls: "input-squared"
+            , inputvalue: "#{args[1]}"})
+        action = args[2]
+        btn = _mapper.parseMapForParent({type: "div", cls: "btn tooltipped tooltipped-n"
+            ,title: "#{args[0]}", arialabel: "Jump to the page", onclick: () ->
+                action?(this.input)})
+        btn.input = input
+
+        type: "div", cls: "section", children: [
+            input,
+            {type: "div", cls: "separator"},
+            btn
+        ]
     else
         null
 
@@ -46,8 +61,9 @@ menu = (info) ->
         elem("btn", "Prev", "#{btnCls(prev)}", action = () -> askAnotherPage(type, jobid, prev))
         elem("btn", "Next", "#{btnCls(next)}", action = () -> askAnotherPage(type, jobid, next))
         elem("pair", "Block size (Bytes): ", "#{info["size"]}")
-        elem("pair", "Page: ", "#{page}"),
-        elem("pair", "Pages: ", "#{pages}"),
+        elem("pair", "Page: ", "#{page}")
+        elem("pair", "Pages: ", "#{pages}")
+        elem("input", "Jump", "", (input) -> askAnotherPage(type, jobid, input?.value))
     ]
     _mapper.parseMapForParent(menuElem)
 
@@ -88,6 +104,9 @@ askAnotherPage = (type, jobid, page) ->
                 _mapper.parseMapForParent(menu(content), jobLogsElem)
                 _mapper.parseMapForParent(preContent(block), jobLogsElem)
             else
+                # we update job back link even in case if something has failed, we still want to
+                # use previous job id to go back to the details.
+                jobLinkElem.href = "/job?jobid=#{jobid}"
                 msg = if json then json["content"]["msg"] else "We know and keep working on that"
                 result = blankslateWithMsg("Something went wrong :(",  msg)
             _mapper.parseMapForParent(result, jobLogsElem)

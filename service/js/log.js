@@ -44,7 +44,7 @@
   };
 
   elem = function() {
-    var args, type;
+    var action, args, btn, input, type;
     type = arguments[0], args = 2 <= arguments.length ? __slice.call(arguments, 1) : [];
     if (type === "btn") {
       return {
@@ -74,6 +74,34 @@
           }
         ]
       };
+    } else if (type === "input") {
+      input = _mapper.parseMapForParent({
+        type: "input",
+        inputtype: "text",
+        cls: "input-squared",
+        inputvalue: "" + args[1]
+      });
+      action = args[2];
+      btn = _mapper.parseMapForParent({
+        type: "div",
+        cls: "btn tooltipped tooltipped-n",
+        title: "" + args[0],
+        arialabel: "Jump to the page",
+        onclick: function() {
+          return typeof action === "function" ? action(this.input) : void 0;
+        }
+      });
+      btn.input = input;
+      return {
+        type: "div",
+        cls: "section",
+        children: [
+          input, {
+            type: "div",
+            cls: "separator"
+          }, btn
+        ]
+      };
     } else {
       return null;
     }
@@ -100,7 +128,9 @@
           return askAnotherPage(type, jobid, prev);
         }), elem("btn", "Next", "" + (btnCls(next)), action = function() {
           return askAnotherPage(type, jobid, next);
-        }), elem("pair", "Block size (Bytes): ", "" + info["size"]), elem("pair", "Page: ", "" + page), elem("pair", "Pages: ", "" + pages)
+        }), elem("pair", "Block size (Bytes): ", "" + info["size"]), elem("pair", "Page: ", "" + page), elem("pair", "Pages: ", "" + pages), elem("input", "Jump", "", function(input) {
+          return askAnotherPage(type, jobid, input != null ? input.value : void 0);
+        })
       ]
     };
     return _mapper.parseMapForParent(menuElem);
@@ -158,6 +188,7 @@
           _mapper.parseMapForParent(menu(content), jobLogsElem);
           _mapper.parseMapForParent(preContent(block), jobLogsElem);
         } else {
+          jobLinkElem.href = "/job?jobid=" + jobid;
           msg = json ? json["content"]["msg"] : "We know and keep working on that";
           result = blankslateWithMsg("Something went wrong :(", msg);
         }

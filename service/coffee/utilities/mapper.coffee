@@ -37,6 +37,7 @@ class Mapper
             text_last: 'text_last' # add children before HTML text
             onclick: 'onclick' # adds onclick event
             onkeyup: 'onkeyup' # adds onkeyup event
+            arialabel: 'arialabel'
         # map can be object or array, or DOM element
         if "nodeName" of map
             # hack - add DOM element
@@ -54,6 +55,9 @@ class Mapper
             c.type = "#{map[mprs.inputtype]}" if mprs.inputtype of map
             c.placeholder = "#{map[mprs.placeholder]}" if mprs.placeholder of map
             c.selected = map[mprs.optionselected] if mprs.optionselected of map
+            # add tooltip label
+            if mprs.arialabel of map
+                c.setAttribute("aria-label", map[mprs.arialabel])
             # events
             if mprs.onclick of map and map[mprs.onclick]
                 @addEventListener c, 'click', (e) -> map[mprs.onclick].call @, e

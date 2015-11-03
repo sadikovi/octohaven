@@ -58,6 +58,11 @@ input.input-contrast,
     color: #aaa;
 }
 
+// Squared (approximately) input, for some short text boxes, e.g. page numbers and etc.
+input.input-squared {
+    width: 70px;
+}
+
 // Mini inputs, to match .minibutton
 input.input-mini {
     min-height: 26px;

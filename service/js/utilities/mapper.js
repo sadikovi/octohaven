@@ -47,7 +47,8 @@
         children: 'children',
         text_last: 'text_last',
         onclick: 'onclick',
-        onkeyup: 'onkeyup'
+        onkeyup: 'onkeyup',
+        arialabel: 'arialabel'
       };
       if ("nodeName" in map) {
         if (parent) {
@@ -81,6 +82,9 @@
         }
         if (mprs.optionselected in map) {
           c.selected = map[mprs.optionselected];
+        }
+        if (mprs.arialabel in map) {
+          c.setAttribute("aria-label", map[mprs.arialabel]);
         }
         if (mprs.onclick in map && map[mprs.onclick]) {
           this.addEventListener(c, 'click', function(e) {
