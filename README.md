@@ -5,6 +5,7 @@ Super simple Apache Spark job server.
 - [Install](#install)
 - [Run](#run)
     - [Quick test](#quick-test)
+    - [Application logs](#application-logs)
     - [Spark job logs](#spark-job-logs)
 - [Configuration](#configuration)
 - [Build and test](#build-and-test)
@@ -41,6 +42,13 @@ $ sbin/start.sh
 $ sbin/stop.sh
 ```
 
+Note that `start.sh` supports some command-line arguments (again, this is just one option, will add
+more in the future):
+- `-d` or `--daemon=true/false` => launch service as daemon process, which means logging will be
+only available in a log file _octohaven-service.log_. If option is not specified, launches as
+normal process, equivalent to `--daemon=false`. Usage: `sbin/start.sh -d` or
+`sbin/start.sh --daemon=true`
+
 Application will be available on `localhost:33900` or whatever port you specify in configuration
 file.
 
@@ -52,6 +60,11 @@ Settings are:
 - **jobconf** any number up to max integer
 
 Job will report sum of numbers between 0 and number specified.
+
+### Application logs
+Application logs stored in project directory in a file/many files **octohaven-service.log**. Default
+setup is that logs spilling into that file and also terminal. You can set different output handler
+or log directory. Configuration file for application logs is `config/log.conf`
 
 ### Spark job logs
 Each job saves `stdout` and `stderr` results in global log folder `projectDir/apache/spark/logs`.

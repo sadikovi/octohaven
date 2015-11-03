@@ -4,6 +4,34 @@
 sbin="`dirname "$0"`"
 ROOT_DIR="`cd "$sbin/../"; pwd`"
 
+# command-line options for start-up:
+# -d | --daemon => runs service as a daemon process
+for i in "$@"; do
+    case $i in
+        -d|--daemon=*)
+            OPTION_USE_DAEMON="${i#*=}"
+            if [ "$OPTION_USE_DAEMON" == "-d" ]; then
+                OPTION_USE_DAEMON="true"
+            elif [ "$OPTION_USE_DAEMON" == "true" ]; then
+                OPTION_USE_DAEMON="true"
+            elif [ "$OPTION_USE_DAEMON" == "false" ]; then
+                OPTION_USE_DAEMON=""
+            else
+                echo "[ERROR] Unrecognized value $OPTION_USE_DAEMON for '--daemon' option"
+                exit 1
+            fi
+            shift ;;
+        *) ;;
+    esac
+done
+
+# just some messaging (mainly for debugging purposes, should be removed once we are happy with this)
+if [ -n "$OPTION_USE_DAEMON" ]; then
+    echo "[INFO] Will launch service as daemon process"
+else
+    echo "[INFO] Will launch service as normal process"
+fi
+
 # load default variables (Octohaven and Redis settings)
 . "$ROOT_DIR/sbin/config.sh"
 
@@ -55,8 +83,8 @@ if [ -n "$USE_DOCKER" ]; then
     fi
 fi
 
-# start serving
-eval "$WHICH_PYTHON $ROOT_DIR/run_service.py \
+# command to start service
+RUN_SERVICE_COMMAND="$WHICH_PYTHON $ROOT_DIR/run_service.py \
     --host=$OCTOHAVEN_HOST \
     --port=$OCTOHAVEN_PORT \
     --spark-ui-address=$OCTOHAVEN_SPARK_UI_ADDRESS \
@@ -66,3 +94,9 @@ eval "$WHICH_PYTHON $ROOT_DIR/run_service.py \
     --redis-port=$REDIS_PORT \
     --redis-db=$REDIS_DB \
     --jar-folder=$JAR_FOLDER"
+
+if [ -n "$OPTION_USE_DAEMON" ]; then
+    eval "nohup $RUN_SERVICE_COMMAND 0<&- &>/dev/null &"
+else
+    eval "$RUN_SERVICE_COMMAND"
+fi
