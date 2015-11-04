@@ -4,7 +4,6 @@
 sbin="`dirname "$0"`"
 ROOT_DIR="`cd "$sbin/../"; pwd`"
 
-
 # functions (mainly for processing command-line arguments)
 def_usage() {
     cat <<EOM
@@ -28,14 +27,6 @@ def_daemon() {
         echo "Run '--usage' to display possible options"
         exit 1
     fi
-
-    # just some messaging
-    # (mainly for debugging purposes, should be removed once we are happy with this)
-    if [ -n "$OPTION_USE_DAEMON" ]; then
-        echo "[INFO] Will launch service as daemon process"
-    else
-        echo "[INFO] Will launch service as normal process"
-    fi
 }
 
 # command-line options for start-up:
@@ -58,6 +49,9 @@ done
 # check dependencies (python is always checked)
 . "$ROOT_DIR/sbin/check-python.sh"
 
+# call to prepare variable for service check
+. "$ROOT_DIR/sbin/check-service.sh"
+
 # check if we are using Docker
 if [ -n "$USE_DOCKER" ]; then
     . "$ROOT_DIR/sbin/check-docker.sh"
@@ -73,7 +67,10 @@ if [ -n "$USE_DOCKER" ]; then
             # [issue #11] if Docker version is below 1.5.0, we have to launch container and then
             # invoke script "sbin/start.sh" again, otherwise it might fail with "redis.exceptions.ConnectionError"
             # "Error while reading from socket: (104, 'Connection reset by peer')"
-            if [ -n "$DOCKER_SERVER_VERSION" ]; then
+            if [ -z "$DOCKER_SERVER_VERSION" ]; then
+                echo "[ERROR] Could not resolve Docker version"
+                exit 1
+            else
                 # convert Docker version to integer by dropping "."
                 DOCKER_SERVER_VERSION_NUM=$(echo $DOCKER_SERVER_VERSION | sed 's/\.//g')
                 # show warning for Docker versions below 1.5.0
@@ -103,6 +100,13 @@ if [ -n "$USE_DOCKER" ]; then
     fi
 fi
 
+# now we are ready to actually run service. Check whether service is already running, and if it is
+# tell to stop and exit
+if [ -n "$IS_SERVICE_RUNNING" ]; then
+    echo "[ERROR] Service is already running under process $PROCESS_ID. Stop it first"
+    exit 1
+fi
+
 # command to start service
 RUN_SERVICE_COMMAND="$WHICH_PYTHON $ROOT_DIR/run_service.py \
     --host=$OCTOHAVEN_HOST \
@@ -116,7 +120,9 @@ RUN_SERVICE_COMMAND="$WHICH_PYTHON $ROOT_DIR/run_service.py \
     --jar-folder=$JAR_FOLDER"
 
 if [ -n "$OPTION_USE_DAEMON" ]; then
+    echo "[INFO] Launching service as daemon process..."
     eval "nohup $RUN_SERVICE_COMMAND 0<&- &>/dev/null &"
 else
+    echo "[INFO] Launching service as normal process..."
     eval "$RUN_SERVICE_COMMAND"
 fi

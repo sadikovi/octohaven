@@ -10,6 +10,9 @@ ROOT_DIR="`cd "$sbin/../"; pwd`"
 # check dependencies (python is always checked)
 . "$ROOT_DIR/sbin/check-python.sh"
 
+# call to prepare variable for service check
+. "$ROOT_DIR/sbin/check-service.sh"
+
 # check if we are using Docker
 if [ -n "$USE_DOCKER" ]; then
     . "$ROOT_DIR/sbin/check-docker.sh"
@@ -25,8 +28,7 @@ fi
 
 # stop serving
 echo "[INFO] Stopping service..."
-# start serving
-PROCESS_ID=$(ps aux | grep "$WHICH_PYTHON $ROOT_DIR/run_service.py" | grep -v grep | awk '{print $2}')
+# check process id to find out whether we need to stop process
 if [ -z "$PROCESS_ID" ]; then
     echo "[INFO] Nothing to stop"
 else
