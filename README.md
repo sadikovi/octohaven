@@ -14,9 +14,9 @@ Super simple Apache Spark job server.
 ## Overview
 Allows you to select `jar` file and specify Spark conf parameters. You can schedule jobs to run
 after some time passed, pass job parameters along with Spark configuration options, view stdout and
-stderr of the job running and etc. **Does not mess up** with your cluster installation and/or scripts,
-it is more like a nice feature, which you can turn off any time. Tested with Spark standalone cluster,
-not sure if it will work with Yarn or Mesos.
+stderr of the job running and etc. **It does not mess up** with your cluster installation and/or
+scripts, it is more like a nice feature, which you can turn off any time. Tested with Spark
+standalone cluster, not sure if it will work with Yarn or Mesos.
 
 Screenshot of the UI:
 ![Screenshot](./resources/octohaven-screenshot.jpg)

@@ -309,7 +309,7 @@
         return job.set("executor-memory", "" + value);
       }
     }));
-    addRow(jobOption("Options", "Settings, e.g. JVM, networking, shuffle...", job.get("options"), function(ok, value) {
+    addRow(jobOption("Spark options", "Settings, e.g. JVM, networking, shuffle...", job.get("options"), function(ok, value) {
       if (ok) {
         return job.set("options", "" + value);
       }

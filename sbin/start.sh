@@ -8,7 +8,7 @@ ROOT_DIR="`cd "$sbin/../"; pwd`"
 def_usage() {
     cat <<EOM
 Usage: $0 [options]
--d | --daemon   launches service as daemon process, e.g. daemon=true/false
+-d | --daemon   launches service as daemon process, e.g. --daemon=true/false
 --usage         displayes usage of the script
 EOM
     exit 0

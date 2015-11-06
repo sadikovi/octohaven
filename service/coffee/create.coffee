@@ -192,7 +192,7 @@ loadTemplate = (job) ->
         (ok, value) -> job.set("driver-memory", "#{value}") if ok))
     addRow(jobOption("Executor memory", "Memory for Spark executors", job.get("executor-memory"),
         (ok, value) -> job.set("executor-memory", "#{value}") if ok))
-    addRow(jobOption("Options", "Settings, e.g. JVM, networking, shuffle...", job.get("options"),
+    addRow(jobOption("Spark options", "Settings, e.g. JVM, networking, shuffle...", job.get("options"),
         (ok, value) -> job.set("options", "#{value}") if ok))
     addRow(jobOption("Job options", "Job options to pass to entrypoint", job.get("jobconf"),
         (ok, value) -> job.set("jobconf", "#{value}") if ok))
