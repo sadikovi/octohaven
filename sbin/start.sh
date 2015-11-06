@@ -57,19 +57,18 @@ if [ -n "$USE_DOCKER" ]; then
     . "$ROOT_DIR/sbin/check-docker.sh"
 
     # check if container exists and running
-    DOCKER_REDIS_EXISTS=$(docker ps -a | grep -e "$REDIS_CONTAINER$")
-    DOCKER_REDIS_RUNNING=$(docker ps | grep -e "$REDIS_CONTAINER$")
     if [ -z "$DOCKER_REDIS_RUNNING" ]; then
         if [ -z "$DOCKER_REDIS_EXISTS" ]; then
             # run new container, as no container can be found
+            # [issue #24] fail if anything goes wrong
             echo "[INFO] Running new Redis container..."
-            eval "$WHICH_DOCKER run -h $REDIS_HOST -p $REDIS_PORT:6379 --name $REDIS_CONTAINER -d redis:$REDIS_VERSION"
+            eval "$WHICH_DOCKER run -h $REDIS_HOST -p $REDIS_PORT:6379 --name $REDIS_CONTAINER -d redis:$REDIS_VERSION" || \
+                (echo "[ERROR] Failed to run new container. Try again later" && exit 1)
             # [issue #11] if Docker version is below 1.5.0, we have to launch container and then
             # invoke script "sbin/start.sh" again, otherwise it might fail with "redis.exceptions.ConnectionError"
             # "Error while reading from socket: (104, 'Connection reset by peer')"
             if [ -z "$DOCKER_SERVER_VERSION" ]; then
-                echo "[ERROR] Could not resolve Docker version"
-                exit 1
+                echo "[WARN] Could not resolve Docker version"
             else
                 # convert Docker version to integer by dropping "."
                 DOCKER_SERVER_VERSION_NUM=$(echo $DOCKER_SERVER_VERSION | sed 's/\.//g')
@@ -80,15 +79,16 @@ if [ -n "$USE_DOCKER" ]; then
                     echo "It is recommended to upgrade Docker to latest version."
                     echo "To proceed or in case of error just try relaunching 'sbin/start.sh'"
                     exit 0
+                else
+                    echo "[INFO] Keep running..."
                 fi
             fi
         else
-            # start stopped container
+            # start stopped container, fail if anything goes wrong
             echo "[INFO] Starting up Redis container..."
-            eval "$WHICH_DOCKER start $REDIS_CONTAINER"
+            eval "$WHICH_DOCKER start $REDIS_CONTAINER" || \
+                (echo "[ERROR] Failed to start container. Try again later." && exit 1)
         fi
-    else
-        echo "[INFO] Redis is already running"
     fi
     # if we use Docker we have to reevaluate Redis host, as it will be VM IP in case of boot2docker
     # or localhost on Linux
