@@ -150,7 +150,7 @@ class FileManager(object):
         if type(pos) is not IntType:
             raise StandardError("Expected IntType, got %s" % str(type(pos)))
         if pos < 0:
-            raise StandardError("Position is negative")
+            raise StandardError("Position '%s' is negative" % pos)
         return pos
 
     # validation of page
@@ -164,7 +164,8 @@ class FileManager(object):
     # returns at most number of pages for a file
     def numPages(self, f, chunk=500):
         fileSize = self.endOfFile(f)
-        return int(math.ceil(fileSize * 1.0 / chunk))
+        # if file is empty, we still treat it as having at most 1 page
+        return int(math.ceil(fileSize * 1.0 / chunk)) if fileSize > 0 else 1
 
     # generic function to read specific chunk of data
     # we always read from beginning
@@ -180,7 +181,10 @@ class FileManager(object):
     @private
     def readFromPosition(self, f, pos, offset=500):
         self.validateFile(f)
-        self.validatePosition(pos)
+        # remove position validation and replace with just type check, since we deal with negative
+        # positions in code
+        if type(pos) is not IntType:
+            raise StandardError("Expected IntType, got %s" % str(type(pos)))
         # start is always less than end in this case
         start, end = (pos, pos + offset) if offset > 0 else (pos + offset, pos)
         fileSize = self.endOfFile(f)
@@ -194,6 +198,10 @@ class FileManager(object):
     # offset indicates whether we need to truncate rows up to new line character
     # chunk is a block to read in bytes
     def readFromStart(self, f, page, chunk=500, offset=0):
+        self.validatePage(page)
+        numPages = self.numPages(f, chunk)
+        if page >= numPages:
+            raise StandardError("Page '%s' exceeds max number of pages" % page)
         start = chunk * page
         part = self.readFromPosition(f, start, chunk)
         if len(part) > 0:
@@ -207,6 +215,10 @@ class FileManager(object):
     # offset indicates whether we need to truncate rows up to new line character
     # chunk is a block to read in bytes
     def readFromEnd(self, f, page, chunk=500, offset=0):
+        self.validatePage(page)
+        numPages = self.numPages(f, chunk)
+        if page >= numPages:
+            raise StandardError("Page '%s' exceeds max number of pages" % page)
         start = self.endOfFile(f) - chunk * (page + 1)
         part = self.readFromPosition(f, start, chunk)
         if len(part) > 0:

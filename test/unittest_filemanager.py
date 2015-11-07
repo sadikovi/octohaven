@@ -9,6 +9,7 @@ class FileManagerTestSuite(unittest.TestCase):
     def setUp(self):
         self.root = os.path.join(TEST_PATH, "resources", "filelist")
         self.file = os.path.join(TEST_PATH, "resources", "scheduler.txt")
+        self.emptyFile = os.path.join(TEST_PATH, "resources", "empty.txt")
 
     def tearDown(self):
         pass
@@ -191,8 +192,8 @@ class FileManagerTestSuite(unittest.TestCase):
         with self.assertRaises(StandardError):
             manager.readFromPosition(None, 100, offset=200)
         with open(self.file) as f:
-            with self.assertRaises(StandardError):
-                manager.readFromPosition(f, -1, offset=200)
+            block = manager.readFromPosition(f, -1, offset=10)
+            self.assertEqual(block, "Main poin")
             block = manager.readFromPosition(f, 500, offset=100)
             self.assertEqual(block, "ules:\n- Fetching jobs that are ready to be run (1)\n- " +
                 "Checking whether we can execute job (2)\n- Actua")
@@ -231,6 +232,37 @@ class FileManagerTestSuite(unittest.TestCase):
             self.assertEqual(block, "- Should be very easy to extend i")
             block = manager.crop(f, 100, 100)
             self.assertEqual(block, "t or add functionality")
+
+    # issue 25:
+    def test_validatePageWhenReading(self):
+        manager = FileManager(self.root)
+        with open(self.file) as f:
+            numPages = manager.numPages(f, chunk=100)
+            self.assertEqual(numPages, 23)
+            # test exceeded number of pages
+            with self.assertRaises(StandardError):
+                manager.readFromStart(f, numPages, chunk=100, offset=0)
+            with self.assertRaises(StandardError):
+                manager.readFromEnd(f, numPages, chunk=100, offset=0)
+            # test negative page number
+            with self.assertRaises(StandardError):
+                manager.readFromStart(f, -1, chunk=100, offset=0)
+            with self.assertRaises(StandardError):
+                manager.readFromEnd(f, -1, chunk=100, offset=0)
+            # this should be okay
+            manager.readFromStart(f, numPages - 1, chunk=100, offset=0)
+            manager.readFromEnd(f, numPages - 1, chunk=100, offset=0)
+
+    def test_minNumPages(self):
+        # number of pages should be at least 1, so empty file will say that it has 1 page, which is
+        # empty
+        manager = FileManager(self.root)
+        with open(self.emptyFile) as f:
+            numPages = manager.numPages(f, chunk=200)
+            self.assertEqual(numPages, 1)
+        with open(self.file) as f:
+            numPages = manager.numPages(f, chunk=200)
+            self.assertEqual(numPages, 12)
 
 # Load test suites
 def _suites():
