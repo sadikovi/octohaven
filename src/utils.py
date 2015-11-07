@@ -5,7 +5,12 @@ from types import UnicodeType, StringType, DictType, ListType
 
 # private decorator
 def private(f):
-    # This function is what we "replace" hello with
+    def wrapper(*args, **kw):
+        return f(*args, **kw)
+    return wrapper
+
+# override decorator
+def override(f):
     def wrapper(*args, **kw):
         return f(*args, **kw)
     return wrapper
