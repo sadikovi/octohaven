@@ -2,12 +2,15 @@
 
 bin="`dirname "$0"`"
 ROOT_DIR="`cd "$bin/../"; pwd`"
-echo "[INFO] Removing *.pyc files in $ROOT_DIR"
 # delete .pyc files from project folder
+echo "[INFO] Removing *.pyc files in $ROOT_DIR"
 for f in $(find "$ROOT_DIR" -name "*.pyc" -type f); do
     echo "- Removing $f"
     rm "$f"
 done
+# delete sass cache
+echo "[INFO] Removing sass-cache files in $ROOT_DIR"
+rm -r "$ROOT_DIR/.sass-cache"
 # delete service logs
 echo "[INFO] Removing 'octohaven-service.log' files"
 for f in $(find "$ROOT_DIR" -name "octohaven-service.log*" -type f); do
