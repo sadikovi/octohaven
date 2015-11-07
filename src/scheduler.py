@@ -85,7 +85,7 @@ def fetch(scheduler):
                     scheduler.logger().info("Updated job %s on WAITING from %s", job.uid, job.status)
                 scheduler.add(job, job.priority)
         else:
-            scheduler.logger().info("No new jobs were added")
+            scheduler.logger().info("Scheduler pool is full, no new jobs were added")
         scheduler.logger().info("Refreshed queue size: %s", scheduler.pool.qsize())
     finally:
         lock.release()
@@ -125,7 +125,7 @@ def runJob(scheduler):
         if numFreeSlots <= 0:
             scheduler.logger().info("Skip launching jobs due to max number of jobs running")
         else:
-            scheduler.logger().info("Number of free slots: %s", numFreeSlots)
+            scheduler.logger().info("Number of free slots to run: %s", numFreeSlots)
             if not scheduler.hasNext():
                 scheduler.logger().info("There are no jobs available in scheduler pool")
                 return

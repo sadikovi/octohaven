@@ -14,7 +14,8 @@ RUN_TESTS = {
     "utils": True,
     "sparkmodule": True,
     "template": True,
-    "scheduler": True
+    "scheduler": True,
+    "subscription": True
 }
 
 def checkTest(key):
@@ -83,6 +84,13 @@ def collectSystemTests(suites):
         suites.addTest(unittest_scheduler.loadSuites())
     else:
         print "@skip: 'scheduler' tests"
+
+    # subscription
+    if checkTest("subscription"):
+        import test.unittest_subscription as unittest_subscription
+        suites.addTest(unittest_subscription.loadSuites())
+    else:
+        print "@skip: 'subscription' tests"
 
 if __name__ == '__main__':
     args = sys.argv[2:]

@@ -17,6 +17,15 @@ def _logger(name):
     logger.addHandler(logging.NullHandler())
     return logger
 
+"""
+Log messages available:
+- ::debug(msg, *args, **kwargs)
+- ::info(msg, *args, **kwargs)
+- ::warning(msg, *args, **kwargs)
+- ::error(msg, *args, **kwargs)
+- ::critical(msg, *args, **kwargs)
+- ::exception(msg, *args, **kwargs)
+"""
 class Octolog(object):
     def logger(self):
         name = str(self.__class__)
