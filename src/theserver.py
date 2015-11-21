@@ -21,7 +21,8 @@ REQUEST_TABLE = {
     "/": "index.html",
     "create": "create.html",
     "job": "job.html",
-    "log": "log.html"
+    "log": "log.html",
+    "timetable": "timetable.html"
 }
 # root directory for http server
 ROOT = paths.SERV_PATH
