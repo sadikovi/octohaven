@@ -9,9 +9,6 @@ export OCTOHAVEN_PORT="33900"
 export OCTOHAVEN_SPARK_MASTER_ADDRESS="spark://jony-local.local:7077"
 # Spark full UI address (the one for job monitoring)
 export OCTOHAVEN_SPARK_UI_ADDRESS="http://localhost:8080"
-# Spark full UI address for running job (usually, http://localhost:4040, this will be used to
-# update information from Spark UI)
-export OCTOHAVEN_SPARK_UI_RUN_ADDRESS="http://localhost:4040"
 # Root path for .jar files, can have nested folders, this will show file catalog starting from
 # this folder specified
 export JAR_FOLDER="/Users/sadikovi/developer/octohaven/test/resources/filelist"

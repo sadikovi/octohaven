@@ -48,7 +48,6 @@ Options are:
 - host [ --host=localhost ]
 - port [ --port=33900 ]
 - (required) spark ui address [ --spark-ui-address=http://localhost:8080 ]
-- (required) spark ui run address [ --spark-ui-run-address=http://localhost:4040 ]
 - (required) spark master address [ --spark-master-address=spark://local:7077 ]
 - (required) jar folder [ --jar-folder ]
 - redis host [ --redis-host=localhost ]
@@ -63,7 +62,9 @@ Options are:
     host = getOrElse(params, "--host", "localhost")
     port = getOrElse(params, "--port", "33900")
     spark_ui_address = getOrElse(params, "--spark-ui-address", None)
-    spark_ui_run_address = getOrElse(params, "--spark-ui-run-address", None)
+    # [OCTO-29] removes this option from configuration, since we are not using it. We pass dummy
+    # value [http://localhost:4040] in order for it to compile and pass checks.
+    spark_ui_run_address = "http://localhost:4040"
     spark_master_address = getOrElse(params, "--spark-master-address", None)
     jar_folder = getOrElse(params, "--jar-folder", None)
     redis_host = getOrElse(params, "--redis-host", "localhost")
@@ -72,8 +73,6 @@ Options are:
     # check if any of required parameters are not set
     if not spark_ui_address:
         raise StandardError("Spark UI address must be set, e.g. http://localhost:8080")
-    if not spark_ui_run_address:
-        raise StandardError("Spark UI running address must be set, e.g. http://localhost:4040")
     if not spark_master_address:
         raise StandardError("Spark Master address must be set, e.g. spark://local:7077")
     # check whether jar_folder is an absolute path and exists
@@ -100,7 +99,6 @@ Options are:
     scheduler = Scheduler(settings)
 
     print "[INFO] Spark UI address is set to %s" % spark_ui_address
-    print "[INFO] Spark UI run address is set to %s" % spark_ui_run_address
     print "[INFO] Spark Master address is set to %s" % spark_master_address
     print "[INFO] Jar folder is set to %s" % jar_folder
     print "[INFO] Redis host and port are set to %s:%s" % (redis_host, redis_port)

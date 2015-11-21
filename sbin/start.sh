@@ -112,7 +112,6 @@ RUN_SERVICE_COMMAND="$WHICH_PYTHON $ROOT_DIR/run_service.py \
     --host=$OCTOHAVEN_HOST \
     --port=$OCTOHAVEN_PORT \
     --spark-ui-address=$OCTOHAVEN_SPARK_UI_ADDRESS \
-    --spark-ui-run-address=$OCTOHAVEN_SPARK_UI_RUN_ADDRESS \
     --spark-master-address=$OCTOHAVEN_SPARK_MASTER_ADDRESS \
     --redis-host=$REDIS_HOST \
     --redis-port=$REDIS_PORT \
