@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import paths
-import uuid, re, shlex
+import re, shlex
 from types import DictType, StringType, IntType
 from job import *
 from storagemanager import StorageManager
@@ -83,7 +83,7 @@ class JobManager(object):
         # parse options correctly, job accepts already parsed options as
         # key-value pairs, e.g. spark.shuffle.spill=true
         # we do not fail, if there are no options
-        uid = "spark_" + uuid.uuid4().hex
+        uid = nextSparkJobId()
         masterurl = self.sparkModule.masterAddress
         updatedOptions = self.parseOptions(opts)
         # we also parse job configuration options, the same principle really
@@ -100,7 +100,7 @@ class JobManager(object):
     def createJob(self, sparkjob, delay=0):
         if type(delay) is not IntType:
             raise StandardError("Delay is expected to be of IntType, got " + str(type(delay)))
-        uid = "job_" + uuid.uuid4().hex
+        uid = nextJobId()
         status = CREATED if delay <= 0 else DELAYED
         duration = MEDIUM
         # store start time as unix timestamp in ms

@@ -147,6 +147,12 @@ class SparkJob(object):
         cmd = sparkSubmit + name + master + conf + entrypoint + jar + jobconf
         return cmd
 
+    # clones current SparkJob and returns copy with new uid
+    def clone(self):
+        uid = nextSparkJobId()
+        return SparkJob(uid, self.name, self.masterurl, self.entrypoint, self.jar, self.options,
+            self.jobconf)
+
     @classmethod
     def fromDict(cls, obj):
         uid = obj["uid"]
