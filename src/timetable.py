@@ -9,7 +9,6 @@ from utils import *
 # delay interval for job creation in seconds, job will start within that interval
 TIMETABLE_DELAY_INTERVAL = 60
 TIMETABLE_KEYSPACE = "TIMETABLE_KEYSPACE"
-TIMETABLE_JOBS_SUFFIX = ":jobs"
 
 # Timetable class to keep track of schedules for a particular job. Reports when to launch job, and
 # keeps statistics of actual, and total number of jobs.
@@ -17,26 +16,32 @@ TIMETABLE_JOBS_SUFFIX = ":jobs"
 # means "run first job after 1 minute, second job in 2 minutes after launching first job, etc."
 # If list is out of bound, we repeat intervals. This will allow us to schedule more complex times,
 # e.g. running only on Saturday, Sunday, or running every work day at 2pm.
+# - starttime - time in milliseconds
+# - intervals - intervals in seconds
+# - jobs - list of job uids
 class Timetable(object):
-    def __init__(self, uid, name, starttime, interval, active, jobid):
+    def __init__(self, uid, name, canceled, clonejobid, starttime, intervals, jobs):
+        if type(intervals) is not ListType:
+            raise StandardError("Expected intervals as ListType, got " + str(type(intervals)))
+        if type(jobs) is not ListType:
+            raise StandardError("Expected jobs as ListType, got " + str(type(jobs)))
         self.uid = uid
         self.name = str(name)
-        self.starttime = long(starttime)
-        if type(interval) is not ListType:
-            raise StandardError("Expected ListType interval, got " + str(type(interval)))
-        self.interval = interval
-        self.active = boolOrElse(active, False)
+        self.canceled = bool(canceled)
         # job uid of a template job, we need to clone it for every scheduled job
-        self.jobid = jobid
+        self.clonejobid = clonejobid
+        self.starttime = long(starttime)
+        self.intervals = intervals
         # these properties are never stored, since they are very dynamic, and should be
         # recalculated every time.
-        self.numTotalJobs = self.numJobs(currentTimeMillis() - starttime, interval)
-        self.numJobs = -1
+        self.numTotalJobs = Timetable.numJobs((currentTimeMillis() - starttime) / 1000, intervals)
         # list of job uids
-        self.jobs = []
+        self.jobs = jobs
+        self.numJobs = len(jobs)
 
+    @staticmethod
     @private
-    def numJobs(self, period, intervals):
+    def numJobs(period, intervals):
         sm = sum(intervals)
         ln = len(intervals)
         if sm <= 0:
@@ -51,41 +56,37 @@ class Timetable(object):
         else:
             jobs = (period / sm) * ln
             diff = period % sm
-            return jobs + numJobs(diff, intervals)
-
-    # update jobs after creation, also update counter
-    def updateJobs(self, jobs):
-        if type(jobs) is not ListType:
-            raise StandardError("Expected ListType, got " + str(type(jobs)))
-        self.jobs = jobs
-        self.numJobs = len(self.jobs)
+            return jobs + Timetable.numJobs(diff, intervals)
 
     # increment counter of total jobs and append job to the list
     def incrementJob(self, jobid):
         self.numTotalJobs += 1
+        self.numJobs += 1
         self.jobs.append(jobid)
 
     def toDict(self):
         return {
             "uid": self.uid,
             "name": self.name,
+            "canceled": self.canceled,
+            "clonejobid": self.clonejobid,
             "starttime": self.starttime,
-            "interval": self.interval,
-            "active": self.active,
-            "jobid": self.jobid,
+            "intervals": self.intervals,
             "numtotaljobs": self.numTotalJobs,
-            "numjobs": self.numJobs
+            "numjobs": self.numJobs,
+            "jobs": self.jobs
         }
 
     @classmethod
     def fromDict(cls, obj):
         uid = obj["uid"]
         name = obj["name"]
+        canceled = obj["canceled"]
+        clonejobid = obj["clonejobid"]
         starttime = obj["starttime"]
-        interval = obj["interval"]
-        active = obj["active"]
-        jobid = obj["jobid"]
-        return cls(uid, name, starttime, interval, active, jobid)
+        intervals = obj["intervals"]
+        jobs = obj["jobs"]
+        return cls(uid, name, canceled, clonejobid, starttime, intervals, jobs)
 
 # Manager for timetables. Handles saving to and retrieving from storage, updates and etc.
 class TimetableManager(Octolog, object):
@@ -110,13 +111,17 @@ class TimetableManager(Octolog, object):
             raise StandardError("Expected Job, got " + str(type(job)))
         # duplicate fields and replace uids
         sparkjob = self.cloneSparkJob(job.sparkjob)
-        return JobManager.createJob(sparkjob, TIMETABLE_DELAY_INTERVAL)
+        return self.jobManager.createJob(sparkjob, TIMETABLE_DELAY_INTERVAL)
 
-    def createTimetable(name, start, interval, job):
+    # creates new timetable using `delay` in seconds for starting timetable,
+    # `intervals` is a list of intervals in seconds
+    def createTimetable(self, name, delay, intervals, job):
         uid = nextTimetableId()
         if type(job) is not Job:
             raise StandardError("Expected Job, got " + str(type(job)))
-        return TimeTable(uid, name, start, interval, True, job.uid)
+        delay = 0 if delay <= 0 else delay
+        start = currentTimeMillis() + delay * 1000
+        return Timetable(uid, name, False, job.uid, start, intervals, [])
 
     def saveTimetable(self, timetable):
         # use storage manager to save timetable
@@ -126,36 +131,22 @@ class TimetableManager(Octolog, object):
             raise StandardError("Expected Timetable, got " + str(type(timetable)))
         self.storageManager.saveItem(timetable, klass=Timetable)
         self.storageManager.addItemToKeyspace(TIMETABLE_KEYSPACE, timetable.uid)
-        self.storageManager.addItemsToKeyspace(timetable.uid + TIMETABLE_JOBS_SUFFIX,
-            timetable.jobs)
-
-    @private
-    def jobsForTimetable(self, timetable):
-        return self.storageManager.itemsForKeyspace(timetable.uid + TIMETABLE_JOBS_SUFFIX, -1)
 
     def timetableForUid(self, uid):
-        timetable = self.storageManager.itemForUid(uid, klass=Timetable)
-        if timetable:
-            jobs = jobsForTimetable(timetable)
-            timetable.updateJobs(jobs)
-        return timetable
+        return self.storageManager.itemForUid(uid, klass=Timetable)
 
     # we do not limit timetables and return all of them sorted by name
     def listTimetables(self):
         def func(x, y):
             return cmp(x.name, y.name)
-        tables = self.storageManager.itemsForKeyspace(TIMETABLE_KEYSPACE, -1, func, klass=Timetable)
-        for t in tables:
-            jobs = jobsForTimetable(t)
-            t.updateJobs(jobs)
-        return tables
+        return self.storageManager.itemsForKeyspace(TIMETABLE_KEYSPACE, -1, func, klass=Timetable)
 
     # cancel timetable, set `active` status to False
     def cancel(self, uid):
         timetable = self.timetableForUid(uid)
         if not timetable:
             raise StandardError("Timetable with uid '%s' does not exist" % uid)
-        if not timetable.active:
-            raise StandardError("Cannot cancel non-active timetable with uid '%s'" % uid)
-        timetable.active = False
+        if timetable.canceled:
+            raise StandardError("Cannot cancel already canceled timetable with uid '%s'" % uid)
+        timetable.canceled = True
         self.saveTimetable(timetable)

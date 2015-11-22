@@ -100,6 +100,25 @@ class StorageManagerTestSuite(unittest.TestCase):
         got = storageManager.itemsForKeyspace(job.status, limit=3, klass=Job)
         self.assertEqual(len(got), 3)
 
+    def test_addItemsToKeyspace(self):
+        storageManager = StorageManager(self.connector)
+        jobs = [self.newJob(), self.newJob()]
+        storageManager.addItemsToKeyspace("multiplejobs", [x.uid for x in jobs])
+        for job in jobs:
+            storageManager.saveItem(job, klass=Job)
+        savedJobs = storageManager.itemsForKeyspace("multiplejobs", klass=Job)
+        self.assertEqual(sorted([x.uid for x in savedJobs]), sorted([x.uid for x in jobs]))
+
+    def test_removeItemsFromKeyspace(self):
+        storageManager = StorageManager(self.connector)
+        jobs = [self.newJob(), self.newJob(), self.newJob()]
+        storageManager.addItemsToKeyspace("multiplejobs", [x.uid for x in jobs])
+        for job in jobs:
+            storageManager.saveItem(job, klass=Job)
+        storageManager.removeItemsFromKeyspace("multiplejobs", [x.uid for x in jobs][:2])
+        leftJobs = storageManager.itemsForKeyspace("multiplejobs", klass=Job)
+        self.assertEqual([x.uid for x in leftJobs], [x.uid for x in jobs][2:])
+
 # Load test suites
 def _suites():
     return [

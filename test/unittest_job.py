@@ -190,6 +190,17 @@ class SparkJobTestSuite(unittest.TestCase):
         # increased number of parameters passed with spark uid key
         self.assertEqual(len(cmd), 22)
 
+    def test_clone(self):
+        sparkjob = JobSentinel.sparkJob()
+        copy = sparkjob.clone()
+        self.assertTrue(copy.uid != sparkjob.uid)
+        # reset different uids, so we can compare the rest
+        copyObj = copy.toDict()
+        copyObj["uid"] = None
+        obj = sparkjob.toDict()
+        obj["uid"] = None
+        self.assertEqual(copyObj, obj)
+
 class JobTestSuite(unittest.TestCase):
     def setUp(self):
         self.uid = str(uuid.uuid4())
