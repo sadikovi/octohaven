@@ -12,6 +12,7 @@ from jobmanager import JobManager
 from job import Job, SparkJob
 from sparkmodule import SparkModule
 from template import TemplateManager
+from timetable import TimetableManager
 from utils import *
 
 # constants for request mapping
@@ -67,6 +68,7 @@ class APICall(Octolog, object):
         self.fileManager = FileManager(jarFolder)
         self.jobManager = JobManager(self.sparkModule, storageManager)
         self.templateManager = TemplateManager(storageManager)
+        self.timetableManager = TimetableManager(self.jobManager)
         self.response = None
 
     @private
@@ -93,11 +95,18 @@ class APICall(Octolog, object):
     # - POST    /api/v1/template/create: create template
     # - GET     /api/v1/template/delete: delete tempate
     # - GET     /api/v1/template/list: list all templates
+    # - POST    /api/v1/timetable/create: create a timetable
+    # - GET     /api/v1/timetable/get: fetch timetable for id
+    # - GET     /api/v1/timetable/list: list all timetables
+    # - GET     /api/v1/timetable/cancel: cancel timetable for id
     def process(self):
         try:
             # list of API functions, see comment above. Everything is called in if-else statement
             # that decides what response to send. If API is undefined we raise a system error 500
 
+            ####################################################
+            ### Spark API
+            ####################################################
             def sparkStatus():
                 status = self.sparkModule.clusterStatus()
                 return self.success({
@@ -106,6 +115,9 @@ class APICall(Octolog, object):
                     "spark-master-address": self.sparkModule.masterAddress
                 })
 
+            ####################################################
+            ### Job API
+            ####################################################
             def jobList():
                 if "status" not in self.query:
                     raise StandardError("Expected 'status' parameter")
@@ -158,6 +170,9 @@ class APICall(Octolog, object):
                 self.jobManager.closeJob(job)
                 return self.success({"msg": "Job has been closed", "jobid": job.uid})
 
+            ####################################################
+            ### Files API
+            ####################################################
             def fileBreadcrumbs():
                 # return breadcrumbs for a path
                 path = self.query["path"] if "path" in self.query else ""
@@ -195,6 +210,9 @@ class APICall(Octolog, object):
                 return self.success({"jobid": job.uid, "jobname": job.sparkjob.name,
                     "pages": numPages, "page": page, "block": block, "size": chunk})
 
+            ####################################################
+            ### Template API
+            ####################################################
             def templateList():
                 arr = self.templateManager.templates()
                 return self.success({"templates": [template.toDict() for template in arr]})
@@ -222,6 +240,56 @@ class APICall(Octolog, object):
                 self.templateManager.deleteTemplate(template)
                 return self.success({"msg": "Template has been deleted"})
 
+            ####################################################
+            ### Timetable API
+            ####################################################
+            def timetableCreate():
+                if "content" not in self.query or not self.query["content"]:
+                    raise StandardError("Timetable information expected, got empty input")
+                raw = self.query["content"].strip()
+                data = jsonOrElse(raw, None)
+                if not data:
+                    raise StandardError("Corrupt json data: " + raw)
+                name = data["name"]
+                delay = int(data["delay"])
+                # list of integer values is expected
+                intervals = data["intervals"]
+                jobid = data["jobid"]
+                job = self.jobManager.jobForUid(jobid)
+                if not job:
+                    raise StandardError("No job found for uid: " + str(jobid))
+                timetable = self.timetableManager.createTimetable(name, delay, intervals, job)
+                self.timetableManager.saveTimetable(timetable)
+                return self.success({"msg": "Timetable has been created"})
+
+            def timetableGet():
+                if "id" not in self.query:
+                    raise StandardError("Expected 'id' parameter")
+                uid = self.query["id"]
+                timetable = self.timetableManager.timetableForUid(uid)
+                if not timetable:
+                    raise StandardError("No timetable found for uid: " + str(uid))
+                return self.success({"timetable": timetable.toDict()})
+
+            def timetableList():
+                # we do not include jobs, by default, since it can be very long list
+                include = self.query["includejobs"] if "includejobs" in self.query else ""
+                doInclude = boolOrElse(include, False)
+                arr = self.timetableManager.listTimetables()
+                tables = []
+                for elem in arr:
+                    if not doInclude:
+                        elem.jobs = None
+                    tables.append(elem.toDict())
+                return self.success({"timetables": tables})
+
+            def timetableCancel():
+                if "id" not in self.query:
+                    raise StandardError("Expected 'id' parameter")
+                uid = self.query["id"]
+                self.timetableManager.cancel(uid)
+                return self.success({"msg": "Timetable '%s' has been canceled" % str(uid)})
+
             if self.path.endswith("%s/spark/status" % API_V1):
                 self.response = sparkStatus()
             elif self.path.endswith("%s/job/list" % API_V1):
@@ -244,6 +312,14 @@ class APICall(Octolog, object):
                 self.response = templateCreate()
             elif self.path.endswith("%s/template/delete" % API_V1):
                 self.response = templateDelete()
+            elif self.path.endswith("%s/timetable/create" % API_V1):
+                self.response = timetableCreate()
+            elif self.path.endswith("%s/timetable/get" % API_V1):
+                self.response = timetableGet()
+            elif self.path.endswith("%s/timetable/list" % API_V1):
+                self.response = timetableList()
+            elif self.path.endswith("%s/timetable/cancel" % API_V1):
+                self.response = timetableCancel()
             else:
                 # API does not exist for the type of the query
                 raise Exception("No API for the query: %s" % self.path)

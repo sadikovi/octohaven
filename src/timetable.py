@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 from octolog import Octolog
-from types import ListType
+from types import ListType, IntType, LongType
 from job import SparkJob, Job
 from jobmanager import JobManager
 from utils import *
@@ -23,6 +23,12 @@ class Timetable(object):
     def __init__(self, uid, name, canceled, clonejobid, starttime, intervals, jobs):
         if type(intervals) is not ListType:
             raise StandardError("Expected intervals as ListType, got " + str(type(intervals)))
+        # check that every entry of intervals is integer
+        for inl in intervals:
+            if type(inl) is not IntType and type(inl) is not LongType:
+                raise StandardError("Interval entry '%s' is not of numeric type" % inl)
+            if inl < TIMETABLE_DELAY_INTERVAL:
+                raise StandardError("Interval entry '%s' is less than min interval" % inl)
         if type(jobs) is not ListType:
             raise StandardError("Expected jobs as ListType, got " + str(type(jobs)))
         self.uid = uid
@@ -121,6 +127,7 @@ class TimetableManager(Octolog, object):
             raise StandardError("Expected Job, got " + str(type(job)))
         delay = 0 if delay <= 0 else delay
         start = currentTimeMillis() + delay * 1000
+        intervals = [int(x) for x in intervals]
         return Timetable(uid, name, False, job.uid, start, intervals, [])
 
     def saveTimetable(self, timetable):

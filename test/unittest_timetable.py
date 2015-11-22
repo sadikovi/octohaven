@@ -137,7 +137,7 @@ class TimetableManagerTestSuite(unittest.TestCase):
         job = JobSentinel.job()
         name = "test_timetable"
         delay = 100 # delay in seconds
-        intervals = [100, 200, 200, 50]
+        intervals = [100, 200, 200, 70]
         timetable = manager.createTimetable(name, delay, intervals, job)
         self.assertEqual(timetable.name, name)
         self.assertTrue(timetable.starttime > currentTimeMillis() and
@@ -149,7 +149,7 @@ class TimetableManagerTestSuite(unittest.TestCase):
         job = JobSentinel.job()
         name = "test_timetable"
         delay = 100 # delay in seconds
-        intervals = [100, 200, 200, 50]
+        intervals = [100, 200, 200, 70]
         timetable = manager.createTimetable(name, delay, intervals, job)
         with self.assertRaises(StandardError):
             manager.saveTimetable(None)
@@ -166,7 +166,7 @@ class TimetableManagerTestSuite(unittest.TestCase):
     def test_listTimetables(self):
         manager = TimetableManager(self.jobManager)
         job = JobSentinel.job()
-        timetable = manager.createTimetable("test_timetable", 100, [100, 200, 200, 50], job)
+        timetable = manager.createTimetable("test_timetable", 100, [100, 200, 200, 70], job)
         manager.saveTimetable(timetable)
         tables = manager.listTimetables()
         self.assertEqual(len(tables), 1)
@@ -178,13 +178,13 @@ class TimetableManagerTestSuite(unittest.TestCase):
             manager.cancel(None)
         job = JobSentinel.job()
         # try canceling timetable that is non-active
-        timetable = manager.createTimetable("test_timetable", 100, [100, 200, 200, 50], job)
+        timetable = manager.createTimetable("test_timetable", 100, [100, 200, 200, 70], job)
         timetable.canceled = True
         manager.saveTimetable(timetable)
         with self.assertRaises(StandardError):
             manager.cancel(timetable.uid)
         # try canceling timetable
-        timetable = manager.createTimetable("test_timetable", 100, [100, 200, 200, 50], job)
+        timetable = manager.createTimetable("test_timetable", 100, [100, 200, 200, 70], job)
         manager.saveTimetable(timetable)
         manager.cancel(timetable.uid)
         # retrieve saved timetable and check status
