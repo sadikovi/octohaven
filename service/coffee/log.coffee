@@ -7,17 +7,8 @@ unless jobDetailsElem and jobLogsElem and jobLinkElem
 
 _mapper = @mapper
 _util = @util
+_misc = @misc
 _jobloader = new @JobLoader
-
-blankslate = (internal) ->
-    blankview = _mapper.parseMapForParent(type: "div", cls: "blankslate")
-    _mapper.parseMapForParent(internal, blankview)
-    blankview
-
-blankslateWithMsg = (header, msg) ->
-    header = type: "h1", cls: "text-thin", title: "#{header}"
-    body = type: "p", title: "#{msg}"
-    blankslate([header, body])
 
 elem = (type, args...) ->
     if type == "btn"
@@ -108,12 +99,12 @@ askAnotherPage = (type, jobid, page) ->
                 # use previous job id to go back to the details.
                 jobLinkElem.href = "/job?jobid=#{jobid}"
                 msg = if json then json["content"]["msg"] else "We know and keep working on that"
-                result = blankslateWithMsg("Something went wrong :(",  msg)
+                result = _misc.blankslateWithMsg("Something went wrong :(",  msg)
             _mapper.parseMapForParent(result, jobLogsElem)
         )
     else
         # insufficient parameters
-        msg = blankslateWithMsg("Something went wrong :(",
+        msg = _misc.blankslateWithMsg("Something went wrong :(",
             "Insufficient parameters, required type of logs and job id")
         _mapper.parseMapForParent(msg, jobLogsElem)
 # reload first page

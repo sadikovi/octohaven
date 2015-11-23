@@ -62,7 +62,7 @@ class Util
     # parses integer, if fails returns default
     intOrElse: (int, def=-1) ->
         a = parseInt(int, 10)
-        return if a then a else def
+        return if a != NaN then a else def
 
     humanReadableTime: (timestamp, locale="en-nz") ->
         [now, date] = [new Date, new Date timestamp]
@@ -95,7 +95,7 @@ class Util
         for elem in arr
             str = if elem[0].indexOf("?") == 0 then elem[0].substring(1) else elem[0]
             key = this.unquote(str)
-            value = this.unquote(elem[1])
+            value = if elem[1] then this.unquote(elem[1]) else null
             dict[key] = value
         dict
 

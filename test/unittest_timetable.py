@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import unittest
-from src.timetable import Timetable, TimetableManager
+from src.timetable import Timetable, TimetableManager, DEFAULT_TIMETABLE_NAME
 from src.utils import *
 from src.sparkmodule import SparkModule
 from src.redisconnector import RedisConnectionPool, RedisConnector
@@ -38,6 +38,10 @@ class TimetableTestSuite(unittest.TestCase):
         self.assertEqual(timetable.numTotalJobs, 0)
         self.assertEqual(timetable.numJobs, len(self.jobs))
         self.assertEqual(timetable.jobs, self.jobs)
+        # test for empty name
+        timetable = Timetable(self.uid, "", self.canceled, self.clonejobid, self.starttime,
+            self.intervals, self.jobs)
+        self.assertEqual(timetable.name, DEFAULT_TIMETABLE_NAME)
 
     def test_numJobs(self):
         jobs = Timetable.numJobs(10, [5, 5, 10, 20])
@@ -191,6 +195,7 @@ class TimetableManagerTestSuite(unittest.TestCase):
         updated = manager.timetableForUid(timetable.uid)
         self.assertEqual(type(updated), Timetable)
         self.assertEqual(updated.canceled, True)
+        self.assertTrue(updated.stoptime > 0)
 
 # Load test suites
 def _suites():

@@ -162,3 +162,42 @@ class LogReader
             after?(false, json)
 
 @LogReader ?= LogReader
+
+# loading timetables
+class TimetableLoader
+    constructor: ->
+
+    list: (includeJobs, before, after) ->
+        before?()
+        loader.sendrequest "get", "/api/v1/timetable/list?includejobs=#{util.quote(includeJobs)}"
+        , {}, null
+        , (success, response) ->
+            json = util.jsonOrElse(response)
+            after?(!!json, json)
+        , (error, response) ->
+            json = util.jsonOrElse(response)
+            after?(false, json)
+
+    get: (id, before, after) ->
+        before?()
+        loader.sendrequest "get", "/api/v1/timetable/get?id=#{util.quote(id)}"
+        , {}, null
+        , (success, response) ->
+            json = util.jsonOrElse(response)
+            after?(!!json, json)
+        , (error, response) ->
+            json = util.jsonOrElse(response)
+            after?(false, json)
+
+    cancel: (id, before, after) ->
+        before?()
+        loader.sendrequest "get", "/api/v1/timetable/cancel?id=#{util.quote(id)}"
+        , {}, null
+        , (success, response) ->
+            json = util.jsonOrElse(response)
+            after?(!!json, json)
+        , (error, response) ->
+            json = util.jsonOrElse(response)
+            after?(false, json)
+
+@TimetableLoader ?= TimetableLoader

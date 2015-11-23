@@ -9,6 +9,7 @@ from utils import *
 # delay interval for job creation in seconds, job will start within that interval
 TIMETABLE_DELAY_INTERVAL = 60
 TIMETABLE_KEYSPACE = "TIMETABLE_KEYSPACE"
+DEFAULT_TIMETABLE_NAME = "Just another timetable"
 
 # Timetable class to keep track of schedules for a particular job. Reports when to launch job, and
 # keeps statistics of actual, and total number of jobs.
@@ -20,7 +21,7 @@ TIMETABLE_KEYSPACE = "TIMETABLE_KEYSPACE"
 # - intervals - intervals in seconds
 # - jobs - list of job uids
 class Timetable(object):
-    def __init__(self, uid, name, canceled, clonejobid, starttime, intervals, jobs):
+    def __init__(self, uid, name, canceled, clonejobid, starttime, intervals, jobs, stoptime = -1):
         if type(intervals) is not ListType:
             raise StandardError("Expected intervals as ListType, got " + str(type(intervals)))
         # check that every entry of intervals is integer
@@ -32,18 +33,23 @@ class Timetable(object):
         if type(jobs) is not ListType:
             raise StandardError("Expected jobs as ListType, got " + str(type(jobs)))
         self.uid = uid
-        self.name = str(name)
+        name = str(name).strip()
+        self.name = name if len(name) > 0 else DEFAULT_TIMETABLE_NAME
         self.canceled = bool(canceled)
         # job uid of a template job, we need to clone it for every scheduled job
         self.clonejobid = clonejobid
         self.starttime = long(starttime)
+        self.stoptime = long(stoptime)
         self.intervals = intervals
         # these properties are never stored, since they are very dynamic, and should be
         # recalculated every time.
-        self.numTotalJobs = Timetable.numJobs((currentTimeMillis() - starttime) / 1000, intervals)
         # list of job uids
         self.jobs = jobs
         self.numJobs = len(jobs)
+        self.numTotalJobs = None
+        # update total number of jobs
+        endtime = stoptime if stoptime > 0 else currentTimeMillis()
+        self.numTotalJobs = Timetable.numJobs((endtime - starttime) / 1000, intervals)
 
     @staticmethod
     @private
@@ -77,6 +83,7 @@ class Timetable(object):
             "canceled": self.canceled,
             "clonejobid": self.clonejobid,
             "starttime": self.starttime,
+            "stoptime": self.stoptime,
             "intervals": self.intervals,
             "numtotaljobs": self.numTotalJobs,
             "numjobs": self.numJobs,
@@ -92,7 +99,8 @@ class Timetable(object):
         starttime = obj["starttime"]
         intervals = obj["intervals"]
         jobs = obj["jobs"]
-        return cls(uid, name, canceled, clonejobid, starttime, intervals, jobs)
+        stoptime = obj["stoptime"] if "stoptime" in obj else -1
+        return cls(uid, name, canceled, clonejobid, starttime, intervals, jobs, stoptime)
 
 # Manager for timetables. Handles saving to and retrieving from storage, updates and etc.
 class TimetableManager(Octolog, object):
@@ -156,4 +164,5 @@ class TimetableManager(Octolog, object):
         if timetable.canceled:
             raise StandardError("Cannot cancel already canceled timetable with uid '%s'" % uid)
         timetable.canceled = True
+        timetable.stoptime = currentTimeMillis()
         self.saveTimetable(timetable)

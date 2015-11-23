@@ -15,16 +15,6 @@ _jobloader = new @JobLoader
 # Request all jobs from the server
 ################################################################
 
-blankslate = (internal) ->
-    blankview = _mapper.parseMapForParent(type: "div", cls: "blankslate")
-    _mapper.parseMapForParent(internal, blankview)
-    blankview
-
-blankslateWithMsg = (header, msg) ->
-    header = type: "h1", cls: "text-thin", title: "#{header}"
-    body = type: "p", title: "#{msg}"
-    blankslate([header, body])
-
 statusColumn = (status, colour, islarge=false) ->
     updatedClass = if islarge then "one-third column" else "one-sixth column"
     statusText = type: "span", cls: "#{colour}", title: "#{status}"

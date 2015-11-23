@@ -23,6 +23,7 @@ REQUEST_TABLE = {
     "create": "create.html",
     "job": "job.html",
     "log": "log.html",
+    "timetables": "timetables.html",
     "timetable": "timetable.html"
 }
 # root directory for http server
@@ -269,7 +270,11 @@ class APICall(Octolog, object):
                 timetable = self.timetableManager.timetableForUid(uid)
                 if not timetable:
                     raise StandardError("No timetable found for uid: " + str(uid))
-                return self.success({"timetable": timetable.toDict()})
+                # in addition, look up job
+                job = self.jobManager.jobForUid(timetable.clonejobid)
+                if not job:
+                    raise StandardError("No clone job found for this timetable: " + str(uid))
+                return self.success({"timetable": timetable.toDict(), "job": job.toDict()})
 
             def timetableList():
                 # we do not include jobs, by default, since it can be very long list
