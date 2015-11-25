@@ -3,6 +3,7 @@
 import unittest
 from datetime import datetime
 from crontab import CronTab
+from utils import *
 
 class CronTabTestSuite(unittest.TestCase):
     def setUp(self):
@@ -108,10 +109,6 @@ class CronTabTestSuite(unittest.TestCase):
         date3 = datetime(2015, 3, 31, 18, 30)
         date4 = datetime(2015, 3, 20, 12, 0)
         date5 = datetime(2015, 4, 15, 18, 30)
-        # date to timestamp conversion
-        def dateToTimestamp(date):
-            return (date - datetime(1970, 1, 1)).total_seconds() * 1000
-            
         self.assertEquals(cron.ismatch(dateToTimestamp(date1)), True)
         self.assertEquals(cron.ismatch(dateToTimestamp(date2)), True)
         self.assertEquals(cron.ismatch(dateToTimestamp(date3)), True)
