@@ -4,89 +4,66 @@ from octolog import Octolog
 from types import ListType, IntType, LongType
 from job import SparkJob, Job
 from jobmanager import JobManager
+from crontab import CronTab
 from utils import *
 
-# delay interval for job creation in seconds, job will start within that interval
-TIMETABLE_DELAY_INTERVAL = 60
 TIMETABLE_KEYSPACE = "TIMETABLE_KEYSPACE"
 DEFAULT_TIMETABLE_NAME = "Just another timetable"
+# statuses for timetable
+# active - timetable is active and launching jobs on schedule
+TIMETABLE_ACTIVE = "ACTIVE"
+# paused - timetable is stopped, no jobs launched, can be resumed
+TIMETABLE_PAUSED = "PAUSED"
+# canceled - timetable is canceled, no future jobs expected, cannot be resumed
+TIMETABLE_CANCELED = "CANCELED"
+# list of statuses
+TIMETABLE_STATUSES = [TIMETABLE_ACTIVE, TIMETABLE_PAUSED, TIMETABLE_CANCELED]
+
+class TimetableCheck(object):
+    @staticmethod
+    def validateStatus(status):
+        if status not in TIMETABLE_STATUSES:
+            raise StandardError("Invalid status for Timetable")
+        return status
 
 # Timetable class to keep track of schedules for a particular job. Reports when to launch job, and
-# keeps statistics of actual, and total number of jobs.
-# Interval is dynamic, and represented as a list of intervals in seconds, e.g. [60, 120, 60], which
-# means "run first job after 1 minute, second job in 2 minutes after launching first job, etc."
-# If list is out of bound, we repeat intervals. This will allow us to schedule more complex times,
-# e.g. running only on Saturday, Sunday, or running every work day at 2pm.
-# - starttime - time in milliseconds
-# - intervals - intervals in seconds
-# - jobs - list of job uids
+# keeps statistics of total number of jobs. Uses cron expression to specify scheduling time
 class Timetable(object):
-    def __init__(self, uid, name, canceled, clonejobid, starttime, intervals, jobs, stoptime = -1):
-        if type(intervals) is not ListType:
-            raise StandardError("Expected intervals as ListType, got " + str(type(intervals)))
-        # check that every entry of intervals is integer
-        for inl in intervals:
-            if type(inl) is not IntType and type(inl) is not LongType:
-                raise StandardError("Interval entry '%s' is not of numeric type" % inl)
-            if inl < TIMETABLE_DELAY_INTERVAL:
-                raise StandardError("Interval entry '%s' is less than min interval" % inl)
-        if type(jobs) is not ListType:
-            raise StandardError("Expected jobs as ListType, got " + str(type(jobs)))
+    def __init__(self, uid, name, status, clonejobid, crontab, starttime, stoptime, jobs):
         self.uid = uid
         name = str(name).strip()
         self.name = name if len(name) > 0 else DEFAULT_TIMETABLE_NAME
-        self.canceled = bool(canceled)
+        self.status = TimetableCheck.validateStatus(status)
         # job uid of a template job, we need to clone it for every scheduled job
         self.clonejobid = clonejobid
+        if type(crontab) is not CronTab:
+            raise StandardError("Expected CronTab, got %s" % str(type(crontab)))
+        self.crontab = crontab
+        # start and stop time in milliseconds
         self.starttime = long(starttime)
         self.stoptime = long(stoptime)
-        self.intervals = intervals
-        # these properties are never stored, since they are very dynamic, and should be
-        # recalculated every time.
-        # list of job uids
+        if type(jobs) is not ListType:
+            raise StandardError("Expected ListType, got %s" % str(type(jobs)))
         self.jobs = jobs
+        # we do not store number of jobs, since we can compute it using list
         self.numJobs = len(jobs)
-        self.numTotalJobs = None
-        # update total number of jobs
-        endtime = stoptime if stoptime > 0 else currentTimeMillis()
-        self.numTotalJobs = Timetable.numJobs((endtime - starttime) / 1000, intervals)
-
-    @staticmethod
-    @private
-    def numJobs(period, intervals):
-        sm = sum(intervals)
-        ln = len(intervals)
-        if sm <= 0:
-            return 0
-        if period < sm:
-            nt = 0
-            for i in range(ln):
-                nt += intervals[i]
-                if nt > period:
-                    return i
-            return 0
-        else:
-            jobs = (period / sm) * ln
-            diff = period % sm
-            return jobs + Timetable.numJobs(diff, intervals)
 
     # increment counter of total jobs and append job to the list
-    def incrementJob(self, jobid):
-        self.numTotalJobs += 1
+    def addJob(self, job):
+        if type(job) is not Job:
+            raise StandardError("Expected Job, got %s" % str(type(job)))
         self.numJobs += 1
-        self.jobs.append(jobid)
+        self.jobs.append(job.uid)
 
     def toDict(self):
         return {
             "uid": self.uid,
             "name": self.name,
-            "canceled": self.canceled,
+            "status": self.status,
             "clonejobid": self.clonejobid,
+            "crontab": self.crontab.toDict(),
             "starttime": self.starttime,
             "stoptime": self.stoptime,
-            "intervals": self.intervals,
-            "numtotaljobs": self.numTotalJobs,
-            "numjobs": self.numJobs,
             "jobs": self.jobs
         }
 
@@ -94,13 +71,13 @@ class Timetable(object):
     def fromDict(cls, obj):
         uid = obj["uid"]
         name = obj["name"]
-        canceled = obj["canceled"]
+        status = obj["status"]
         clonejobid = obj["clonejobid"]
+        crontab = CronTab.fromDict(obj["crontab"])
         starttime = obj["starttime"]
-        intervals = obj["intervals"]
+        stoptime = obj["stoptime"]
         jobs = obj["jobs"]
-        stoptime = obj["stoptime"] if "stoptime" in obj else -1
-        return cls(uid, name, canceled, clonejobid, starttime, intervals, jobs, stoptime)
+        return cls(uid, name, status, clonejobid, crontab, starttime, stoptime, jobs)
 
 # Manager for timetables. Handles saving to and retrieving from storage, updates and etc.
 class TimetableManager(Octolog, object):
@@ -125,18 +102,20 @@ class TimetableManager(Octolog, object):
             raise StandardError("Expected Job, got " + str(type(job)))
         # duplicate fields and replace uids
         sparkjob = self.cloneSparkJob(job.sparkjob)
-        return self.jobManager.createJob(sparkjob, TIMETABLE_DELAY_INTERVAL)
+        return self.jobManager.createJob(sparkjob, delay=0)
 
     # creates new timetable using `delay` in seconds for starting timetable,
     # `intervals` is a list of intervals in seconds
-    def createTimetable(self, name, delay, intervals, job):
+    def createTimetable(self, name, crontab, clonejob):
+        if type(clonejob) is not Job:
+            raise StandardError("Expected Job, got " + str(type(clonejob)))
         uid = nextTimetableId()
-        if type(job) is not Job:
-            raise StandardError("Expected Job, got " + str(type(job)))
-        delay = 0 if delay <= 0 else delay
-        start = currentTimeMillis() + delay * 1000
-        intervals = [int(x) for x in intervals]
-        return Timetable(uid, name, False, job.uid, start, intervals, [])
+        # current time in milliseconds
+        starttime = currentTimeMillis()
+        # stop time is negative as it is active
+        stoptime = -1
+        status = TIMETABLE_ACTIVE
+        return Timetable(uid, name, status, clonejob.uid, crontab, starttime, stoptime, [])
 
     def saveTimetable(self, timetable):
         # use storage manager to save timetable
@@ -156,13 +135,34 @@ class TimetableManager(Octolog, object):
             return cmp(x.name, y.name)
         return self.storageManager.itemsForKeyspace(TIMETABLE_KEYSPACE, -1, func, klass=Timetable)
 
-    # cancel timetable, set `active` status to False
-    def cancel(self, uid):
-        timetable = self.timetableForUid(uid)
-        if not timetable:
-            raise StandardError("Timetable with uid '%s' does not exist" % uid)
-        if timetable.canceled:
-            raise StandardError("Cannot cancel already canceled timetable with uid '%s'" % uid)
-        timetable.canceled = True
+    # resume current timetable
+    def resume(self, timetable):
+        if type(timetable) is not Timetable:
+            raise StandardError("Expected Timetable, got " + str(type(timetable)))
+        if timetable.status == TIMETABLE_ACTIVE:
+            raise StandardError("Cannot resume already active timetable")
+        if timetable.status == TIMETABLE_CANCELED:
+            raise StandardError("Cannot resume canceled timetable")
+        timetable.status = TIMETABLE_ACTIVE
+        self.saveTimetable(timetable)
+
+    # pause current timetable, you can resume it later
+    def pause(self, timetable):
+        if type(timetable) is not Timetable:
+            raise StandardError("Expected Timetable, got " + str(type(timetable)))
+        if timetable.status == TIMETABLE_PAUSED:
+            raise StandardError("Cannot pause already paused timetable")
+        if timetable.status == TIMETABLE_CANCELED:
+            raise StandardError("Cannot pause canceled timetable")
+        timetable.status = TIMETABLE_PAUSED
+        self.saveTimetable(timetable)
+
+    # cancel timetable, you will not be able to revoke it
+    def cancel(self, timetable):
+        if type(timetable) is not Timetable:
+            raise StandardError("Expected Timetable, got " + str(type(timetable)))
+        if timetable.status == TIMETABLE_CANCELED:
+            raise StandardError("Cannot cancel canceled timetable")
+        timetable.status = TIMETABLE_CANCELED
         timetable.stoptime = currentTimeMillis()
         self.saveTimetable(timetable)

@@ -1,12 +1,13 @@
 #!/usr/bin/env python
 
 import unittest
-from src.timetable import Timetable, TimetableManager, DEFAULT_TIMETABLE_NAME
+from src.timetable import *
 from src.utils import *
 from src.sparkmodule import SparkModule
 from src.redisconnector import RedisConnectionPool, RedisConnector
 from src.storagemanager import StorageManager
 from src.jobmanager import JobManager, ALL_JOBS_KEY
+from src.crontab import CronTab
 from test.unittest_constants import RedisConst
 from test.unittest_job import JobSentinel
 
@@ -14,10 +15,11 @@ class TimetableTestSuite(unittest.TestCase):
     def setUp(self):
         self.uid = nextTimetableId()
         self.name = "test-timetable"
-        self.canceled = False
+        self.status = TIMETABLE_ACTIVE
         self.clonejobid = nextJobId()
+        self.crontab = CronTab.fromPattern("0 8-12 * * * *")
         self.starttime = currentTimeMillis()
-        self.intervals = [120, 240, 120]
+        self.stoptime = -1
         self.jobs = [nextJobId(), nextJobId(), nextJobId()]
 
     def tearDown(self):
@@ -25,67 +27,45 @@ class TimetableTestSuite(unittest.TestCase):
 
     def test_init(self):
         with self.assertRaises(StandardError):
-            Timetable(self.uid, self.name, self.canceled, self.clonejobid, "time", self.intervals,
-                self.jobs)
+            Timetable(self.uid, self.name, self.status, self.clonejobid, None, self.starttime,
+                self.stoptime, self.jobs)
         with self.assertRaises(StandardError):
-            Timetable(self.uid, self.name, self.canceled, self.clonejobid, self.starttime, {},
-                self.jobs)
+            Timetable(self.uid, self.name, "TEST", self.clonejobid, self.crontab, self.starttime,
+                self.stoptime, self.jobs)
         with self.assertRaises(StandardError):
-            Timetable(self.uid, self.name, self.canceled, self.clonejobid, self.starttime,
-                self.intervals, None)
-        timetable = Timetable(self.uid, self.name, self.canceled, self.clonejobid, self.starttime,
-            self.intervals, self.jobs)
-        self.assertEqual(timetable.numTotalJobs, 0)
+            Timetable(self.uid, self.name, self.status, self.clonejobid, self.crontab,
+                self.starttime, self.stoptime, {})
+        timetable = Timetable(self.uid, self.name, self.status, self.clonejobid, self.crontab,
+            self.starttime, self.stoptime, self.jobs)
         self.assertEqual(timetable.numJobs, len(self.jobs))
         self.assertEqual(timetable.jobs, self.jobs)
         # test for empty name
-        timetable = Timetable(self.uid, "", self.canceled, self.clonejobid, self.starttime,
-            self.intervals, self.jobs)
+        timetable = Timetable(self.uid, "", self.status, self.clonejobid, self.crontab,
+            self.starttime, self.stoptime, self.jobs)
         self.assertEqual(timetable.name, DEFAULT_TIMETABLE_NAME)
 
-    def test_numJobs(self):
-        jobs = Timetable.numJobs(10, [5, 5, 10, 20])
-        self.assertEqual(jobs, 2)
-        jobs = Timetable.numJobs(30, [5, 5, 10, 20])
-        self.assertEqual(jobs, 3)
-        jobs = Timetable.numJobs(50, [5, 5, 10, 20])
-        self.assertEqual(jobs, 6)
-        jobs = Timetable.numJobs(79, [5, 5, 10, 20])
-        self.assertEqual(jobs, 7)
-        jobs = Timetable.numJobs(80, [5, 5, 10, 20])
-        self.assertEqual(jobs, 8)
-        jobs = Timetable.numJobs(-100, [5, 5, 10, 20])
-        self.assertEqual(jobs, 0)
-        jobs = Timetable.numJobs(10, [])
-        self.assertEqual(jobs, 0)
-        jobs = Timetable.numJobs(10, [0])
-        self.assertEqual(jobs, 0)
-        jobs = Timetable.numJobs(0, [0])
-        self.assertEqual(jobs, 0)
-
     def test_incrementJob(self):
-        timetable = Timetable(self.uid, self.name, self.canceled, self.clonejobid, self.starttime,
-            self.intervals, self.jobs)
-        timetable.incrementJob("job_1")
-        timetable.incrementJob("job_2")
-        timetable.incrementJob("job_3")
-        self.assertEqual(timetable.numTotalJobs, 3)
-        self.assertEqual(timetable.numJobs, 6)
-        # `self.jobs` is also updated as we pass it by reference and do not clone
-        self.assertEqual(timetable.jobs, self.jobs)
+        timetable = Timetable(self.uid, self.name, self.status, self.clonejobid, self.crontab,
+            self.starttime, self.stoptime, self.jobs)
+        with self.assertRaises(StandardError):
+            timetable.addJob("job_1")
+        timetable.addJob(JobSentinel.job())
+        timetable.addJob(JobSentinel.job())
+        self.assertEqual(timetable.numJobs, 5)
+        self.assertEqual(len(timetable.jobs), 5)
 
     def test_toFromDict(self):
-        timetable = Timetable(self.uid, self.name, self.canceled, self.clonejobid, self.starttime,
-            self.intervals, self.jobs)
+        timetable = Timetable(self.uid, self.name, self.status, self.clonejobid, self.crontab,
+            self.starttime, self.stoptime, self.jobs)
         obj = timetable.toDict()
         copy = Timetable.fromDict(obj)
         self.assertEqual(copy.uid, timetable.uid)
         self.assertEqual(copy.name, timetable.name)
-        self.assertEqual(copy.canceled, timetable.canceled)
+        self.assertEqual(copy.status, timetable.status)
         self.assertEqual(copy.clonejobid, timetable.clonejobid)
+        self.assertEqual(copy.crontab.toDict(), timetable.crontab.toDict())
         self.assertEqual(copy.starttime, timetable.starttime)
-        self.assertEqual(copy.intervals, timetable.intervals)
-        self.assertEqual(copy.numTotalJobs, 0)
+        self.assertEqual(copy.stoptime, timetable.stoptime)
         self.assertEqual(copy.numJobs, timetable.numJobs)
         self.assertEqual(copy.jobs, timetable.jobs)
 
@@ -106,6 +86,10 @@ class TimetableManagerTestSuite(unittest.TestCase):
         self.sparkModule = SparkModule(self.masterurl, self.uiurl, self.uiRunUrl)
         self.storageManager = StorageManager(self.connector)
         self.jobManager = JobManager(self.sparkModule, self.storageManager)
+        # timetable settings
+        self.name = "test-timetable"
+        self.clonejob = JobSentinel.job()
+        self.crontab = CronTab.fromPattern("0 8-12 * * * *")
 
     def tearDown(self):
         pass
@@ -138,23 +122,15 @@ class TimetableManagerTestSuite(unittest.TestCase):
 
     def test_createTimetable(self):
         manager = TimetableManager(self.jobManager)
-        job = JobSentinel.job()
-        name = "test_timetable"
-        delay = 100 # delay in seconds
-        intervals = [100, 200, 200, 70]
-        timetable = manager.createTimetable(name, delay, intervals, job)
-        self.assertEqual(timetable.name, name)
-        self.assertTrue(timetable.starttime > currentTimeMillis() and
-            timetable.starttime <= currentTimeMillis() + delay * 1000)
-        self.assertEqual(timetable.clonejobid, job.uid)
+        timetable = manager.createTimetable(self.name, self.crontab, self.clonejob)
+        self.assertEqual(timetable.name, self.name)
+        self.assertTrue(timetable.starttime <= currentTimeMillis() and
+            timetable.starttime > currentTimeMillis() - 5000)
+        self.assertEqual(timetable.clonejobid, self.clonejob.uid)
 
     def test_saveAndLoadTimetable(self):
         manager = TimetableManager(self.jobManager)
-        job = JobSentinel.job()
-        name = "test_timetable"
-        delay = 100 # delay in seconds
-        intervals = [100, 200, 200, 70]
-        timetable = manager.createTimetable(name, delay, intervals, job)
+        timetable = manager.createTimetable(self.name, self.crontab, self.clonejob)
         with self.assertRaises(StandardError):
             manager.saveTimetable(None)
         manager.saveTimetable(timetable)
@@ -169,33 +145,60 @@ class TimetableManagerTestSuite(unittest.TestCase):
 
     def test_listTimetables(self):
         manager = TimetableManager(self.jobManager)
-        job = JobSentinel.job()
-        timetable = manager.createTimetable("test_timetable", 100, [100, 200, 200, 70], job)
-        manager.saveTimetable(timetable)
+        table1 = manager.createTimetable(self.name, self.crontab, self.clonejob)
+        table2 = manager.createTimetable(self.name, self.crontab, self.clonejob)
+        manager.saveTimetable(table1)
+        manager.saveTimetable(table2)
+        # request timetables
         tables = manager.listTimetables()
-        self.assertEqual(len(tables), 1)
-        self.assertEqual(tables[0].uid, timetable.uid)
+        self.assertEqual(len(tables), 2)
+        self.assertEqual(sorted([x.uid for x in tables]), sorted([table1.uid, table2.uid]))
+
+    def test_resume(self):
+        manager = TimetableManager(self.jobManager)
+        timetable = manager.createTimetable(self.name, self.crontab, self.clonejob)
+        timetable.status = TIMETABLE_ACTIVE
+        with self.assertRaises(StandardError):
+            manager.resume(timetable)
+        timetable.status = TIMETABLE_CANCELED
+        with self.assertRaises(StandardError):
+            manager.resume(timetable)
+        timetable.status = TIMETABLE_PAUSED
+        manager.resume(timetable)
+        # check that status is active
+        timetable = manager.timetableForUid(timetable.uid)
+        self.assertEqual(timetable.status, TIMETABLE_ACTIVE)
+
+    def test_pause(self):
+        manager = TimetableManager(self.jobManager)
+        timetable = manager.createTimetable(self.name, self.crontab, self.clonejob)
+        timetable.status = TIMETABLE_PAUSED
+        with self.assertRaises(StandardError):
+            manager.pause(timetable)
+        timetable.status = TIMETABLE_CANCELED
+        with self.assertRaises(StandardError):
+            manager.pause(timetable)
+        timetable.status = TIMETABLE_ACTIVE
+        manager.pause(timetable)
+        # check that status is paused
+        timetable = manager.timetableForUid(timetable.uid)
+        self.assertEqual(timetable.status, TIMETABLE_PAUSED)
 
     def test_cancel(self):
         manager = TimetableManager(self.jobManager)
+        timetable = manager.createTimetable(self.name, self.crontab, self.clonejob)
+        timetable.status = TIMETABLE_CANCELED
         with self.assertRaises(StandardError):
-            manager.cancel(None)
-        job = JobSentinel.job()
-        # try canceling timetable that is non-active
-        timetable = manager.createTimetable("test_timetable", 100, [100, 200, 200, 70], job)
-        timetable.canceled = True
-        manager.saveTimetable(timetable)
-        with self.assertRaises(StandardError):
-            manager.cancel(timetable.uid)
-        # try canceling timetable
-        timetable = manager.createTimetable("test_timetable", 100, [100, 200, 200, 70], job)
-        manager.saveTimetable(timetable)
-        manager.cancel(timetable.uid)
-        # retrieve saved timetable and check status
-        updated = manager.timetableForUid(timetable.uid)
-        self.assertEqual(type(updated), Timetable)
-        self.assertEqual(updated.canceled, True)
-        self.assertTrue(updated.stoptime > 0)
+            manager.cancel(timetable)
+        timetable.status = TIMETABLE_ACTIVE
+        manager.cancel(timetable)
+        # check that status is canceled and stop time is filled in
+        canceled = manager.timetableForUid(timetable.uid)
+        self.assertEqual(canceled.uid, timetable.uid)
+        self.assertEqual(canceled.starttime, timetable.starttime)
+        self.assertTrue(canceled.stoptime >= currentTimeMillis() - 5000 and
+            canceled.stoptime <= currentTimeMillis())
+        self.assertEqual(canceled.status, TIMETABLE_CANCELED)
 
 # Load test suites
 def _suites():
