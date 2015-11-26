@@ -5,6 +5,7 @@ unless jobHistory
 _util = @util
 _mapper = @mapper
 _loader = @loader
+_misc = @misc
 _jobloader = new @JobLoader
 
 # job statuses
@@ -98,11 +99,11 @@ reloadJobs = (status, limit = 30) ->
                 header = type: "h1", cls: "text-thin", title: "No jobs found :("
                 link = type: "a", href: "/create", title: "create a new job"
                 text = type: "p", title: "You can ", children: link
-                _mapper.parseMapForParent(blankslate([header, text]), jobHistory)
+                _mapper.parseMapForParent(_misc.blankslate([header, text]), jobHistory)
         else
             msg = if json then "#{json["content"]["msg"]}" else "We do not know what happened :("
             header = "Something went wrong"
-            _mapper.parseMapForParent(blankslateWithMsg(header, msg), jobHistory)
+            _mapper.parseMapForParent(_misc.blankslateWithMsg(header, msg), jobHistory)
     )
 
 # add actions to different menu items

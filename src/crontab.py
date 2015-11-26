@@ -142,7 +142,7 @@ class CronTab(object):
 
     @classmethod
     def fromPattern(cls, pattern):
-        arr = pattern.split()
+        arr = str(pattern).split()
         if len(arr) != 6:
             raise StandardError("Cannot parse pattern %s" % pattern)
         minute = cls.resolve(arr[0], range(0, 60))

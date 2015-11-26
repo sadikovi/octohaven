@@ -62,20 +62,19 @@ update = ->
     _timetableLoader.list(false, ->
         timetablesElem.innerHTML = ""
     , (ok, json) ->
-        result = null
         if ok
             timetables = json["content"]["timetables"]
             if timetables and timetables.length > 0
                 rows = [row(timetable) for timetable in timetables]
                 _misc.segments(rows, timetablesElem)
             else
-                header = type: "h1", cls: "text-thin", title: "No timetables found :("
-                text = type: "p", title: "You can a timetable for any job"
-                _mapper.parseMapForParent(blankslate([header, text]), jobHistory)
+                view = _misc.blankslateWithMsg("No timetables found :(",
+                    "You can still create a timetable for any job from job view")
+                _mapper.parseMapForParent(view, timetablesElem)
         else
             msg = if json then json["content"]["msg"] else "We know and keep working on that"
-            result = _misc.blankslateWithMsg("Something went wrong :(",  msg)
-        _mapper.parseMapForParent(result, timetablesElem)
+            result = _misc.blankslateWithMsg("Something went wrong :(", msg)
+            _mapper.parseMapForParent(result, timetablesElem)
     )
 
 # update timetables

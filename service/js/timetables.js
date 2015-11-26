@@ -145,8 +145,7 @@
     return _timetableLoader.list(false, function() {
       return timetablesElem.innerHTML = "";
     }, function(ok, json) {
-      var header, msg, result, rows, text, timetable, timetables;
-      result = null;
+      var msg, result, rows, timetable, timetables, view;
       if (ok) {
         timetables = json["content"]["timetables"];
         if (timetables && timetables.length > 0) {
@@ -161,24 +160,16 @@
               return _results;
             })()
           ];
-          _misc.segments(rows, timetablesElem);
+          return _misc.segments(rows, timetablesElem);
         } else {
-          header = {
-            type: "h1",
-            cls: "text-thin",
-            title: "No timetables found :("
-          };
-          text = {
-            type: "p",
-            title: "You can a timetable for any job"
-          };
-          _mapper.parseMapForParent(blankslate([header, text]), jobHistory);
+          view = _misc.blankslateWithMsg("No timetables found :(", "You can still create a timetable for any job from job view");
+          return _mapper.parseMapForParent(view, timetablesElem);
         }
       } else {
         msg = json ? json["content"]["msg"] : "We know and keep working on that";
         result = _misc.blankslateWithMsg("Something went wrong :(", msg);
+        return _mapper.parseMapForParent(result, timetablesElem);
       }
-      return _mapper.parseMapForParent(result, timetablesElem);
     });
   };
 

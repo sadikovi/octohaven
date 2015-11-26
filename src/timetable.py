@@ -55,7 +55,7 @@ class Timetable(object):
         self.numJobs += 1
         self.jobs.append(job.uid)
 
-    def toDict(self):
+    def toDict(self, includejobs=True):
         return {
             "uid": self.uid,
             "name": self.name,
@@ -64,7 +64,7 @@ class Timetable(object):
             "crontab": self.crontab.toDict(),
             "starttime": self.starttime,
             "stoptime": self.stoptime,
-            "jobs": self.jobs
+            "jobs": self.jobs if includejobs else None
         }
 
     @classmethod

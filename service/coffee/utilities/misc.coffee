@@ -13,7 +13,7 @@ class Misc
     blankslateWithMsg: (header, msg) ->
         header = type: "h1", cls: "text-thin", title: "#{header}"
         body = type: "p", title: "#{msg}"
-        this.blankslate([header, body])
+        @blankslate([header, body])
 
     segments: (content, parent = null) ->
         seg = type: "div", cls: "segments", children: content

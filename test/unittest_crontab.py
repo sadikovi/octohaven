@@ -115,6 +115,13 @@ class CronTabTestSuite(unittest.TestCase):
         self.assertEquals(cron.ismatch(dateToTimestamp(date4)), False)
         self.assertEquals(cron.ismatch(dateToTimestamp(date5)), False)
 
+    def test_stringPattern(self):
+        with self.assertRaises(StandardError):
+            CronTab.fromPattern(123)
+        with self.assertRaises(StandardError):
+            CronTab.fromPattern({"123": 123})
+        with self.assertRaises(StandardError):
+            CronTab.fromPattern([123])
 
 # Load test suites
 def _suites():
