@@ -5,61 +5,90 @@ _mapper = @mapper
 _util = @util
 _misc = @misc
 _timetableLoader = new @TimetableLoader
+# statuses
+[ACTIVE, PAUSED, CANCELED] = ["ACTIVE", "PAUSED", "CANCELED"]
 
-columnName = (name, uid, isactive) ->
-    # status of timetable
-    statusMsg = if isactive then "[ Active ]" else "[ Canceled ]"
-    statusKlass = if isactive then "text-green" else "text-red"
-    status = type: "span", cls: "#{statusKlass}", title: "#{statusMsg}"
-    # name and link
-    head = type: "a", href: "/timetable?id=#{uid}&mode=show", title: "#{name}"
-    # overall parent structure
-    breadcrumb = type: "div", cls: "breadcrumb", children: [
-        _misc.section(status), _misc.section(head)]
-    col = type: "div", cls: "two-fifths column", children: breadcrumb
-    _mapper.parseMapForParent(col)
+column = (size, content, parent=null) ->
+    brd = type: "div", cls: "breadcrumb", children: content
+    col = type: "div", cls: "#{size} column", children: brd
+    _mapper.parseMapForParent(col, parent)
 
-# statistics for timetable: run jobs, lost jobs, total number of jobs
-columnStats = (run, lost, total) ->
-    run = [{type: "span", title: "#{run}"}, {type: "span", cls: "text-mute", title: " run"}]
-    lost = [{type: "span", title: "#{lost}"}, {type: "span", cls: "text-mute", title: " lost"}]
-    total = [{type: "span", title: "#{total}"}, {type: "span", cls: "text-mute", title: " total"}]
-    # overall parent structure
-    breadcrumb = type: "div", cls: "breadcrumb", children: [
-        _misc.section(run), _misc.section(lost), _misc.section(total)]
-    col = type: "div", cls: "two-fifths column", children: breadcrumb
-    _mapper.parseMapForParent(col)
+statusColour = (status) ->
+    return "text-green" if status == ACTIVE
+    return "text-yellow" if status == PAUSED
+    return "text-red" if status == CANCELED
+    return "text-mute"
 
-columnControl = (uid, isactive, func) ->
-    btn = if isactive then {type: "div", cls: "btn btn-compact", title: "Cancel"
-        , onclick: (e) -> func?(@)} else null
-    btn = _mapper.parseMapForParent(btn)
-    btn.uid = uid
-    col = type: "div", cls: "one-fifth column", children: btn
-    _mapper.parseMapForParent(col)
+actionName = (status) ->
+    return "Pause" if status == ACTIVE
+    return "Resume" if status == PAUSED
+    return null
+
+columnStatus = (status, colour) ->
+    st = type: "div", cls: "#{colour}", title: "#{status}"
+    section = type: "div", cls: "section", children: st
+    column("one-sixth", section)
+
+columnName = (uid, name) ->
+    nm = type: "a", href: "/timetable?id=#{uid}&mode=show", title: "#{name}"
+    section = type: "div", cls: "section", children: nm
+    column("one-third", section)
+
+columnStats = (numJobs, jobid, timestamp) ->
+    # counter and text
+    counter = type: "span", title: "#{numJobs}"
+    countertext = type: "span", cls: "text-mute", title: " scheduled jobs"
+    section1 = type: "div", cls: "section", children: [counter, countertext]
+    # timestamp and jobid of latest run
+    section2 = null
+    if timestamp and timestamp > 0
+        jobid = type: "a", href: "/job?jobid=#{jobid}", title: "latest "
+        time = type: "span", title: "#{_util.timestampToDate(timestamp)}"
+        section2 = type: "div", cls: "section", children: [jobid, time]
+    column("one-third", [section1, section2])
+
+columnAction = (uid, name, status, action) ->
+    btn = type: "div", cls: "btn btn-compact", title: "#{name}", onclick: ->
+        @uid = uid
+        @status = status
+        action?(@)
+    section = type: "div", cls: "section", children: btn
+    column("one-sixth", section)
 
 row = (obj) ->
-    name = obj["name"]
     uid = obj["uid"]
-    run = _util.intOrElse(obj["numjobs"], -1)
-    total = _util.intOrElse(obj["numtotaljobs"], -1)
-    lost = total - run
-    isactive = !obj["canceled"]
-    colName = columnName(name, uid, isactive)
-    colStats = columnStats(run, lost, total)
-    colControl = columnControl(uid, isactive, (obj) ->
-        fetch = =>
-            _util.addClass(obj, "btn-disabled")
-            obj.innerHTML = "???"
-        update = (ok) =>
-            _util.addClass(obj, "btn-disabled")
-            obj.innerHTML = if ok then "Canceled" else "Error"
-        _timetableLoader.cancel(obj.uid, (-> fetch()), ((ok, json) -> update(ok)))
-    )
-    _misc.segment(_misc.columns([colName, colStats, colControl]))
+    name = obj["name"]
+    numJobs = obj["numjobs"]
+    status = obj["status"]
+    jobid = obj["latestrunjobid"]
+    timestamp = obj["latestruntime"]
+    # build columns
+    colStatus = columnStatus(status, statusColour(status))
+    colName = columnName(uid, name)
+    colStats = columnStats(numJobs, jobid, timestamp)
+    colAction = null
+    aname = actionName(status)
+    if aname
+        colAction = columnAction(uid, aname, status, (obj) ->
+            fetch = =>
+                _util.addClass(obj, "btn-disabled")
+                obj.innerHTML = "???"
+            update = (ok) =>
+                _util.addClass(obj, "btn-disabled")
+                if ok
+                    obj.innerHTML = if obj.status == ACTIVE then "Paused" else "Active"
+                else
+                    obj.innerHTML = "Error"
+            if obj.status == ACTIVE
+                _timetableLoader.pause(obj.uid, (-> fetch()), ((ok, json) -> update(ok)))
+            else if obj.status == PAUSED
+                _timetableLoader.resume(obj.uid, (-> fetch()), ((ok, json) -> update(ok)))
+        )
+    _misc.segment(_misc.columns([colStatus, colName, colStats, colAction]))
 
-update = ->
-    _timetableLoader.list(false, ->
+update = (statuses) ->
+    console.log statuses
+    _timetableLoader.list(false, statuses, ->
         timetablesElem.innerHTML = ""
     , (ok, json) ->
         if ok
@@ -77,5 +106,32 @@ update = ->
             _mapper.parseMapForParent(result, timetablesElem)
     )
 
-# update timetables
-update?()
+# add actions to different menu items
+noncanceled = document.getElementById("octohaven-timetables-noncanceled")
+active = document.getElementById("octohaven-timetables-active")
+paused = document.getElementById("octohaven-timetable-paused")
+canceled = document.getElementById("octohaven-timetable-canceled")
+
+resetLabels = ->
+    _util.removeClass(noncanceled, "selected")
+    _util.removeClass(active, "selected")
+    _util.removeClass(paused, "selected")
+    _util.removeClass(canceled, "selected")
+
+selectLabel = (elem) ->
+    _util.addClass(elem, "selected")
+
+actionLabel = (e, elem, statuses) ->
+    resetLabels()
+    update?(statuses)
+    selectLabel(elem)
+    e?.preventDefault()
+    e?.stopPropagation()
+
+_util.addEventListener(noncanceled, "click", (e) -> actionLabel(e, noncanceled, [ACTIVE, PAUSED]))
+_util.addEventListener(active, "click", (e) -> actionLabel(e, active, [ACTIVE]))
+_util.addEventListener(paused, "click", (e) -> actionLabel(e, paused, [PAUSED]))
+_util.addEventListener(canceled, "click", (e) -> actionLabel(e, canceled, [CANCELED]))
+
+# request non canceled statuses, update timetables
+actionLabel(null, noncanceled, [ACTIVE, PAUSED])

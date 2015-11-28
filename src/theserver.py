@@ -26,7 +26,8 @@ REQUEST_TABLE = {
     "job": "job.html",
     "log": "log.html",
     "timetables": "timetables.html",
-    "timetable": "timetable.html"
+    "timetable": "timetable.html",
+    "timetablecreate": "timetablecreate.html"
 }
 # root directory for http server
 ROOT = paths.SERV_PATH
@@ -264,16 +265,19 @@ class APICall(Octolog, object):
                     raise StandardError("No job found for uid: " + str(jobid))
                 timetable = self.timetableManager.createTimetable(name, crontab, clonejob)
                 self.timetableManager.saveTimetable(timetable)
-                return self.success({"msg": "Timetable has been created"})
+                return self.success({"msg": "Timetable has been created", "uid": timetable.uid})
 
             def timetableList():
                 # we do not include jobs, by default, since it can be very long list
                 include = self.query["includejobs"] if "includejobs" in self.query else ""
+                statuses = self.query["status"] if "status" in self.query else None
+                statuses = str(statuses).split(",")
                 doInclude = boolOrElse(include, False)
-                arr = self.timetableManager.listTimetables()
+                arr = self.timetableManager.listTimetables(statuses)
                 # we skip jobs and do not send them unless user requests specifically
                 return self.success({"timetables": [x.toDict(includejobs=doInclude) for x in arr]})
 
+            # private function for fetching timetable from query
             def timetableFromQuery():
                 if "id" not in self.query:
                     raise StandardError("Expected 'id' parameter")

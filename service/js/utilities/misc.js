@@ -87,7 +87,7 @@
       return _mapper.parseMapForParent(sec, parent);
     };
 
-    Misc.prototype.jobOption = function(name, desc, value, onValueChanged) {
+    Misc.prototype.dynamicOption = function(name, desc, value, onValueChanged) {
       var body, header, row, trigger, triggerLink;
       header = _mapper.parseMapForParent({
         type: "span",
@@ -123,6 +123,43 @@
         return typeof onValueChanged === "function" ? onValueChanged(status, value) : void 0;
       });
       return row;
+    };
+
+    Misc.prototype.staticOption = function(name, desc, content) {
+      var body, header, trigger;
+      header = _mapper.parseMapForParent({
+        type: "span",
+        cls: "text-mute tooltipped tooltipped-n",
+        title: "" + name
+      });
+      header.setAttribute("aria-label", "" + desc);
+      header = _mapper.parseMapForParent({
+        type: "div",
+        cls: "one-fifth column",
+        children: header
+      });
+      trigger = _mapper.parseMapForParent({
+        type: "div",
+        cls: "one-fifth column",
+        children: {
+          type: "div",
+          cls: "breadcrumb",
+          title: ""
+        }
+      });
+      body = _mapper.parseMapForParent({
+        type: "div",
+        cls: "three-fifths column",
+        children: content
+      });
+      return this.segment(this.columns([header, trigger, body]));
+    };
+
+    Misc.prototype.staticTextOption = function(name, desc, value) {
+      return this.staticOption(name, desc, {
+        type: "span",
+        title: "" + value
+      });
     };
 
     return Misc;

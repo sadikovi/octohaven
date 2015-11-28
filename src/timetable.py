@@ -29,7 +29,8 @@ class TimetableCheck(object):
 # Timetable class to keep track of schedules for a particular job. Reports when to launch job, and
 # keeps statistics of total number of jobs. Uses cron expression to specify scheduling time
 class Timetable(object):
-    def __init__(self, uid, name, status, clonejobid, crontab, starttime, stoptime, jobs):
+    def __init__(self, uid, name, status, clonejobid, crontab, starttime, stoptime, jobs,
+        latestruntime=-1):
         self.uid = uid
         name = str(name).strip()
         self.name = name if len(name) > 0 else DEFAULT_TIMETABLE_NAME
@@ -47,6 +48,8 @@ class Timetable(object):
         self.jobs = jobs
         # we do not store number of jobs, since we can compute it using list
         self.numJobs = len(jobs)
+        self.latestjobid = jobs[-1] if self.numJobs > 0 else None
+        self.latestruntime = long(latestruntime)
 
     # increment counter of total jobs and append job to the list
     def addJob(self, job):
@@ -54,6 +57,11 @@ class Timetable(object):
             raise StandardError("Expected Job, got %s" % str(type(job)))
         self.numJobs += 1
         self.jobs.append(job.uid)
+        self.latestjobid = job.uid
+
+    # update latest run time, when timetable was invoked to create new job
+    def updateRunTime(self, timestamp):
+        self.latestruntime = long(timestamp)
 
     def toDict(self, includejobs=True):
         return {
@@ -64,7 +72,10 @@ class Timetable(object):
             "crontab": self.crontab.toDict(),
             "starttime": self.starttime,
             "stoptime": self.stoptime,
-            "jobs": self.jobs if includejobs else None
+            "numjobs": self.numJobs,
+            "jobs": self.jobs if includejobs else None,
+            "latestjobid": self.latestjobid,
+            "latestruntime": self.latestruntime
         }
 
     @classmethod
@@ -77,7 +88,9 @@ class Timetable(object):
         starttime = obj["starttime"]
         stoptime = obj["stoptime"]
         jobs = obj["jobs"]
-        return cls(uid, name, status, clonejobid, crontab, starttime, stoptime, jobs)
+        # latest run time, slightly different from job creation
+        latestruntime = obj["latestruntime"] if "latestruntime" in obj else -1
+        return cls(uid, name, status, clonejobid, crontab, starttime, stoptime, jobs, latestruntime)
 
 # Manager for timetables. Handles saving to and retrieving from storage, updates and etc.
 class TimetableManager(Octolog, object):
@@ -130,10 +143,21 @@ class TimetableManager(Octolog, object):
         return self.storageManager.itemForUid(uid, klass=Timetable)
 
     # we do not limit timetables and return all of them sorted by name
-    def listTimetables(self):
+    # filtering by status is done by fetching everything and filtering by status
+    # we do not store timetable for status (like jobs), because we do not expect that many
+    # timetables, complexity of fast updates, and maintenance
+    def listTimetables(self, statuses=TIMETABLE_STATUSES):
+        if type(statuses) is not ListType:
+            raise StandardError("Expected ListType, got %s" % str(type(statuses)))
+        # normalize statuses
+        statuses = [str(x).upper() for x in statuses]
         def func(x, y):
             return cmp(x.name, y.name)
-        return self.storageManager.itemsForKeyspace(TIMETABLE_KEYSPACE, -1, func, klass=Timetable)
+        # we do not sort when fetching from storage, as it can be expensive, sort only objects
+        # that we will send back
+        arr = self.storageManager.itemsForKeyspace(TIMETABLE_KEYSPACE, -1, None, klass=Timetable)
+        filtered = sorted([x for x in arr if x.status in statuses], cmp=func)
+        return filtered
 
     # resume current timetable
     def resume(self, timetable):

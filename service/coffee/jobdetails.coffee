@@ -33,6 +33,11 @@ updateLogLinks = (uid) ->
     stdout.href = "/log?type=stdout&jobid=#{uid}" if stdout
     stderr.href = "/log?type=stderr&jobid=#{uid}" if stderr
 
+updateScheduleLink = (uid) ->
+    # update link to create timetable for the job
+    timetable = document.getElementById("octohaven-job-timetable")
+    timetable.href = "/timetablecreate?id=#{uid}&mode=create" if timetable
+
 # extract jobid from url
 params = _util.windowParameters()
 if "jobid" of params
@@ -107,6 +112,8 @@ if "jobid" of params
 
                 # update links for job logs
                 updateLogLinks(uid)
+                # update link for scheduling
+                updateScheduleLink(uid)
             else
                 msg = if json then json["content"]["msg"] else "We know and keep working on that"
                 view = _misc.blankslateWithMsg("Something went wrong", msg)

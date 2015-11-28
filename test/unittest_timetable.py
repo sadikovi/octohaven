@@ -54,9 +54,17 @@ class TimetableTestSuite(unittest.TestCase):
         self.assertEqual(timetable.numJobs, 5)
         self.assertEqual(len(timetable.jobs), 5)
 
-    def test_toFromDict(self):
+    def test_updateLatestRunTime(self):
         timetable = Timetable(self.uid, self.name, self.status, self.clonejobid, self.crontab,
             self.starttime, self.stoptime, self.jobs)
+        self.assertEqual(timetable.latestruntime, -1L)
+        ts = currentTimeMillis()
+        timetable.updateRunTime(ts)
+        self.assertEqual(timetable.latestruntime, ts)
+
+    def test_toFromDict(self):
+        timetable = Timetable(self.uid, self.name, self.status, self.clonejobid, self.crontab,
+            self.starttime, self.stoptime, self.jobs, currentTimeMillis())
         obj = timetable.toDict()
         copy = Timetable.fromDict(obj)
         self.assertEqual(copy.uid, timetable.uid)
@@ -68,6 +76,8 @@ class TimetableTestSuite(unittest.TestCase):
         self.assertEqual(copy.stoptime, timetable.stoptime)
         self.assertEqual(copy.numJobs, timetable.numJobs)
         self.assertEqual(copy.jobs, timetable.jobs)
+        self.assertTrue(copy.latestruntime is not None and
+            copy.latestruntime == timetable.latestruntime)
 
 class TimetableManagerTestSuite(unittest.TestCase):
     def setUp(self):
@@ -153,6 +163,34 @@ class TimetableManagerTestSuite(unittest.TestCase):
         tables = manager.listTimetables()
         self.assertEqual(len(tables), 2)
         self.assertEqual(sorted([x.uid for x in tables]), sorted([table1.uid, table2.uid]))
+
+    def test_listTimetablesByStatus(self):
+        manager = TimetableManager(self.jobManager)
+        table1 = manager.createTimetable(self.name, self.crontab, self.clonejob)
+        table1.status = TIMETABLE_ACTIVE
+        manager.saveTimetable(table1)
+        table2 = manager.createTimetable(self.name, self.crontab, self.clonejob)
+        table2.status = TIMETABLE_PAUSED
+        manager.saveTimetable(table2)
+        table3 = manager.createTimetable(self.name, self.crontab, self.clonejob)
+        manager.saveTimetable(table3)
+        manager.cancel(table3)
+        # fetch non canceled timetables
+        arr = manager.listTimetables([TIMETABLE_ACTIVE, TIMETABLE_PAUSED])
+        self.assertEqual(len(arr), 2)
+        self.assertEqual(sorted([x.status for x in arr]),
+            sorted([TIMETABLE_ACTIVE, TIMETABLE_PAUSED]))
+        # fetch only active jobs
+        arr = manager.listTimetables([TIMETABLE_ACTIVE])
+        self.assertEqual(len(arr), 1)
+        self.assertEqual(sorted([x.status for x in arr]), sorted([TIMETABLE_ACTIVE]))
+        # fetch canceled jobs
+        arr = manager.listTimetables([TIMETABLE_CANCELED])
+        self.assertEqual(len(arr), 1)
+        self.assertEqual(sorted([x.status for x in arr]), sorted([TIMETABLE_CANCELED]))
+        # fail to fetch, if statuses is not a list
+        with self.assertRaises(StandardError):
+            manager.listTimetables(None)
 
     def test_resume(self):
         manager = TimetableManager(self.jobManager)

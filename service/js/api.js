@@ -265,11 +265,34 @@
   TimetableLoader = (function() {
     function TimetableLoader() {}
 
-    TimetableLoader.prototype.list = function(includeJobs, before, after) {
+    TimetableLoader.prototype.submit = function(data, before, after) {
       if (typeof before === "function") {
         before();
       }
-      return loader.sendrequest("get", "/api/v1/timetable/list?includejobs=" + (util.quote(includeJobs)), {}, null, function(success, response) {
+      return loader.sendrequest("post", "/api/v1/timetable/create", {}, data, (function(_this) {
+        return function(code, response) {
+          var json;
+          json = util.jsonOrElse(response);
+          if (json) {
+            return typeof after === "function" ? after(true, json) : void 0;
+          } else {
+            return typeof after === "function" ? after(false, json) : void 0;
+          }
+        };
+      })(this), (function(_this) {
+        return function(error, response) {
+          var json;
+          json = util.jsonOrElse(response);
+          return typeof after === "function" ? after(false, json) : void 0;
+        };
+      })(this));
+    };
+
+    TimetableLoader.prototype.list = function(includeJobs, statuses, before, after) {
+      if (typeof before === "function") {
+        before();
+      }
+      return loader.sendrequest("get", "/api/v1/timetable/list?includejobs=" + (util.quote(includeJobs)) + "&status=" + (util.quote(statuses)), {}, null, function(success, response) {
         var json;
         json = util.jsonOrElse(response);
         return typeof after === "function" ? after(!!json, json) : void 0;
@@ -285,6 +308,36 @@
         before();
       }
       return loader.sendrequest("get", "/api/v1/timetable/get?id=" + (util.quote(id)), {}, null, function(success, response) {
+        var json;
+        json = util.jsonOrElse(response);
+        return typeof after === "function" ? after(!!json, json) : void 0;
+      }, function(error, response) {
+        var json;
+        json = util.jsonOrElse(response);
+        return typeof after === "function" ? after(false, json) : void 0;
+      });
+    };
+
+    TimetableLoader.prototype.pause = function(id, before, after) {
+      if (typeof before === "function") {
+        before();
+      }
+      return loader.sendrequest("get", "/api/v1/timetable/pause?id=" + (util.quote(id)), {}, null, function(success, response) {
+        var json;
+        json = util.jsonOrElse(response);
+        return typeof after === "function" ? after(!!json, json) : void 0;
+      }, function(error, response) {
+        var json;
+        json = util.jsonOrElse(response);
+        return typeof after === "function" ? after(false, json) : void 0;
+      });
+    };
+
+    TimetableLoader.prototype.resume = function(id, before, after) {
+      if (typeof before === "function") {
+        before();
+      }
+      return loader.sendrequest("get", "/api/v1/timetable/resume?id=" + (util.quote(id)), {}, null, function(success, response) {
         var json;
         json = util.jsonOrElse(response);
         return typeof after === "function" ? after(!!json, json) : void 0;
