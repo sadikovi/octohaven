@@ -54,6 +54,12 @@ class StorageManager(object):
     def removeItemFromKeyspace(self, keyspace, uid):
         self.connector.removeFromCollection(keyspace, [uid])
 
+    def addItemsToKeyspace(self, keyspace, arr):
+        self.connector.storeCollection(keyspace, arr)
+
+    def removeItemsFromKeyspace(self, keyspace, arr):
+        self.connector.removeFromCollection(keyspace, arr)
+
     # potentially dangerous, removes keyspace including actual job/template/link ids
     def removeKeyspace(self, keyspace):
         self.connector.delete(keyspace)

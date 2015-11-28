@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import os, re
-from types import IntType
+from types import IntType, LongType
 from utils import *
 
 # Job statuses that are supported
@@ -53,7 +53,7 @@ class JobCheck(object):
 
     @staticmethod
     def validatePriority(value):
-        if type(value) is not IntType or value < 0:
+        if (type(value) is not IntType and type(value) is not LongType) or value < 0:
             raise StandardError("Priority is incorrect: %s" % str(value))
         return value
 
@@ -147,6 +147,12 @@ class SparkJob(object):
         cmd = sparkSubmit + name + master + conf + entrypoint + jar + jobconf
         return cmd
 
+    # clones current SparkJob and returns copy with new uid
+    def clone(self):
+        uid = nextSparkJobId()
+        return SparkJob(uid, self.name, self.masterurl, self.entrypoint, self.jar, self.options,
+            self.jobconf)
+
     @classmethod
     def fromDict(cls, obj):
         uid = obj["uid"]
@@ -173,7 +179,8 @@ class Job(object):
         self.duration = duration
         # Spark job
         self.sparkjob = sparkjob
-        # default job priority
+        # default job priority is it's submittime, older jobs are executed first
+        priority = self.submittime if priority == DEFAULT_PRIORITY else priority
         self.priority = JobCheck.validatePriority(priority)
         # Spark app id from Spark UI (if possible to fetch)
         self.sparkAppId = None

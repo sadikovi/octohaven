@@ -132,7 +132,7 @@
         def = -1;
       }
       a = parseInt(int, 10);
-      if (a) {
+      if (a !== NaN) {
         return a;
       } else {
         return def;
@@ -187,7 +187,7 @@
         elem = arr[_i];
         str = elem[0].indexOf("?") === 0 ? elem[0].substring(1) : elem[0];
         key = this.unquote(str);
-        value = this.unquote(elem[1]);
+        value = elem[1] ? this.unquote(elem[1]) : null;
         dict[key] = value;
       }
       return dict;

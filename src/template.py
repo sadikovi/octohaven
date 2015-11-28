@@ -14,7 +14,6 @@
 #   }
 # }
 
-import uuid
 from types import DictType, StringType
 from storagemanager import StorageManager
 from utils import *
@@ -57,7 +56,7 @@ class TemplateManager(object):
         self.storageManager = storageManager
 
     def createTemplate(self, name, content):
-        uid = "template_" + uuid.uuid4().hex
+        uid = nextTemplateId()
         # we use default name if current name cannot be resolved
         name = name if type(name) is StringType and len(name) > 0 else TEMPLATE_NAME_UNKNOWN
         # creation time in milliseconds

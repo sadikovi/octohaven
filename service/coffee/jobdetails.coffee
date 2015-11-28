@@ -4,17 +4,8 @@ throw new Error("Job details element is not found") unless jobDetailsElem
 
 _mapper = @mapper
 _util = @util
+_misc = @misc
 _jobloader = new @JobLoader
-
-blankslate = (internal) ->
-    blankview = _mapper.parseMapForParent(type: "div", cls: "blankslate")
-    _mapper.parseMapForParent(internal, blankview)
-    blankview
-
-blankslateWithMsg = (header, msg) ->
-    header = type: "h1", cls: "text-thin", title: "#{header}"
-    body = type: "p", title: "#{msg}"
-    blankslate([header, body])
 
 contentHeader = (value) -> type: "span", cls: "text-mute", title: "#{value}"
 
@@ -41,6 +32,11 @@ updateLogLinks = (uid) ->
     stderr = document.getElementById("octohaven-job-stderr")
     stdout.href = "/log?type=stdout&jobid=#{uid}" if stdout
     stderr.href = "/log?type=stderr&jobid=#{uid}" if stderr
+
+updateScheduleLink = (uid) ->
+    # update link to create timetable for the job
+    timetable = document.getElementById("octohaven-job-timetable")
+    timetable.href = "/timetablecreate?id=#{uid}&mode=create" if timetable
 
 # extract jobid from url
 params = _util.windowParameters()
@@ -116,12 +112,14 @@ if "jobid" of params
 
                 # update links for job logs
                 updateLogLinks(uid)
+                # update link for scheduling
+                updateScheduleLink(uid)
             else
                 msg = if json then json["content"]["msg"] else "We know and keep working on that"
-                view = blankslateWithMsg("Something went wrong", msg)
+                view = _misc.blankslateWithMsg("Something went wrong", msg)
                 _mapper.parseMapForParent(view, jobDetailsElem)
     )
 else
     jobDetailsElem.innerHTML = ""
-    view = blankslateWithMsg("Something went wrong", "We know and keep working on that")
+    view = _misc.blankslateWithMsg("Something went wrong", "We know and keep working on that")
     _mapper.parseMapForParent(view, jobDetailsElem)

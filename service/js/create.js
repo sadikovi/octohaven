@@ -372,7 +372,6 @@
 
   submitJob = function(job) {
     var resolver, settings;
-    console.log(job);
     setLoadStatus(true);
     if (!IS_SUBMITTED) {
       IS_SUBMITTED = true;

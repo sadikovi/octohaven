@@ -162,3 +162,76 @@ class LogReader
             after?(false, json)
 
 @LogReader ?= LogReader
+
+# creating and loading timetables
+class TimetableLoader
+    constructor: ->
+
+    submit: (data, before, after) ->
+        before?()
+        loader.sendrequest "post", "/api/v1/timetable/create", {}, data
+        , (code, response) =>
+            json = util.jsonOrElse(response)
+            if json then  after?(true, json) else after?(false, json)
+        , (error, response) =>
+            json = util.jsonOrElse(response)
+            after?(false, json)
+
+    list: (includeJobs, statuses, before, after) ->
+        # _util.isArray(statuses)
+        before?()
+        loader.sendrequest "get",
+            "/api/v1/timetable/list?includejobs=#{util.quote(includeJobs)}&status=#{util.quote(statuses)}"
+        , {}, null
+        , (success, response) ->
+            json = util.jsonOrElse(response)
+            after?(!!json, json)
+        , (error, response) ->
+            json = util.jsonOrElse(response)
+            after?(false, json)
+
+    get: (id, before, after) ->
+        before?()
+        loader.sendrequest "get", "/api/v1/timetable/get?id=#{util.quote(id)}"
+        , {}, null
+        , (success, response) ->
+            json = util.jsonOrElse(response)
+            after?(!!json, json)
+        , (error, response) ->
+            json = util.jsonOrElse(response)
+            after?(false, json)
+
+    pause: (id, before, after) ->
+        before?()
+        loader.sendrequest "get", "/api/v1/timetable/pause?id=#{util.quote(id)}"
+        , {}, null
+        , (success, response) ->
+            json = util.jsonOrElse(response)
+            after?(!!json, json)
+        , (error, response) ->
+            json = util.jsonOrElse(response)
+            after?(false, json)
+
+    resume: (id, before, after) ->
+        before?()
+        loader.sendrequest "get", "/api/v1/timetable/resume?id=#{util.quote(id)}"
+        , {}, null
+        , (success, response) ->
+            json = util.jsonOrElse(response)
+            after?(!!json, json)
+        , (error, response) ->
+            json = util.jsonOrElse(response)
+            after?(false, json)
+
+    cancel: (id, before, after) ->
+        before?()
+        loader.sendrequest "get", "/api/v1/timetable/cancel?id=#{util.quote(id)}"
+        , {}, null
+        , (success, response) ->
+            json = util.jsonOrElse(response)
+            after?(!!json, json)
+        , (error, response) ->
+            json = util.jsonOrElse(response)
+            after?(false, json)
+
+@TimetableLoader ?= TimetableLoader

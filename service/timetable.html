@@ -10,7 +10,7 @@
         <meta name="author" content="">
 
         <title>
-            Create a job &middot; Octohaven
+            Timetable &middot; Octohaven
         </title>
 
         <link rel="icon" type="image/x-icon" href="img/favicon.ico">
@@ -28,7 +28,7 @@
                             <span class="text-mute" id="octohaven-spark-server-status">Pending...</span>
                         </div>
                         <a class="menu-item" href="/">Home</a>
-                        <div class="menu-heading" id="octohaven-templates">Templates</div>
+                        <a class="menu-item" href="/timetables">Back to timetables</a>
                     </nav>
                 </div>
                 <div class="three-fourths column">
@@ -43,42 +43,14 @@
                         </div>
                     </div>
                     <div class="attached secondary segment">
-                        <h1 class="text-thin">Create a new Spark job</h1>
+                        <h1 class="text-thin">Timetable details</h1>
                     </div>
-                    <div class="attached segment" id="octohaven-job-settings">
-                    </div>
-                    <div class="attached secondary segment">
-                        <h4>Select .jar file</h4>
-                        <div class="segment">
-                            <code class="text-emphasized" id="octohaven-selected-jar">&nbsp;</code>
-                        </div>
-                        <div class="breadcrumb" id="octohaven-filelist-breadcrumbs">
-                        </div>
-                        <div class="menu text-mono" id="octohaven-filelist-files">
-                        </div>
-                    </div>
-                    <div class="attached secondary segment">
-                        <h4>Choose when to run job</h4>
-                        <nav class="menu" id="octohaven-job-delay">
-                        </nav>
-                    </div>
-                    <div class="attached segment" id="octohaven-validation-status">
-                    </div>
-                    <div class="bottom attached segment">
+                    <div class="attached segment" id="octohaven-timetable-show"></div>
+                    <div class="attached hidden segment" id="octohaven-validation-status"></div>
+                    <div class="bottom attached hidden segment" id="octohaven-show-controls">
                         <div class="breadcrumb">
                             <div class="section">
-                                <a class="btn btn-primary" id="octohaven-submit-job">Submit a job</a>
-                            </div>
-                            <div class="separator"></div>
-                            <div class="section">
-                                <a class="btn" href="/" id="octohaven-cancel-job">Cancel</a>
-                            </div>
-                            <div class="separator">|</div>
-                            <div class="section" data-attr="fast-editor" id="octohaven-save-template">
-                                <span data-attr="fast-editor-texter"></span>
-                                <a class="btn" data-attr="fast-editor-trigger" href="/">
-                                    Save as template
-                                </a>
+                                <a class="btn btn-danger" id="octohaven-cancel-timetable">Cancel timetable</a>
                             </div>
                         </div>
                     </div>
@@ -88,11 +60,9 @@
         <script type="text/javascript" src="js/utilities/util.js"></script>
         <script type="text/javascript" src="js/utilities/loader.js"></script>
         <script type="text/javascript" src="js/utilities/mapper.js"></script>
-        <script type="text/javascript" src="js/utilities/namer.js"></script>
-        <script type="text/javascript" src="js/model/model.js"></script>
-        <script type="text/javascript" src="js/utilities/fasteditor.js"></script>
+        <script type="text/javascript" src="js/utilities/misc.js"></script>
         <script type="text/javascript" src="js/api.js"></script>
         <script type="text/javascript" src="js/status.js"></script>
-        <script type="text/javascript" src="js/create.js"></script>
+        <script type="text/javascript" src="js/timetabledetails.js"></script>
     </body>
 </html>

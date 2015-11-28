@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
-import json, time
+import json, time, uuid
+from datetime import datetime
 from types import UnicodeType, StringType, DictType, ListType
 
 # private decorator
@@ -62,3 +63,20 @@ def boolOrElse(raw, value):
 # return current time in milliseconds
 def currentTimeMillis():
     return long(time.time() * 1000.0)
+
+# date to timestamp (in milliseconds) conversion
+def dateToTimestamp(date):
+    return (date - datetime(1970, 1, 1)).total_seconds() * 1000L
+
+# UID functions for model
+def nextJobId():
+    return "job_" + uuid.uuid4().hex
+
+def nextSparkJobId():
+    return "spark_" + uuid.uuid4().hex
+
+def nextTemplateId():
+    return "template_" + uuid.uuid4().hex
+
+def nextTimetableId():
+    return "timetable_" + uuid.uuid4().hex

@@ -1,5 +1,5 @@
-# template for a job, keeps only key - value pairs, where value is always a string
-class Template
+# generic dictionary object
+class Dictionary
     constructor: (@settings = {}) -> @correct(@settings)
 
     set: (key, value) -> if value != null then @settings[key] = value.toString() else null
@@ -10,5 +10,10 @@ class Template
 
     correct: -> @set(key, value) for key, value of @settings
 
-
+# template for a job, keeps only key - value pairs, where value is always a string
+class Template extends Dictionary
 @Template ?= Template
+
+# timetable, keeps only key - value pairs, where value is always a string
+class Timetable extends Dictionary
+@Timetable ?= Timetable

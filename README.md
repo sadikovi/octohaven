@@ -12,14 +12,23 @@ Super simple Apache Spark job server.
 - [Contribute](#contribute)
 
 ## Overview
-Allows you to select `jar` file and specify Spark conf parameters. You can schedule jobs to run
-after some time passed, pass job parameters along with Spark configuration options, view stdout and
-stderr of the job running and etc. **It does not mess up** with your cluster installation and/or
-scripts, it is more like a nice feature, which you can turn off any time. Tested with Spark
-standalone cluster, not sure if it will work with Yarn or Mesos.
+Simple Spark job scheduler, allows to run created, delayed or periodic jobs with selected `jar` and
+Spark / job configuration options.
+
+Features:
+- delayed jobs (run after some time passed)
+- periodic jobs (run jobs periodically using timetables and Cron expressions)
+- view `stdout` / `stderr` of jobs using UI and etc.
+
+Goodies:
+- does not mess up with Spark cluster installation and/or scripts (more like nice feature, which
+    you can easily turn on/off any time)
+
+Others:
+- Tested only with Spark standalone cluster, not sure if it will work with Yarn or Mesos
 
 Screenshot of the UI:
-![Screenshot](./resources/octohaven-screenshot.jpg)
+![Screenshot](./resources/octohaven-screenshot.png)
 
 ## Install
 Super simple installation and no dependencies, except Python 2.7.x, and Redis.
@@ -30,7 +39,7 @@ Web UI is built using [Primer](http://primercss.io/) with some modifications to 
 ## Run
 Download repository and run scripts from `sbin` directory.
 To run service execute `start.sh` script, to stop service - `stop.sh`. Application will be
-available on `localhost:33900` or whatever port you will have specified in `config.sh`.
+available on `localhost:33900` or whatever host and port you will have specified in `config.sh`.
 
 ```shell
 # start service, this will load configuration from config.sh
@@ -61,6 +70,9 @@ Settings are:
 - **jobconf** any number up to max integer
 
 Job will report sum of numbers between 0 and number specified.
+
+> You can also schedule that job using `Schedule job` on left side menu. This will create timetable
+> to run your job periodically, again it is all accessible through UI.
 
 ### Application logs
 Application logs stored in project directory in a file/many files **octohaven-service.log**. Default

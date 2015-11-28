@@ -236,7 +236,6 @@ loadTemplate = (job) ->
 # Submit job
 ################################################################
 submitJob = (job) ->
-    console.log(job)
     setLoadStatus(true)
     unless IS_SUBMITTED
         IS_SUBMITTED = true

@@ -15,7 +15,9 @@ RUN_TESTS = {
     "sparkmodule": True,
     "template": True,
     "scheduler": True,
-    "subscription": True
+    "subscription": True,
+    "timetable": True,
+    "crontab": True
 }
 
 def checkTest(key):
@@ -91,6 +93,20 @@ def collectSystemTests(suites):
         suites.addTest(unittest_subscription.loadSuites())
     else:
         print "@skip: 'subscription' tests"
+
+    # timetable
+    if checkTest("timetable"):
+        import test.unittest_timetable as unittest_timetable
+        suites.addTest(unittest_timetable.loadSuites())
+    else:
+        print "@skip: 'timetable' tests"
+
+    # crontab
+    if checkTest("crontab"):
+        import test.unittest_crontab as unittest_crontab
+        suites.addTest(unittest_crontab.loadSuites())
+    else:
+        print "@skip: 'crontab' tests"
 
 if __name__ == '__main__':
     args = sys.argv[2:]
