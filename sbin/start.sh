@@ -52,6 +52,9 @@ done
 # call to prepare variable for service check
 . "$ROOT_DIR/sbin/check-service.sh"
 
+# check Spark dependencies
+. "$ROOT_DIR/sbin/check-spark.sh"
+
 # check if we are using Docker
 if [ -n "$USE_DOCKER" ]; then
     . "$ROOT_DIR/sbin/check-docker.sh"
