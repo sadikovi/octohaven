@@ -104,7 +104,7 @@ Options are:
     print "[INFO] Using Redis db %s" % redis_db
     print "[INFO] Starting up scheduler"
     scheduler = Scheduler(settings)
-    # scheduler.run()
+    scheduler.run()
     print "[INFO] Starting up timetable scheduler"
     timetableScheduler = TimetableScheduler(settings)
     timetableScheduler.start()
@@ -113,7 +113,7 @@ Options are:
         httpd.serve_forever()
     except KeyboardInterrupt:
         logger.error("Attempt to stop server")
-        # scheduler.stop()
+        scheduler.stop()
         print "Stop scheduler"
         timetableScheduler.stop()
         print "Stop timetable scheduler"
