@@ -65,7 +65,11 @@ def fetch(scheduler):
             # Update status on waiting and priority, so we ensure that delayed job runs first
             for job in delayed:
                 if job and job.submittime <= maxT:
-                    scheduler.updateJob(job, WAITING, job.priority - 1)
+                    # delayed job should have higher priority on execution, by order of magnitude
+                    # assuming that priority is a submittime. By dividing by 10, we achieve the
+                    # same scale of priorities within delayed jobs, but different from waiting and
+                    # created jobs
+                    scheduler.updateJob(job, WAITING, job.priority / 10)
                     scheduler.logger().info("Updated job %s to run as soon as possible", job.uid)
         # Fetches WAITING jobs first, sorting them by priority, then CREATED, if we have free slots.
         # If there is a delayed job that was updated as waiting, it will be queued and run as fast

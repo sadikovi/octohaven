@@ -8,14 +8,21 @@ from storagemanager import StorageManager
 from sparkmodule import SparkModule
 from jobmanager import JobManager
 from timetable import *
-from subscription import Subscriber, GLOBAL_DISPATCHER
+from subscription import Emitter, Subscriber, GLOBAL_DISPATCHER
 from utils import *
 
+# minimal interval for timetable scheduling, it does not makes sense keep it less than 1 minute
 MINIMAL_INTERVAL = 60.0
 
 # general lock for all runners
 lock = Lock()
-# default running action
+# pool lock for updates
+poolLock = Lock()
+
+# We fetch timetable for runner at the beginning of every action, since we do not know whether it
+# has been stopped or paused. Once we resolved status, "active" and "stopped" flags, we branch out
+# to non-stopped and active and check current time. Note that we use default server time zone,
+# otherwise it can messy.
 def action(runner):
     uid, currenttime, interval = None, None, MINIMAL_INTERVAL
     try:
@@ -28,7 +35,7 @@ def action(runner):
         timetable = runner.manager.timetableForUid(uid)
         if not timetable:
             raise StandardError("No timetable found for uid: %s" % uid)
-        # assess status
+        # assess status and update runner, so we know if it was stopped or paused
         status = timetable.status
         active = status == TIMETABLE_ACTIVE
         runner.stopped = status == TIMETABLE_CANCELED
@@ -75,10 +82,14 @@ def action(runner):
             runner.logger().debug("[%s] spawned another thread", uid)
         else:
             runner.logger().debug("[%s] has been shut down", uid)
+            runner.broadcast("timetable-runner-stop", uid)
+            runner.logger().debug("[%s] requested clean up", uid)
             runner = None
 
-class TimetableRunner(Octolog, object):
+class TimetableRunner(Emitter, object):
     def __init__(self, uid, interval, manager, stopped):
+        # register as an emitter, when it is stopped, it will send a message to clean up pool
+        Emitter.__init__(self, GLOBAL_DISPATCHER)
         self.uid = uid
         self.interval = interval
         # timetable manager to schedule timetable and create jobs
@@ -126,6 +137,7 @@ class TimetableScheduler(Subscriber, object):
         Subscriber.__init__(self, GLOBAL_DISPATCHER)
         # register to "create timetable" event
         self.subscribe("timetable-create", future=True)
+        self.subscribe("timetable-runner-stop", future=True)
 
     def start(self):
         # when we start scheduler we pull all non-canceled jobs from it to spawn new scheduling
@@ -142,14 +154,22 @@ class TimetableScheduler(Subscriber, object):
         uid = timetable.uid
         stopped = timetable.status == TIMETABLE_CANCELED
         # refresh interval in seconds (constant for now)
-        interval = 60.0
+        interval = MINIMAL_INTERVAL
         self.logger().debug("Launching runner %s", uid)
         self.pool[uid] = TimetableRunner(uid, interval, self.timetableManager, stopped)
 
-    # subscriber action method
-    def receive(self, event, value):
-        if event == "timetable-create":
-            self.addTimetableToPool(value)
+    # removes canceled runner from the pool to clean it up
+    # use pool lock just to be safe
+    def removeRunnerFromPool(self, uid):
+        try:
+            poolLock.acquire()
+            if uid not in self.pool:
+                self.logger().warn("Requested to remove non-existent runner %s", uid)
+            else:
+                del self.pool[uid]
+                self.logger().info("Cleaned up runner %s", uid)
+        finally:
+            poolLock.release()
 
     def stop(self):
         for key, runner in self.pool.items():
@@ -157,5 +177,13 @@ class TimetableScheduler(Subscriber, object):
                 runner.active = False
                 runner.stopped = True
                 self.logger().debug("Stopped %s runner", runner.uid)
+                runner = None
         # reset pool
         self.pool = {}
+
+    # subscriber action method
+    def receive(self, event, value):
+        if event == "timetable-create":
+            self.addTimetableToPool(value)
+        elif event == "timetable-runner-stop":
+            self.removeRunnerFromPool(str(value))

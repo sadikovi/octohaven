@@ -221,7 +221,12 @@ class JobTestSuite(unittest.TestCase):
         self.assertEqual(job.submittime, self.submittime)
         self.assertEqual(job.duration, self.duration)
         self.assertEqual(job.sparkjob, self.sparkjob)
-        self.assertEqual(job.priority, DEFAULT_PRIORITY)
+        # default priority should be resolved into submittime
+        self.assertEqual(job.priority, self.submittime)
+        # now if you specify priority defferent from DEFAULT_PRIORITY, it will be assigned
+        job = Job(self.uid, self.status, self.createtime, self.submittime,
+            self.duration, self.sparkjob, priority=99)
+        self.assertEqual(job.priority, 99)
         # check passing wrong status and duration
         with self.assertRaises(StandardError):
             Job(self.uid, "WRONG_STATUS", self.createtime, self.submittime,
@@ -250,11 +255,15 @@ class JobTestSuite(unittest.TestCase):
         self.assertEqual(obj["submittime"], self.submittime)
         self.assertEqual(obj["duration"], self.duration)
         self.assertEqual(obj["sparkjob"], self.sparkjob.toDict())
-        self.assertEqual(obj["priority"], DEFAULT_PRIORITY)
+        self.assertEqual(obj["priority"], self.submittime)
+        # change priority of a job
+        job.priority = 99
+        obj = job.toDict()
+        self.assertEqual(obj["priority"], 99)
 
     def test_convertFromDict(self):
         job = Job(self.uid, self.status, self.createtime, self.submittime,
-            self.duration, self.sparkjob, 1)
+            self.duration, self.sparkjob, priority=1)
         obj = job.toDict()
         copy = Job.fromDict(obj)
         self.assertEqual(copy.uid, self.uid)
