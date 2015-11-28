@@ -60,7 +60,7 @@ row = (obj) ->
     name = obj["name"]
     numJobs = obj["numjobs"]
     status = obj["status"]
-    jobid = obj["latestrunjobid"]
+    jobid = obj["latestjobid"]
     timestamp = obj["latestruntime"]
     # build columns
     colStatus = columnStatus(status, statusColour(status))
@@ -87,7 +87,6 @@ row = (obj) ->
     _misc.segment(_misc.columns([colStatus, colName, colStats, colAction]))
 
 update = (statuses) ->
-    console.log statuses
     _timetableLoader.list(false, statuses, ->
         timetablesElem.innerHTML = ""
     , (ok, json) ->
@@ -98,7 +97,7 @@ update = (statuses) ->
                 _misc.segments(rows, timetablesElem)
             else
                 view = _misc.blankslateWithMsg("No timetables found :(",
-                    "You can still create a timetable for any job from job view")
+                    "You can create a timetable for any job from job details view")
                 _mapper.parseMapForParent(view, timetablesElem)
         else
             msg = if json then json["content"]["msg"] else "We know and keep working on that"

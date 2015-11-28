@@ -265,6 +265,8 @@ class APICall(Octolog, object):
                     raise StandardError("No job found for uid: " + str(jobid))
                 timetable = self.timetableManager.createTimetable(name, crontab, clonejob)
                 self.timetableManager.saveTimetable(timetable)
+                # broadcast value to timetable scheduler
+                self.timetableManager.broadcast("timetable-create", timetable)
                 return self.success({"msg": "Timetable has been created", "uid": timetable.uid})
 
             def timetableList():

@@ -5,6 +5,7 @@ from types import ListType, IntType, LongType
 from job import SparkJob, Job
 from jobmanager import JobManager
 from crontab import CronTab
+from subscription import Emitter, GLOBAL_DISPATCHER
 from utils import *
 
 TIMETABLE_KEYSPACE = "TIMETABLE_KEYSPACE"
@@ -93,12 +94,14 @@ class Timetable(object):
         return cls(uid, name, status, clonejobid, crontab, starttime, stoptime, jobs, latestruntime)
 
 # Manager for timetables. Handles saving to and retrieving from storage, updates and etc.
-class TimetableManager(Octolog, object):
+class TimetableManager(Emitter, object):
     def __init__(self, jobManager):
         if type(jobManager) is not JobManager:
             raise StandardError("Expected JobManager, got " + str(type(jobManager)))
         self.jobManager = jobManager
         self.storageManager = jobManager.storageManager
+        # register as emitter
+        Emitter.__init__(self, GLOBAL_DISPATCHER)
 
     @private
     def cloneSparkJob(self, sparkjob):
@@ -109,12 +112,15 @@ class TimetableManager(Octolog, object):
         return newSparkjob
 
     @private
-    def cloneJob(self, job):
+    def cloneJob(self, job, newname=None):
         # creates clone of the job, with different uids
         if type(job) is not Job:
             raise StandardError("Expected Job, got " + str(type(job)))
         # duplicate fields and replace uids
         sparkjob = self.cloneSparkJob(job.sparkjob)
+        # update name if possible
+        if newname:
+            sparkjob.name = str(newname)
         return self.jobManager.createJob(sparkjob, delay=0)
 
     # creates new timetable using `delay` in seconds for starting timetable,

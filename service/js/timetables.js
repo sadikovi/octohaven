@@ -151,7 +151,7 @@
     name = obj["name"];
     numJobs = obj["numjobs"];
     status = obj["status"];
-    jobid = obj["latestrunjobid"];
+    jobid = obj["latestjobid"];
     timestamp = obj["latestruntime"];
     colStatus = columnStatus(status, statusColour(status));
     colName = columnName(uid, name);
@@ -196,7 +196,6 @@
   };
 
   update = function(statuses) {
-    console.log(statuses);
     return _timetableLoader.list(false, statuses, function() {
       return timetablesElem.innerHTML = "";
     }, function(ok, json) {
@@ -217,7 +216,7 @@
           ];
           return _misc.segments(rows, timetablesElem);
         } else {
-          view = _misc.blankslateWithMsg("No timetables found :(", "You can still create a timetable for any job from job view");
+          view = _misc.blankslateWithMsg("No timetables found :(", "You can create a timetable for any job from job details view");
           return _mapper.parseMapForParent(view, timetablesElem);
         }
       } else {

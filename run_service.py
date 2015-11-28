@@ -4,6 +4,7 @@ import paths
 import sys, time, octolog, os, platform
 from theserver import SimpleHandler, RichHTTPServer
 from scheduler import Scheduler, fetchTimer, runTimer
+from timetablescheduler import TimetableScheduler
 
 # init logger
 logger = octolog._logger("run_service:" + __name__)
@@ -95,8 +96,6 @@ Options are:
     # prepare server
     server = RichHTTPServer
     httpd = server(host, int(port), SimpleHandler, settings)
-    # prepare scheduler
-    scheduler = Scheduler(settings)
 
     print "[INFO] Spark UI address is set to %s" % spark_ui_address
     print "[INFO] Spark Master address is set to %s" % spark_master_address
@@ -104,7 +103,11 @@ Options are:
     print "[INFO] Redis host and port are set to %s:%s" % (redis_host, redis_port)
     print "[INFO] Using Redis db %s" % redis_db
     print "[INFO] Starting up scheduler"
+    scheduler = Scheduler(settings)
     # scheduler.run()
+    print "[INFO] Starting up timetable scheduler"
+    timetableScheduler = TimetableScheduler(settings)
+    timetableScheduler.start()
     print time.asctime(), "Serving HTTP on %s:%s ..." % (host, port)
     try:
         httpd.serve_forever()
@@ -112,5 +115,7 @@ Options are:
         logger.error("Attempt to stop server")
         # scheduler.stop()
         print "Stop scheduler"
+        timetableScheduler.stop()
+        print "Stop timetable scheduler"
         httpd.server_close()
         print time.asctime(), "Stop serving on %s:%s ..." % (host, port)

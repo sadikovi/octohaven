@@ -149,14 +149,12 @@
           title: "" + jobname
         }), _misc.dynamicOption("Name", "Timetable name", "" + (currentTimetable.get("name")), function(status, value) {
           if (status) {
-            currentTimetable.set("name", value);
+            return currentTimetable.set("name", value);
           }
-          return console.log(currentTimetable);
         }), _misc.dynamicOption("Cron pattern", "Cron expression for scheduling", "" + (currentTimetable.get("pattern")), function(status, value) {
           if (status) {
-            currentTimetable.set("pattern", value);
+            return currentTimetable.set("pattern", value);
           }
-          return console.log(currentTimetable);
         })
       ];
       result = _misc.segments(rows);

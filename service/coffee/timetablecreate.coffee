@@ -107,10 +107,10 @@ _jobLoader.getJob(id, ->
             _misc.staticOption("Clone job", "Base job for timetable",
                 {type: "a", href: "/job?jobid=#{jobid}", title: "#{jobname}"})
             _misc.dynamicOption("Name", "Timetable name", "#{currentTimetable.get("name")}"
-                , (status, value) -> currentTimetable.set("name", value) if status; console.log currentTimetable),
+                , (status, value) -> currentTimetable.set("name", value) if status),
             _misc.dynamicOption("Cron pattern", "Cron expression for scheduling",
                 "#{currentTimetable.get("pattern")}", (status, value) ->
-                    currentTimetable.set("pattern", value) if status; console.log currentTimetable)
+                    currentTimetable.set("pattern", value) if status)
         ]
         result = _misc.segments(rows)
     else

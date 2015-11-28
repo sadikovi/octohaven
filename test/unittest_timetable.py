@@ -129,6 +129,11 @@ class TimetableManagerTestSuite(unittest.TestCase):
         copy = manager.cloneJob(job)
         self.assertTrue(copy.uid != job.uid)
         self.assertTrue(copy != job)
+        # changing name
+        copy = manager.cloneJob(job, "New name")
+        self.assertTrue(copy.uid != job.uid)
+        self.assertTrue(copy != job)
+        self.assertEqual(copy.sparkjob.name, "New name")
 
     def test_createTimetable(self):
         manager = TimetableManager(self.jobManager)
