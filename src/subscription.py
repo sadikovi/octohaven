@@ -52,8 +52,7 @@ class Dispatcher(Octolog, object):
 
     @private
     def hasEvent(self, event):
-        if type(event) is not StringType:
-            raise StandardError("Expected StringType, got " + str(type(event)))
+        assertType(event, StringType)
         return event in self.events
 
     @private

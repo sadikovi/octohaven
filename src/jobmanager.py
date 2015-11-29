@@ -16,10 +16,8 @@ ALL_JOBS_KEY = "ALL"
 # takes SparkModule and StorageManager as parameters to provide unified interface.
 class JobManager(object):
     def __init__(self, sparkModule, storageManager):
-        if type(sparkModule) is not SparkModule:
-            raise StandardError("Expected SparkModule, got " + str(type(sparkModule)))
-        if type(storageManager) is not StorageManager:
-            raise StandardError("Expected StorageManager, got " + str(type(storageManager)))
+        assertType(sparkModule, SparkModule)
+        assertType(storageManager, StorageManager)
         self.sparkModule = sparkModule
         self.storageManager = storageManager
 

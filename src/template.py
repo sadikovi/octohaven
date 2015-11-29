@@ -59,8 +59,7 @@ class Template(object):
 
 class TemplateManager(object):
     def __init__(self, storageManager):
-        if type(storageManager) is not StorageManager:
-            raise StandardError("Expected StorageManager, got " + str(type(storageManager)))
+        assertType(storageManager, StorageManager)
         self.storageManager = storageManager
 
     def createTemplate(self, name, content):
@@ -70,8 +69,7 @@ class TemplateManager(object):
         # creation time in milliseconds
         createtime = currentTimeMillis()
         # check that content is a dictionary
-        if type(content) is not DictType:
-            raise StandardError("Content is wrong and cannot be parsed")
+        assertType(content, DictType, "Content is wrong and cannot be parsed")
         return Template(uid, str(name), createtime, content)
 
     def saveTemplate(self, template):
@@ -90,6 +88,5 @@ class TemplateManager(object):
 
     # we do not really delete template, we just remove reference to it from keyspace
     def deleteTemplate(self, template):
-        if type(template) is not Template:
-            raise StandardError("Expected Template, found " + str(type(template)))
+        assertType(template, Template)
         self.storageManager.removeItemFromKeyspace(TEMPLATE_KEYSPACE, template.uid)

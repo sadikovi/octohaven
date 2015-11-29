@@ -44,14 +44,12 @@ class Timetable(object):
         self.status = TimetableCheck.validateStatus(status)
         # job uid of a template job, we need to clone it for every scheduled job
         self.clonejobid = clonejobid
-        if type(crontab) is not CronTab:
-            raise StandardError("Expected CronTab, got %s" % str(type(crontab)))
+        assertType(crontab, CronTab)
         self.crontab = crontab
         # start and stop time in milliseconds
         self.starttime = long(starttime)
         self.stoptime = long(stoptime)
-        if type(jobs) is not ListType:
-            raise StandardError("Expected ListType, got %s" % str(type(jobs)))
+        assertType(jobs, ListType)
         self.jobs = jobs
         # we do not store number of jobs, since we can compute it using list
         self.numJobs = len(jobs)
@@ -60,8 +58,7 @@ class Timetable(object):
 
     # increment counter of total jobs and append job to the list
     def addJob(self, job):
-        if type(job) is not Job:
-            raise StandardError("Expected Job, got %s" % str(type(job)))
+        assertType(job, Job)
         self.numJobs += 1
         self.jobs.append(job.uid)
         self.latestjobid = job.uid
@@ -103,8 +100,7 @@ class Timetable(object):
 # Manager for timetables. Handles saving to and retrieving from storage, updates and etc.
 class TimetableManager(Emitter, object):
     def __init__(self, jobManager):
-        if type(jobManager) is not JobManager:
-            raise StandardError("Expected JobManager, got " + str(type(jobManager)))
+        assertType(jobManager, JobManager)
         self.jobManager = jobManager
         self.storageManager = jobManager.storageManager
         # register as emitter
@@ -112,8 +108,7 @@ class TimetableManager(Emitter, object):
 
     @private
     def cloneSparkJob(self, sparkjob):
-        if type(sparkjob) is not SparkJob:
-            raise StandardError("Expected SparkJob, got " + str(type(sparkjob)))
+        assertType(sparkjob, SparkJob)
         # `SparkJob::clone()` already returns new instance with updated uid
         newSparkjob = sparkjob.clone()
         return newSparkjob
@@ -121,8 +116,7 @@ class TimetableManager(Emitter, object):
     @private
     def cloneJob(self, job, newname=None):
         # creates clone of the job, with different uids
-        if type(job) is not Job:
-            raise StandardError("Expected Job, got " + str(type(job)))
+        assertType(job, Job)
         # duplicate fields and replace uids
         sparkjob = self.cloneSparkJob(job.sparkjob)
         # update name if possible
@@ -133,8 +127,7 @@ class TimetableManager(Emitter, object):
     # creates new timetable using `delay` in seconds for starting timetable,
     # `intervals` is a list of intervals in seconds
     def createTimetable(self, name, crontab, clonejob):
-        if type(clonejob) is not Job:
-            raise StandardError("Expected Job, got " + str(type(clonejob)))
+        assertType(clonejob, Job)
         uid = nextTimetableId()
         # current time in milliseconds
         starttime = currentTimeMillis()
@@ -147,8 +140,7 @@ class TimetableManager(Emitter, object):
         # use storage manager to save timetable
         # add timetable id to the set
         # start process for that timetable
-        if type(timetable) is not Timetable:
-            raise StandardError("Expected Timetable, got " + str(type(timetable)))
+        assertType(timetable, Timetable)
         self.storageManager.saveItem(timetable, klass=Timetable)
         self.storageManager.addItemToKeyspace(TIMETABLE_KEYSPACE, timetable.uid)
 
@@ -160,8 +152,7 @@ class TimetableManager(Emitter, object):
     # we do not store timetable for status (like jobs), because we do not expect that many
     # timetables, complexity of fast updates, and maintenance
     def listTimetables(self, statuses=TIMETABLE_STATUSES):
-        if type(statuses) is not ListType:
-            raise StandardError("Expected ListType, got %s" % str(type(statuses)))
+        assertType(statuses, ListType)
         # normalize statuses
         statuses = [str(x).upper() for x in statuses]
         def func(x, y):
@@ -174,8 +165,7 @@ class TimetableManager(Emitter, object):
 
     # resume current timetable
     def resume(self, timetable):
-        if type(timetable) is not Timetable:
-            raise StandardError("Expected Timetable, got " + str(type(timetable)))
+        assertType(timetable, Timetable)
         if timetable.status == TIMETABLE_ACTIVE:
             raise StandardError("Cannot resume already active timetable")
         if timetable.status == TIMETABLE_CANCELED:
@@ -185,8 +175,7 @@ class TimetableManager(Emitter, object):
 
     # pause current timetable, you can resume it later
     def pause(self, timetable):
-        if type(timetable) is not Timetable:
-            raise StandardError("Expected Timetable, got " + str(type(timetable)))
+        assertType(timetable, Timetable)
         if timetable.status == TIMETABLE_PAUSED:
             raise StandardError("Cannot pause already paused timetable")
         if timetable.status == TIMETABLE_CANCELED:
@@ -196,8 +185,7 @@ class TimetableManager(Emitter, object):
 
     # cancel timetable, you will not be able to revoke it
     def cancel(self, timetable):
-        if type(timetable) is not Timetable:
-            raise StandardError("Expected Timetable, got " + str(type(timetable)))
+        assertType(timetable, Timetable)
         if timetable.status == TIMETABLE_CANCELED:
             raise StandardError("Cannot cancel canceled timetable")
         timetable.status = TIMETABLE_CANCELED

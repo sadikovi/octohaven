@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import unittest
+from types import IntType, LongType, StringType
 import src.utils as utils
 
 class UtilsTestSuite(unittest.TestCase):
@@ -40,6 +41,15 @@ class UtilsTestSuite(unittest.TestCase):
         self.assertEqual(utils.isJobId(utils.nextTemplateId()), False)
         self.assertEqual(utils.isJobId(utils.nextTimetableId()), False)
         self.assertEqual(utils.isJobId(utils.nextSparkJobId()), False)
+
+    def test_assert(self):
+        with self.assertRaises(StandardError):
+            utils.assertType(1, StringType)
+        with self.assertRaises(StandardError):
+            utils.assertType(1, LongType)
+        utils.assertType(1L, LongType)
+        utils.assertType(1, IntType)
+        utils.assertType("1L", StringType)
 
 # Load test suites
 def _suites():

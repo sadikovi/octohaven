@@ -106,3 +106,13 @@ def nextTimetableId():
 
 def isTimetableId(uid):
     return isuid(uid, "timetable_")
+
+################################################################
+# Assertions
+################################################################
+# Helper method to check to type match
+def assertType(passed, expected, msg=None):
+    if type(passed) is not expected:
+        msg = msg if msg else "Expected %s, got %s" % (expected, str(type(passed)))
+        raise StandardError(msg)
+    return True
