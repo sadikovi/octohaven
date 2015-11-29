@@ -21,9 +21,16 @@ from utils import *
 TEMPLATE_KEYSPACE = "TEMPLATE"
 TEMPLATE_NAME_UNKNOWN = "Unknown"
 
+class TemplateCheck(object):
+    @staticmethod
+    def validateUid(uid):
+        if not isTemplateId(uid):
+            raise StandardError("UID is not Template UID")
+        return uid
+
 class Template(object):
     def __init__(self, uid, name, createtime, content):
-        self.uid = uid
+        self.uid = TemplateCheck.validateUid(uid)
         self.name = name
         self.createtime = long(createtime)
         if type(content) is not DictType:
@@ -43,7 +50,8 @@ class Template(object):
 
     @classmethod
     def fromDict(cls, obj):
-        uid = obj["uid"]
+        # validate template uid to fetch only Template instances
+        uid = TemplateCheck.validateUid(obj["uid"])
         name = obj["name"]
         createtime = obj["createtime"]
         content = obj["content"]

@@ -6,11 +6,12 @@ from types import DictType
 from src.redisconnector import RedisConnectionPool, RedisConnector
 from src.storagemanager import StorageManager
 from src.template import Template, TemplateManager
+from src.utils import nextTemplateId, isTemplateId
 from test.unittest_constants import RedisConst
 
 class TemplateTestSuite(unittest.TestCase):
     def setUp(self):
-        self.uid = uuid.uuid4()
+        self.uid = nextTemplateId()
         self.name = "test-template"
         self.createtime = time.time()
 
@@ -29,6 +30,13 @@ class TemplateTestSuite(unittest.TestCase):
         template = Template(self.uid, self.name, self.createtime, {"list": [{"a": True}]})
         self.assertEqual(type(template.content), DictType)
         self.assertEqual(template.content["list"], str([{"a": True}]))
+
+    # check that UID belongs to template group
+    def test_tempalteUid(self):
+        template = Template(self.uid, self.name, self.createtime, {})
+        self.assertEqual(isTemplateId(template.uid), True)
+        with self.assertRaises(StandardError):
+            Template(uuid.uuid4().hex, self.name, self.createtime, {})
 
     def test_toDict(self):
         template = Template(self.uid, self.name, self.createtime, {})

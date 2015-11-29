@@ -4,11 +4,12 @@ import unittest
 import os, uuid, time, random
 from paths import ROOT_PATH
 from src.job import *
+from src.utils import nextJobId, isJobId, nextSparkJobId, isSparkJobId
 
 class JobSentinel(object):
     @staticmethod
     def sparkJob():
-        uid = str(uuid.uuid4())
+        uid = nextSparkJobId()
         name = "test-job"
         masterurl = "spark://jony-local.local:7077"
         entrypoint = "org.apache.spark.test.Class"
@@ -23,7 +24,7 @@ class JobSentinel(object):
 
     @staticmethod
     def job():
-        uid = str(uuid.uuid4())
+        uid = nextJobId()
         status = WAITING
         createtime = long(time.time())
         submittime = long(time.time())
@@ -94,9 +95,25 @@ class JobCheckTestSuite(unittest.TestCase):
             with self.assertRaises(StandardError):
                 JobCheck.validateJarPath(entry)
 
+    def test_validateJobId(self):
+        with self.assertRaises(StandardError):
+            JobCheck.validateJobUid("test")
+        with self.assertRaises(StandardError):
+            JobCheck.validateJobUid(uuid.uuid4().hex)
+        uid = nextJobId()
+        self.assertEqual(JobCheck.validateJobUid(uid), uid)
+
+    def test_validateSparkJobId(self):
+        with self.assertRaises(StandardError):
+            JobCheck.validateSparkJobUid("test")
+        with self.assertRaises(StandardError):
+            JobCheck.validateSparkJobUid(uuid.uuid4().hex)
+        uid = nextSparkJobId()
+        self.assertEqual(JobCheck.validateSparkJobUid(uid), uid)
+
 class SparkJobTestSuite(unittest.TestCase):
     def setUp(self):
-        self.uid = str(uuid.uuid4())
+        self.uid = nextSparkJobId()
         self.name = "test-job"
         self.masterurl = "spark://jony-local.local:7077"
         self.entrypoint = "org.apache.spark.test.Class"
@@ -127,6 +144,14 @@ class SparkJobTestSuite(unittest.TestCase):
                 "spark.driver.memory": "8",
                 "spark.executor.memory": "8"
             })
+
+    def test_uid(self):
+        sparkJob = SparkJob(self.uid, self.name, self.masterurl, self.entrypoint, self.jar,
+            self.options)
+        self.assertEqual(sparkJob.uid, self.uid)
+        with self.assertRaises(StandardError):
+            SparkJob(uuid.uuid4().hex, self.name, self.masterurl, self.entrypoint, self.jar,
+                self.options)
 
     def test_convertToDict(self):
         sparkJob = SparkJob(self.uid, self.name, self.masterurl, self.entrypoint, self.jar,
@@ -203,7 +228,7 @@ class SparkJobTestSuite(unittest.TestCase):
 
 class JobTestSuite(unittest.TestCase):
     def setUp(self):
-        self.uid = str(uuid.uuid4())
+        self.uid = nextJobId()
         self.status = WAITING
         self.createtime = long(time.time())
         self.submittime = long(time.time())
@@ -234,6 +259,14 @@ class JobTestSuite(unittest.TestCase):
         with self.assertRaises(StandardError):
             Job(self.uid, self.status, self.createtime, self.submittime,
                 "WRONG_DURATION", self.sparkjob)
+
+    def test_uid(self):
+        job = Job(self.uid, self.status, self.createtime, self.submittime,
+            self.duration, self.sparkjob)
+        self.assertEqual(job.uid, self.uid)
+        with self.assertRaises(StandardError):
+            Job(uuid.uuid4().hex, self.status, self.createtime, self.submittime, self.duration,
+                self.sparkjob)
 
     def test_updateStatus(self):
         job = Job(self.uid, self.status, self.createtime, self.submittime,

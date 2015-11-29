@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import unittest
+import uuid
 from src.timetable import *
 from src.utils import *
 from src.sparkmodule import SparkModule
@@ -43,6 +44,14 @@ class TimetableTestSuite(unittest.TestCase):
         timetable = Timetable(self.uid, "", self.status, self.clonejobid, self.crontab,
             self.starttime, self.stoptime, self.jobs)
         self.assertEqual(timetable.name, DEFAULT_TIMETABLE_NAME)
+
+    def test_uid(self):
+        timetable = Timetable(self.uid, self.name, self.status, self.clonejobid, self.crontab,
+            self.starttime, self.stoptime, self.jobs)
+        self.assertEqual(timetable.uid, self.uid)
+        with self.assertRaises(StandardError):
+            Timetable(uuid.uuid4().hex, self.name, self.status, self.clonejobid, self.crontab,
+                self.starttime, self.stoptime, self.jobs)
 
     def test_incrementJob(self):
         timetable = Timetable(self.uid, self.name, self.status, self.clonejobid, self.crontab,

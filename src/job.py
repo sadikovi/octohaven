@@ -46,6 +46,18 @@ class JobCheck(object):
         return value
 
     @staticmethod
+    def validateJobUid(uid):
+        if not isJobId(uid):
+            raise StandardError("UID is not Job UID")
+        return uid
+
+    @staticmethod
+    def validateSparkJobUid(uid):
+        if not isSparkJobId(uid):
+            raise StandardError("UID is not SparkJob UID")
+        return uid
+
+    @staticmethod
     def validateJob(value):
         if type(value) is not Job:
             raise StandardError("Expected Job instance, got " + str(type(value)))
@@ -96,7 +108,7 @@ class JobCheck(object):
 # Spark job to consolidate all the settings to launch spark-submit script
 class SparkJob(object):
     def __init__(self, uid, name, masterurl, entrypoint, jar, options, jobconf=[]):
-        self.uid = uid
+        self.uid = JobCheck.validateSparkJobUid(uid)
         # set name, if name is empty then assign default name
         name = str(name).strip()
         self.name = name if len(name) > 0 else DEFAULT_SPARK_NAME
@@ -155,7 +167,8 @@ class SparkJob(object):
 
     @classmethod
     def fromDict(cls, obj):
-        uid = obj["uid"]
+        # validate spark job uid to fetch only SparkJob instances
+        uid = JobCheck.validateSparkJobUid(obj["uid"])
         name = obj["name"]
         masterurl = obj["masterurl"]
         entrypoint = obj["entrypoint"]
@@ -172,7 +185,7 @@ class Job(object):
         if type(sparkjob) is not SparkJob:
             raise StandardError("Expected SparkJob, got " + str(type(sparkjob)))
         # internal properties
-        self.uid = uid
+        self.uid = JobCheck.validateJobUid(uid)
         self.status = JobCheck.validateStatus(status)
         self.createtime = long(createtime)
         self.submittime = long(submittime)
@@ -215,7 +228,8 @@ class Job(object):
 
     @classmethod
     def fromDict(cls, obj):
-        uid = obj["uid"]
+        # validate uid, so we only fetch Job instances
+        uid = JobCheck.validateJobUid(obj["uid"])
         status = obj["status"]
         createtime = obj["createtime"]
         submittime = obj["submittime"]

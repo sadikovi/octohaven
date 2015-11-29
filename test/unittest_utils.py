@@ -31,6 +31,16 @@ class UtilsTestSuite(unittest.TestCase):
         self.assertEqual(utils.boolOrElse("0", True), False)
         self.assertEqual(utils.boolOrElse("no", True), False)
 
+    def test_uid(self):
+        self.assertEqual(utils.isJobId(utils.nextJobId()), True)
+        self.assertEqual(utils.isSparkJobId(utils.nextSparkJobId()), True)
+        self.assertEqual(utils.isTemplateId(utils.nextTemplateId()), True)
+        self.assertEqual(utils.isTimetableId(utils.nextTimetableId()), True)
+        # inter-compare uids
+        self.assertEqual(utils.isJobId(utils.nextTemplateId()), False)
+        self.assertEqual(utils.isJobId(utils.nextTimetableId()), False)
+        self.assertEqual(utils.isJobId(utils.nextSparkJobId()), False)
+
 # Load test suites
 def _suites():
     return [

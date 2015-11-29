@@ -27,12 +27,18 @@ class TimetableCheck(object):
             raise StandardError("Invalid status for Timetable")
         return status
 
+    @staticmethod
+    def validateUid(uid):
+        if not isTimetableId(uid):
+            raise StandardError("UID is not Timetable UID")
+        return uid
+
 # Timetable class to keep track of schedules for a particular job. Reports when to launch job, and
 # keeps statistics of total number of jobs. Uses cron expression to specify scheduling time
 class Timetable(object):
     def __init__(self, uid, name, status, clonejobid, crontab, starttime, stoptime, jobs,
         latestruntime=-1):
-        self.uid = uid
+        self.uid = TimetableCheck.validateUid(uid)
         name = str(name).strip()
         self.name = name if len(name) > 0 else DEFAULT_TIMETABLE_NAME
         self.status = TimetableCheck.validateStatus(status)
@@ -81,7 +87,8 @@ class Timetable(object):
 
     @classmethod
     def fromDict(cls, obj):
-        uid = obj["uid"]
+        # validate timetable uid to fetch only Timetable instances
+        uid = TimetableCheck.validateUid(obj["uid"])
         name = obj["name"]
         status = obj["status"]
         clonejobid = obj["clonejobid"]
