@@ -4,6 +4,7 @@ from octolog import Octolog
 from types import ListType, IntType, LongType
 from job import SparkJob, Job
 from jobmanager import JobManager
+from storagemanager import KeyspaceProvider
 from crontab import CronTab
 from subscription import Emitter, GLOBAL_DISPATCHER
 from utils import *
@@ -98,7 +99,7 @@ class Timetable(object):
         return cls(uid, name, status, clonejobid, crontab, starttime, stoptime, jobs, latestruntime)
 
 # Manager for timetables. Handles saving to and retrieving from storage, updates and etc.
-class TimetableManager(Emitter, object):
+class TimetableManager(Emitter, KeyspaceProvider, object):
     def __init__(self, jobManager):
         assertType(jobManager, JobManager)
         self.jobManager = jobManager
@@ -142,7 +143,8 @@ class TimetableManager(Emitter, object):
         # start process for that timetable
         assertType(timetable, Timetable)
         self.storageManager.saveItem(timetable, klass=Timetable)
-        self.storageManager.addItemToKeyspace(TIMETABLE_KEYSPACE, timetable.uid)
+        keyspace = self.keyspace(TIMETABLE_KEYSPACE)
+        self.storageManager.addItemToKeyspace(keyspace, timetable.uid)
 
     def timetableForUid(self, uid):
         return self.storageManager.itemForUid(uid, klass=Timetable)
@@ -159,7 +161,8 @@ class TimetableManager(Emitter, object):
             return cmp(x.name, y.name)
         # we do not sort when fetching from storage, as it can be expensive, sort only objects
         # that we will send back
-        arr = self.storageManager.itemsForKeyspace(TIMETABLE_KEYSPACE, -1, None, klass=Timetable)
+        keyspace = self.keyspace(TIMETABLE_KEYSPACE)
+        arr = self.storageManager.itemsForKeyspace(keyspace, -1, None, klass=Timetable)
         filtered = sorted([x for x in arr if x.status in statuses], cmp=func)
         return filtered
 

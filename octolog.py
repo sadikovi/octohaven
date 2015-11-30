@@ -28,8 +28,5 @@ Log messages available:
 """
 class Octolog(object):
     def logger(self):
-        name = str(self.__class__)
-        groups = re.match(r"^<class\s*'([\.\w-]+)'\s*>$", name)
-        if groups:
-            name = groups.group(1)
+        name = str(type(self).__name__)
         return _logger(name)

@@ -63,3 +63,10 @@ class StorageManager(object):
     # potentially dangerous, removes keyspace including actual job/template/link ids
     def removeKeyspace(self, keyspace):
         self.connector.delete(keyspace)
+
+# Keyspace provider adds method to return class related keyspace when subclassed.
+# Allows to separate similar keys, e.g. A.keyspace("ACTIVE") and B.keyspace("ACTIVE")
+class KeyspaceProvider(object):
+    @classmethod
+    def keyspace(cls, key):
+        return "%s-%s" % (cls.__name__, key)

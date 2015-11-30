@@ -4,7 +4,7 @@ import paths
 import re, shlex
 from types import DictType, StringType, IntType
 from job import *
-from storagemanager import StorageManager
+from storagemanager import StorageManager, KeyspaceProvider
 from sparkmodule import SparkModule
 from utils import *
 
@@ -14,7 +14,7 @@ ALL_JOBS_KEY = "ALL"
 # purpose of job manager is providing simple interface of creating job as a result
 # of request / loading from storage. It is not responsible for scheduling jobs though.
 # takes SparkModule and StorageManager as parameters to provide unified interface.
-class JobManager(object):
+class JobManager(KeyspaceProvider, object):
     def __init__(self, sparkModule, storageManager):
         assertType(sparkModule, SparkModule)
         assertType(storageManager, StorageManager)
@@ -111,8 +111,8 @@ class JobManager(object):
     def saveJob(self, job):
         JobCheck.validateJob(job)
         self.storageManager.saveItem(job, klass=Job)
-        self.storageManager.addItemToKeyspace(ALL_JOBS_KEY, job.uid)
-        self.storageManager.addItemToKeyspace(job.status, job.uid)
+        self.storageManager.addItemToKeyspace(self.keyspace(ALL_JOBS_KEY), job.uid)
+        self.storageManager.addItemToKeyspace(self.keyspace(job.status), job.uid)
 
     # change job status to any arbitrary allowed status
     # - job => job to change status for
@@ -125,9 +125,9 @@ class JobManager(object):
         if newStatus != oldStatus and validationRule and validationRule(oldStatus, newStatus):
             job.updateStatus(newStatus)
             if pushToStorage:
-                self.storageManager.removeItemFromKeyspace(oldStatus, job.uid)
+                self.storageManager.removeItemFromKeyspace(self.keyspace(oldStatus), job.uid)
                 self.storageManager.saveItem(job, klass=Job)
-                self.storageManager.addItemToKeyspace(newStatus, job.uid)
+                self.storageManager.addItemToKeyspace(self.keyspace(newStatus), job.uid)
 
     # closes job safely, checks whether status can be changed on CLOSED
     def closeJob(self, job):
@@ -150,4 +150,4 @@ class JobManager(object):
             raise StandardError("Invalid status " + status + " to fetch")
         limit = limit if type(limit) is IntType else 30
         cmpFunc = sortFunc if sort else None
-        return self.storageManager.itemsForKeyspace(status, limit, cmpFunc, klass=Job)
+        return self.storageManager.itemsForKeyspace(self.keyspace(status), limit, cmpFunc, Job)

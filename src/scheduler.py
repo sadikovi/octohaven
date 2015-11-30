@@ -7,6 +7,8 @@ from subprocess import Popen, PIPE
 from paths import LOGS_PATH
 from octolog import Octolog
 from job import *
+# import job manager to use its keyspace for fetching jobs
+from jobmanager import JobManager as provider
 from redisconnector import RedisConnector, RedisConnectionPool
 from storagemanager import StorageManager
 from sparkmodule import SparkModule, DOWN
@@ -224,19 +226,20 @@ class Scheduler(Octolog, object):
     def jobsForStatus(self, status, limit):
         def cmpFunc(x, y):
             return cmp(x.submittime, y.submittime)
-        return self.storageManager.itemsForKeyspace(status, limit, cmpFunc, Job)
+        keyspace = provider.keyspace(status)
+        return self.storageManager.itemsForKeyspace(keyspace, limit, cmpFunc, Job)
 
     def jobForUid(self, uid):
         return self.storageManager.itemForUid(uid, klass=Job)
 
     def updateJob(self, job, newStatus, newPriority):
-        self.storageManager.removeItemFromKeyspace(job.status, job.uid)
+        self.storageManager.removeItemFromKeyspace(provider.keyspace(job.status), job.uid)
         # update status and priority as we want delayed jobs to run on time
         job.updateStatus(newStatus)
         job.updatePriority(newPriority)
         # resave job and update link
         self.storageManager.saveItem(job, Job)
-        self.storageManager.addItemToKeyspace(newStatus, job.uid)
+        self.storageManager.addItemToKeyspace(provider.keyspace(newStatus), job.uid)
 
     def linkForUid(self, uid):
         return self.storageManager.itemForUid(uid, klass=Link)

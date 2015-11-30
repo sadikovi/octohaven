@@ -6,7 +6,7 @@ import time
 import random
 from src.job import Job, STATUSES
 from src.redisconnector import RedisConnectionPool, RedisConnector
-from src.storagemanager import StorageManager
+from src.storagemanager import StorageManager, KeyspaceProvider
 from test.unittest_constants import RedisConst
 from test.unittest_job import JobSentinel
 
@@ -119,10 +119,33 @@ class StorageManagerTestSuite(unittest.TestCase):
         leftJobs = storageManager.itemsForKeyspace("multiplejobs", klass=Job)
         self.assertEqual([x.uid for x in leftJobs], [x.uid for x in jobs][2:])
 
+# dummy class A for testing
+class A(KeyspaceProvider, object):
+    pass
+# dummy class B for testing
+class B(KeyspaceProvider, object):
+    pass
+
+class KeyspaceProviderTestSuite(unittest.TestCase):
+    def test_diffKeyspace(self):
+        a = A()
+        b = B()
+        self.assertEqual(a.keyspace("test"), A.keyspace("test"))
+        self.assertEqual(b.keyspace("test"), B.keyspace("test"))
+        self.assertTrue(a.keyspace("test") != b.keyspace("test"))
+        self.assertEqual(a.keyspace(None), a.keyspace("") + str(None))
+
+    def test_sameKeyspace(self):
+        a = A()
+        b = A()
+        self.assertEqual(a.keyspace("test"), b.keyspace("test"))
+        self.assertEqual(a.keyspace(None), b.keyspace(None))
+
 # Load test suites
 def _suites():
     return [
-        StorageManagerTestSuite
+        StorageManagerTestSuite,
+        KeyspaceProviderTestSuite
     ]
 
 # Load tests

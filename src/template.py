@@ -15,7 +15,7 @@
 # }
 
 from types import DictType, StringType
-from storagemanager import StorageManager
+from storagemanager import StorageManager, KeyspaceProvider
 from utils import *
 
 TEMPLATE_KEYSPACE = "TEMPLATE"
@@ -57,7 +57,7 @@ class Template(object):
         content = obj["content"]
         return cls(uid, name, createtime, content)
 
-class TemplateManager(object):
+class TemplateManager(KeyspaceProvider, object):
     def __init__(self, storageManager):
         assertType(storageManager, StorageManager)
         self.storageManager = storageManager
@@ -74,14 +74,15 @@ class TemplateManager(object):
 
     def saveTemplate(self, template):
         self.storageManager.saveItem(template, klass=Template)
-        self.storageManager.addItemToKeyspace(TEMPLATE_KEYSPACE, template.uid)
+        self.storageManager.addItemToKeyspace(self.keyspace(TEMPLATE_KEYSPACE), template.uid)
 
     def templates(self):
         # we retrieve all the templates, do not limit them.
         # sort templates by name
         def func(x, y):
             return cmp(x.name, y.name)
-        return self.storageManager.itemsForKeyspace(TEMPLATE_KEYSPACE, -1, func, klass=Template)
+        keyspace = self.keyspace(TEMPLATE_KEYSPACE)
+        return self.storageManager.itemsForKeyspace(keyspace, -1, func, klass=Template)
 
     def templateForUid(self, uid):
         return self.storageManager.itemForUid(uid, klass=Template)
@@ -89,4 +90,5 @@ class TemplateManager(object):
     # we do not really delete template, we just remove reference to it from keyspace
     def deleteTemplate(self, template):
         assertType(template, Template)
-        self.storageManager.removeItemFromKeyspace(TEMPLATE_KEYSPACE, template.uid)
+        keyspace = self.keyspace(TEMPLATE_KEYSPACE)
+        self.storageManager.removeItemFromKeyspace(keyspace, template.uid)
