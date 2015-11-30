@@ -16,12 +16,31 @@ if [ -z "$WHICH_COFFEE" ]; then
     exit 1
 fi
 
+WHICH_UGLIFYJS=$(which uglifyjs)
+if [ -z "$WHICH_UGLIFYJS" ]; then
+    echo "[ERROR] Cannot minify js files using uglifyjs. Run 'npm install uglifyjs' to install"
+    exit 1
+fi
+
+SCSS_DIR="$ROOT_DIR/service/scss"
+CSS_DIR="$ROOT_DIR/service/css"
+COFFEE_DIR="$ROOT_DIR/service/coffee"
+JS_DIR="$ROOT_DIR/service/js"
+MINJS_DIR="$ROOT_DIR/service/js"
+
 # compile scss -> css and minify css
 echo "[INFO] .scss >>> .css"
-sass "$ROOT_DIR/service/scss/internal.scss" "$ROOT_DIR/service/css/internal.min.css" \
-    --style compressed --sourcemap=none
+sass "$SCSS_DIR/internal.scss" "$CSS_DIR/internal.min.css" --style compressed --sourcemap=none
+
 # compile coffee -> js
 echo "[INFO] .coffee >>> .js"
-coffee --compile --output "$ROOT_DIR/service/js" "$ROOT_DIR/service/coffee"
-# and minify js
-# uglifyjs static/js/loader.js -o foo.min.js -c -m
+coffee --no-header --compile --output "$JS_DIR" "$COFFEE_DIR"
+
+# and minify js files / currently turned off
+echo "[INFO] compress model and utilities .js files"
+for f in $(find -d $JS_DIR -name '*.js' -type f); do
+    OUTPUT="$(echo $f | sed 's|'$JS_DIR'|'$MINJS_DIR'|g')"
+    UPDATED_DIR="$(dirname $OUTPUT)/$(basename $OUTPUT)"
+    echo "- Compressing $UPDATED_DIR"
+    # uglifyjs $f -o "$UPDATED_DIR" -c -m
+done

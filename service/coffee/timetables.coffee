@@ -6,7 +6,7 @@ _util = @util
 _misc = @misc
 _timetableLoader = new @TimetableLoader
 # statuses
-[ACTIVE, PAUSED, CANCELED] = ["ACTIVE", "PAUSED", "CANCELED"]
+[ACTIVE, PAUSED, CANCELLED] = ["ACTIVE", "PAUSED", "CANCELLED"]
 
 column = (size, content, parent=null) ->
     brd = type: "div", cls: "breadcrumb", children: content
@@ -16,7 +16,7 @@ column = (size, content, parent=null) ->
 statusColour = (status) ->
     return "text-green" if status == ACTIVE
     return "text-yellow" if status == PAUSED
-    return "text-red" if status == CANCELED
+    return "text-red" if status == CANCELLED
     return "text-mute"
 
 actionName = (status) ->
@@ -106,16 +106,16 @@ update = (statuses) ->
     )
 
 # add actions to different menu items
-noncanceled = document.getElementById("octohaven-timetables-noncanceled")
+noncancelled = document.getElementById("octohaven-timetables-noncancelled")
 active = document.getElementById("octohaven-timetables-active")
 paused = document.getElementById("octohaven-timetable-paused")
-canceled = document.getElementById("octohaven-timetable-canceled")
+cancelled = document.getElementById("octohaven-timetable-cancelled")
 
 resetLabels = ->
-    _util.removeClass(noncanceled, "selected")
+    _util.removeClass(noncancelled, "selected")
     _util.removeClass(active, "selected")
     _util.removeClass(paused, "selected")
-    _util.removeClass(canceled, "selected")
+    _util.removeClass(cancelled, "selected")
 
 selectLabel = (elem) ->
     _util.addClass(elem, "selected")
@@ -127,10 +127,10 @@ actionLabel = (e, elem, statuses) ->
     e?.preventDefault()
     e?.stopPropagation()
 
-_util.addEventListener(noncanceled, "click", (e) -> actionLabel(e, noncanceled, [ACTIVE, PAUSED]))
+_util.addEventListener(noncancelled, "click", (e) -> actionLabel(e, noncancelled, [ACTIVE, PAUSED]))
 _util.addEventListener(active, "click", (e) -> actionLabel(e, active, [ACTIVE]))
 _util.addEventListener(paused, "click", (e) -> actionLabel(e, paused, [PAUSED]))
-_util.addEventListener(canceled, "click", (e) -> actionLabel(e, canceled, [CANCELED]))
+_util.addEventListener(cancelled, "click", (e) -> actionLabel(e, cancelled, [CANCELLED]))
 
-# request non canceled statuses, update timetables
-actionLabel(null, noncanceled, [ACTIVE, PAUSED])
+# request non cancelled statuses, update timetables
+actionLabel(null, noncancelled, [ACTIVE, PAUSED])

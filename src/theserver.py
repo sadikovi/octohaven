@@ -301,7 +301,7 @@ class APICall(Octolog, object):
             def timetableCancel():
                 timetable = timetableFromQuery()
                 self.timetableManager.cancel(timetable)
-                return self.success({"msg": "Timetable '%s' has been canceled" % timetable.uid})
+                return self.success({"msg": "Timetable '%s' has been cancelled" % timetable.uid})
 
             def timetablePause():
                 timetable = timetableFromQuery()

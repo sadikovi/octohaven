@@ -38,7 +38,7 @@ def action(runner):
         # assess status and update runner, so we know if it was stopped or paused
         status = timetable.status
         active = status == TIMETABLE_ACTIVE
-        runner.stopped = status == TIMETABLE_CANCELED
+        runner.stopped = status == TIMETABLE_CANCELLED
         # show statistics for runner
         runner.logger().debug("[%s at %s] statistics - active: %s, stopped: %s", uid, currenttime,
             active, runner.stopped)
@@ -98,9 +98,9 @@ class TimetableRunner(Emitter, object):
         # spawn process
         action(self)
 
-# Timetable scheduler, once started, fetches all non-canceled timetables and launches processes for
+# Timetable scheduler, once started, fetches all non-cancelled timetables and launches processes for
 # every one of them with 60 seconds interval. If timetable is paused thread is not killed and keeps
-# running, though it stops lauching jobs. Once timetable is canceled it is updated and removed from
+# running, though it stops lauching jobs. Once timetable is cancelled it is updated and removed from
 # the pool. Once new timetable is created, it is registered in the scheduler pool.
 class TimetableScheduler(Subscriber, object):
     def __init__(self, settings):
@@ -140,7 +140,7 @@ class TimetableScheduler(Subscriber, object):
         self.subscribe("timetable-runner-stop", future=True)
 
     def start(self):
-        # when we start scheduler we pull all non-canceled jobs from it to spawn new scheduling
+        # when we start scheduler we pull all non-cancelled jobs from it to spawn new scheduling
         # threads
         arr = self.timetableManager.listTimetables([TIMETABLE_ACTIVE, TIMETABLE_PAUSED])
         # each thread needs timetable id, interval, manager
@@ -152,13 +152,13 @@ class TimetableScheduler(Subscriber, object):
             self.logger().error("Expected Timetable, got %s", str(type(timetable)))
             return None
         uid = timetable.uid
-        stopped = timetable.status == TIMETABLE_CANCELED
+        stopped = timetable.status == TIMETABLE_CANCELLED
         # refresh interval in seconds (constant for now)
         interval = MINIMAL_INTERVAL
         self.logger().debug("Launching runner %s", uid)
         self.pool[uid] = TimetableRunner(uid, interval, self.timetableManager, stopped)
 
-    # removes canceled runner from the pool to clean it up
+    # removes cancelled runner from the pool to clean it up
     # use pool lock just to be safe
     def removeRunnerFromPool(self, uid):
         try:

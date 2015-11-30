@@ -15,10 +15,10 @@ DEFAULT_TIMETABLE_NAME = "Just another timetable"
 TIMETABLE_ACTIVE = "ACTIVE"
 # paused - timetable is stopped, no jobs launched, can be resumed
 TIMETABLE_PAUSED = "PAUSED"
-# canceled - timetable is canceled, no future jobs expected, cannot be resumed
-TIMETABLE_CANCELED = "CANCELED"
+# cancelled - timetable is cancelled, no future jobs expected, cannot be resumed
+TIMETABLE_CANCELLED = "CANCELLED"
 # list of statuses
-TIMETABLE_STATUSES = [TIMETABLE_ACTIVE, TIMETABLE_PAUSED, TIMETABLE_CANCELED]
+TIMETABLE_STATUSES = [TIMETABLE_ACTIVE, TIMETABLE_PAUSED, TIMETABLE_CANCELLED]
 
 class TimetableCheck(object):
     @staticmethod
@@ -168,8 +168,8 @@ class TimetableManager(Emitter, object):
         assertType(timetable, Timetable)
         if timetable.status == TIMETABLE_ACTIVE:
             raise StandardError("Cannot resume already active timetable")
-        if timetable.status == TIMETABLE_CANCELED:
-            raise StandardError("Cannot resume canceled timetable")
+        if timetable.status == TIMETABLE_CANCELLED:
+            raise StandardError("Cannot resume cancelled timetable")
         timetable.status = TIMETABLE_ACTIVE
         self.saveTimetable(timetable)
 
@@ -178,16 +178,16 @@ class TimetableManager(Emitter, object):
         assertType(timetable, Timetable)
         if timetable.status == TIMETABLE_PAUSED:
             raise StandardError("Cannot pause already paused timetable")
-        if timetable.status == TIMETABLE_CANCELED:
-            raise StandardError("Cannot pause canceled timetable")
+        if timetable.status == TIMETABLE_CANCELLED:
+            raise StandardError("Cannot pause cancelled timetable")
         timetable.status = TIMETABLE_PAUSED
         self.saveTimetable(timetable)
 
     # cancel timetable, you will not be able to revoke it
     def cancel(self, timetable):
         assertType(timetable, Timetable)
-        if timetable.status == TIMETABLE_CANCELED:
-            raise StandardError("Cannot cancel canceled timetable")
-        timetable.status = TIMETABLE_CANCELED
+        if timetable.status == TIMETABLE_CANCELLED:
+            raise StandardError("Cannot cancel cancelled timetable")
+        timetable.status = TIMETABLE_CANCELLED
         timetable.stoptime = currentTimeMillis()
         self.saveTimetable(timetable)

@@ -189,7 +189,7 @@ class TimetableManagerTestSuite(unittest.TestCase):
         table3 = manager.createTimetable(self.name, self.crontab, self.clonejob)
         manager.saveTimetable(table3)
         manager.cancel(table3)
-        # fetch non canceled timetables
+        # fetch non cancelled timetables
         arr = manager.listTimetables([TIMETABLE_ACTIVE, TIMETABLE_PAUSED])
         self.assertEqual(len(arr), 2)
         self.assertEqual(sorted([x.status for x in arr]),
@@ -198,10 +198,10 @@ class TimetableManagerTestSuite(unittest.TestCase):
         arr = manager.listTimetables([TIMETABLE_ACTIVE])
         self.assertEqual(len(arr), 1)
         self.assertEqual(sorted([x.status for x in arr]), sorted([TIMETABLE_ACTIVE]))
-        # fetch canceled jobs
-        arr = manager.listTimetables([TIMETABLE_CANCELED])
+        # fetch cancelled jobs
+        arr = manager.listTimetables([TIMETABLE_CANCELLED])
         self.assertEqual(len(arr), 1)
-        self.assertEqual(sorted([x.status for x in arr]), sorted([TIMETABLE_CANCELED]))
+        self.assertEqual(sorted([x.status for x in arr]), sorted([TIMETABLE_CANCELLED]))
         # fail to fetch, if statuses is not a list
         with self.assertRaises(StandardError):
             manager.listTimetables(None)
@@ -212,7 +212,7 @@ class TimetableManagerTestSuite(unittest.TestCase):
         timetable.status = TIMETABLE_ACTIVE
         with self.assertRaises(StandardError):
             manager.resume(timetable)
-        timetable.status = TIMETABLE_CANCELED
+        timetable.status = TIMETABLE_CANCELLED
         with self.assertRaises(StandardError):
             manager.resume(timetable)
         timetable.status = TIMETABLE_PAUSED
@@ -227,7 +227,7 @@ class TimetableManagerTestSuite(unittest.TestCase):
         timetable.status = TIMETABLE_PAUSED
         with self.assertRaises(StandardError):
             manager.pause(timetable)
-        timetable.status = TIMETABLE_CANCELED
+        timetable.status = TIMETABLE_CANCELLED
         with self.assertRaises(StandardError):
             manager.pause(timetable)
         timetable.status = TIMETABLE_ACTIVE
@@ -239,18 +239,18 @@ class TimetableManagerTestSuite(unittest.TestCase):
     def test_cancel(self):
         manager = TimetableManager(self.jobManager)
         timetable = manager.createTimetable(self.name, self.crontab, self.clonejob)
-        timetable.status = TIMETABLE_CANCELED
+        timetable.status = TIMETABLE_CANCELLED
         with self.assertRaises(StandardError):
             manager.cancel(timetable)
         timetable.status = TIMETABLE_ACTIVE
         manager.cancel(timetable)
-        # check that status is canceled and stop time is filled in
-        canceled = manager.timetableForUid(timetable.uid)
-        self.assertEqual(canceled.uid, timetable.uid)
-        self.assertEqual(canceled.starttime, timetable.starttime)
-        self.assertTrue(canceled.stoptime >= currentTimeMillis() - 5000 and
-            canceled.stoptime <= currentTimeMillis())
-        self.assertEqual(canceled.status, TIMETABLE_CANCELED)
+        # check that status is cancelled and stop time is filled in
+        cancelled = manager.timetableForUid(timetable.uid)
+        self.assertEqual(cancelled.uid, timetable.uid)
+        self.assertEqual(cancelled.starttime, timetable.starttime)
+        self.assertTrue(cancelled.stoptime >= currentTimeMillis() - 5000 and
+            cancelled.stoptime <= currentTimeMillis())
+        self.assertEqual(cancelled.status, TIMETABLE_CANCELLED)
 
 # Load test suites
 def _suites():

@@ -100,7 +100,7 @@ _timetableLoader.get(id, ->
                 timetable["crontab"]["pattern"]),
             keyValue("Start time", "Start time for timetable",
                 timeToDate(timetable["starttime"], "None")),
-            keyValue("Stop time", "Stop time for timetable (if canceled)",
+            keyValue("Stop time", "Stop time for timetable (if cancelled)",
                 timeToDate(timetable["stoptime"], "None")),
             keyValue("Number of jobs run", "Number of actual jobs having run",
                 timetable["numjobs"])
@@ -112,7 +112,7 @@ _timetableLoader.get(id, ->
         result = _misc.segments(rows)
 
         # show cancel button
-        if timetable["status"] == "CANCELED"
+        if timetable["status"] == "CANCELLED"
             _util.addClass(cancelBtn, "btn-disabled")
         else
             cancelBtn.uid = timetable["uid"]
