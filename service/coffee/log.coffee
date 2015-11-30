@@ -45,12 +45,13 @@ menu = (info) ->
     pages = info["pages"]
     next = page + 1
     prev = page - 1
-    btnCls = (page) -> if page < 0 or page >= pages then "btn-disabled" else ""
+    btnCls = (page) -> if page < 1 or page > pages then "btn-disabled" else ""
     # prepare menu
     menuElem = type: "div", cls: "breadcrumb", children: [
         # display two buttons and info
         elem("btn", "Prev", "#{btnCls(prev)}", action = () -> askAnotherPage(type, jobid, prev))
         elem("btn", "Next", "#{btnCls(next)}", action = () -> askAnotherPage(type, jobid, next))
+        elem("btn", "Last", "", action = () -> askAnotherPage(type, jobid, pages))
         elem("pair", "Block size (Bytes): ", "#{info["size"]}")
         elem("pair", "Page: ", "#{page}")
         elem("pair", "Pages: ", "#{pages}")
@@ -66,7 +67,7 @@ preContent = (content) ->
 params = _util.windowParameters()
 type = params["type"]
 jobid = params["jobid"]
-page = "0"
+page = "1"
 
 askAnotherPage = (type, jobid, page) ->
     if type and jobid

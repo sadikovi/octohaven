@@ -91,7 +91,7 @@
     next = page + 1;
     prev = page - 1;
     btnCls = function(page) {
-      if (page < 0 || page >= pages) {
+      if (page < 1 || page > pages) {
         return "btn-disabled";
       } else {
         return "";
@@ -105,6 +105,8 @@
           return askAnotherPage(type, jobid, prev);
         }), elem("btn", "Next", "" + (btnCls(next)), action = function() {
           return askAnotherPage(type, jobid, next);
+        }), elem("btn", "Last", "", action = function() {
+          return askAnotherPage(type, jobid, pages);
         }), elem("pair", "Block size (Bytes): ", "" + info["size"]), elem("pair", "Page: ", "" + page), elem("pair", "Pages: ", "" + pages), elem("input", "Jump", "", function(input) {
           return askAnotherPage(type, jobid, input != null ? input.value : void 0);
         })
@@ -129,7 +131,7 @@
 
   jobid = params["jobid"];
 
-  page = "0";
+  page = "1";
 
   askAnotherPage = function(type, jobid, page) {
     var logReader, msg;

@@ -204,10 +204,11 @@ class FileManagerTestSuite(unittest.TestCase):
     def test_readFromStart(self):
         manager = FileManager(self.root)
         with open(self.file) as f:
-            block = manager.readFromStart(f, 2, chunk=100, offset=0)
+            block = manager.readFromStart(f, 3, chunk=100, offset=0)
+            print block
             self.assertEqual(block, "d to config.sh\n\nThe whole job of scheduler is checking " +
                 "whether cluster is available and running jobs")
-            block = manager.readFromStart(f, 2, chunk=100, offset=100)
+            block = manager.readFromStart(f, 3, chunk=100, offset=100)
             self.assertEqual(block, "- Some important configuration options should be separated, " +
                 "and possibly moved to config.sh\n\nThe whole job of scheduler is checking " +
                 "whether cluster is available and running jobs, if it is,")
@@ -215,10 +216,10 @@ class FileManagerTestSuite(unittest.TestCase):
     def test_readFromEnd(self):
         manager = FileManager(self.root)
         with open(self.file) as f:
-            block = manager.readFromEnd(f, 1, chunk=100, offset=0)
+            block = manager.readFromEnd(f, 2, chunk=100, offset=0)
             self.assertEqual(block, "g a link.\nWe maintain pool of links. Constantly we check " +
                 "status of those processes. Once process is ")
-            block = manager.readFromEnd(f, 1, chunk=100, offset=100)
+            block = manager.readFromEnd(f, 2, chunk=100, offset=100)
             self.assertEqual(block, "is all good, we execute command. Tracker gets process id " +
                 "and maps to the job id by creating a link.\nWe maintain pool of links. " +
                 "Constantly we check status of those processes. Once process is finished")
@@ -241,17 +242,17 @@ class FileManagerTestSuite(unittest.TestCase):
             self.assertEqual(numPages, 23)
             # test exceeded number of pages
             with self.assertRaises(StandardError):
-                manager.readFromStart(f, numPages, chunk=100, offset=0)
+                manager.readFromStart(f, numPages + 1, chunk=100, offset=0)
             with self.assertRaises(StandardError):
-                manager.readFromEnd(f, numPages, chunk=100, offset=0)
+                manager.readFromEnd(f, numPages + 1, chunk=100, offset=0)
             # test negative page number
             with self.assertRaises(StandardError):
-                manager.readFromStart(f, -1, chunk=100, offset=0)
+                manager.readFromStart(f, 0, chunk=100, offset=0)
             with self.assertRaises(StandardError):
-                manager.readFromEnd(f, -1, chunk=100, offset=0)
+                manager.readFromEnd(f, 0, chunk=100, offset=0)
             # this should be okay
-            manager.readFromStart(f, numPages - 1, chunk=100, offset=0)
-            manager.readFromEnd(f, numPages - 1, chunk=100, offset=0)
+            manager.readFromStart(f, numPages, chunk=100, offset=0)
+            manager.readFromEnd(f, numPages, chunk=100, offset=0)
 
     def test_minNumPages(self):
         # number of pages should be at least 1, so empty file will say that it has 1 page, which is

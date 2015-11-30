@@ -157,8 +157,8 @@ class FileManager(object):
     def validatePage(self, page):
         if type(page) is not IntType:
             raise StandardError("Expected IntType, got %s" % str(type(page)))
-        if page < 0:
-            raise StandardError("Page is negative")
+        if page <= 0:
+            raise StandardError("Page is not positive")
         return page
 
     # returns at most number of pages for a file
@@ -194,15 +194,15 @@ class FileManager(object):
         end = fileSize if end > fileSize else end
         return self.read(f, start, end)
 
-    # reading specific page from start, page number starts with 0 ->
+    # reading specific page from start, page number starts with 1 ->
     # offset indicates whether we need to truncate rows up to new line character
     # chunk is a block to read in bytes
     def readFromStart(self, f, page, chunk=500, offset=0):
         self.validatePage(page)
         numPages = self.numPages(f, chunk)
-        if page >= numPages:
+        if page > numPages:
             raise StandardError("Page '%s' exceeds max number of pages" % page)
-        start = chunk * page
+        start = chunk * (page - 1)
         part = self.readFromPosition(f, start, chunk)
         if len(part) > 0:
             prefix = self.crop(f, start, -offset)
@@ -211,15 +211,15 @@ class FileManager(object):
             prefix, suffix = "", ""
         return prefix + part + suffix
 
-    # reading specific page from end, page number starts with 0 ->
+    # reading specific page from end, page number starts with 1 ->
     # offset indicates whether we need to truncate rows up to new line character
     # chunk is a block to read in bytes
     def readFromEnd(self, f, page, chunk=500, offset=0):
         self.validatePage(page)
         numPages = self.numPages(f, chunk)
-        if page >= numPages:
+        if page > numPages:
             raise StandardError("Page '%s' exceeds max number of pages" % page)
-        start = self.endOfFile(f) - chunk * (page + 1)
+        start = self.endOfFile(f) - chunk * page
         part = self.readFromPosition(f, start, chunk)
         if len(part) > 0:
             prefix = self.crop(f, start, -offset)
