@@ -35,12 +35,3 @@ sass "$SCSS_DIR/internal.scss" "$CSS_DIR/internal.min.css" --style compressed --
 # compile coffee -> js
 echo "[INFO] .coffee >>> .js"
 coffee --no-header --compile --output "$JS_DIR" "$COFFEE_DIR"
-
-# and minify js files / currently turned off
-echo "[INFO] compress model and utilities .js files"
-for f in $(find -d $JS_DIR -name '*.js' -type f); do
-    OUTPUT="$(echo $f | sed 's|'$JS_DIR'|'$MINJS_DIR'|g')"
-    UPDATED_DIR="$(dirname $OUTPUT)/$(basename $OUTPUT)"
-    echo "- Compressing $UPDATED_DIR"
-    # uglifyjs $f -o "$UPDATED_DIR" -c -m
-done
