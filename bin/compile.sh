@@ -25,7 +25,7 @@ fi
 SCSS_DIR="$ROOT_DIR/service/scss"
 CSS_DIR="$ROOT_DIR/service/css"
 COFFEE_DIR="$ROOT_DIR/service/coffee"
-JS_DIR="$ROOT_DIR/service/js"
+JS_DIR="$ROOT_DIR/temp/service/js"
 MINJS_DIR="$ROOT_DIR/service/js"
 
 # compile scss -> css and minify css
@@ -35,3 +35,42 @@ sass "$SCSS_DIR/internal.scss" "$CSS_DIR/internal.min.css" --style compressed --
 # compile coffee -> js
 echo "[INFO] .coffee >>> .js"
 coffee --no-header --compile --output "$JS_DIR" "$COFFEE_DIR"
+
+# compress scripts in specific order, because of the dependencies
+echo "[INFO] compress utilities folder >> util.min.js"
+uglifyjs \
+    $JS_DIR/utilities/util.js \
+    $JS_DIR/utilities/loader.js \
+    $JS_DIR/utilities/mapper.js \
+    $JS_DIR/utilities/fasteditor.js \
+    $JS_DIR/utilities/misc.js \
+    $JS_DIR/utilities/namer.js \
+    -o "$MINJS_DIR/util.min.js" -c -m
+
+echo "[INFO] compress general functions (api, status, ...) >> misc.min.js"
+uglifyjs $JS_DIR/api.js \
+    $JS_DIR/model.js \
+    $JS_DIR/status.js \
+    -o "$MINJS_DIR/misc.min.js" -c -m
+
+# function to compress script by its name
+def_compress() {
+    uglifyjs "$JS_DIR/$1.js" -o "$MINJS_DIR/$1.min.js" -c -m
+}
+
+echo "[INFO] compress timezone.js"
+def_compress "timezone"
+echo "[INFO] compress create.js"
+def_compress "create"
+echo "[INFO] compress jobdetails.js"
+def_compress "jobdetails"
+echo "[INFO] compress jobs.js"
+def_compress "jobs"
+echo "[INFO] compress log.js"
+def_compress "log"
+echo "[INFO] compress timetablecreate.js"
+def_compress "timetablecreate"
+echo "[INFO] compress timetabledetails.js"
+def_compress "timetabledetails"
+echo "[INFO] compress timetables.js"
+def_compress "timetables"
