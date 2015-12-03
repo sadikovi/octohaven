@@ -308,12 +308,10 @@ class Scheduler(Octolog, object):
     def updateProcessStatus(self, processid):
         if not processid:
             return 2
-        p1 = Popen(["ps", "aux"], stdout=PIPE)
-        p2 = Popen(["grep", "-i", str(processid)], stdin=p1.stdout, stdout=PIPE)
-        p1.stdout.close()
-        p3 = Popen(["grep", "-i", "spark"], stdin=p2.stdout, stdout=PIPE)
-        p2.stdout.close()
-        output = p3.communicate()[0]
+        # replaced command to check process to fetch exact pid
+        p1 = Popen(["ps", "-h", "-p", str(processid), "-o", "pid,user,ppid,session,args"],
+            stdout=PIPE)
+        output = p1.communicate()[0]
         # process is still running
         if output and len(output) > 0:
             return -1
