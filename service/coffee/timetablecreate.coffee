@@ -7,8 +7,8 @@ _mapper = @mapper
 _util = @util
 _misc = @misc
 _namer = @namer
-_jobLoader = new @JobLoader
-_timetableLoader = new @TimetableLoader
+_jobapi = new @JobApi
+_timetableApi = new @TimetableApi
 
 # extract parameters from window
 params = _util.windowParameters()
@@ -63,7 +63,7 @@ submitTimetable = (timetable) ->
         IS_SUBMITTED = true
         # extracting latest changes from the current timetable
         settings = timetable.settings
-        _timetableLoader.submit JSON.stringify(settings), null, (ok, content) ->
+        _timetableApi.submit settings, null, (ok, content) ->
             setLoadStatus(false)
             if ok
                 msg = content["content"]["msg"]
@@ -88,7 +88,7 @@ _util.addEventListener submitBtn, "click", (e) ->
     e.preventDefault()
     e.stopPropagation()
 # load clone job
-_jobLoader.getJob(id, ->
+_jobapi.getJob(id, ->
     timetableCreateElem.innerHTML = ""
 , (ok, json) ->
     result = null

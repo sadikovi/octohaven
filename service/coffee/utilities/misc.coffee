@@ -2,7 +2,7 @@
 
 _mapper = @mapper
 _util = @util
-FastEditor = @FastEditor
+_FastEditor = @FastEditor
 
 class Misc
     blankslate: (internal) ->
@@ -49,7 +49,7 @@ class Misc
         row = @segment(@columns([header, trigger, body]))
         row.setAttribute("data-attr", "fast-editor")
         # add fast editor
-        new FastEditor(row, (status, value) -> onValueChanged?(status, value))
+        new _FastEditor(row, (status, value) -> onValueChanged?(status, value))
         # return row element
         return row
 

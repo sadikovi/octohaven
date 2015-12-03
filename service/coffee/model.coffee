@@ -4,7 +4,9 @@ class Dictionary
 
     set: (key, value) -> if value != null then @settings[key] = value.toString() else null
 
-    get: (key) -> if key of @settings then @settings[key] else null
+    getOrElse: (key, alternative) -> if key of @settings then @settings[key] else alternative
+
+    get: (key) -> @getOrElse(key, null)
 
     exists: (key) -> @get(key) != null
 
@@ -17,3 +19,7 @@ class Template extends Dictionary
 # timetable, keeps only key - value pairs, where value is always a string
 class Timetable extends Dictionary
 @Timetable ?= Timetable
+
+# cluster status, has keys such as master address, ui address and status
+class ClusterStatus extends Dictionary
+@ClusterStatus ?= ClusterStatus

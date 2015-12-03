@@ -5,7 +5,7 @@ unless timetableShowElem
 _mapper = @mapper
 _util = @util
 _misc = @misc
-_timetableLoader = new @TimetableLoader
+_timetableApi = new @TimetableApi
 
 # extract parameters from window
 params = _util.windowParameters()
@@ -44,7 +44,7 @@ setTextStatus = (ok, text) -> setSubmitStatus(ok, type: "span", title: "#{text}"
 
 cancelTimetable = (uid) ->
     setLoadStatus(true)
-    _timetableLoader.cancel uid, null, (ok, content) ->
+    _timetableApi.cancel uid, null, (ok, content) ->
         setLoadStatus(false)
         msg = if content then content["content"]["msg"] else "Something went wrong :("
         setTextStatus(ok, msg)
@@ -77,7 +77,7 @@ timeToDate = (timestamp, alter) ->
 # Building web page
 ################################################################
 # load timetable for uid
-_timetableLoader.get(id, ->
+_timetableApi.get(id, ->
     timetableShowElem.innerHTML = ""
 , (ok, json) ->
     result = null

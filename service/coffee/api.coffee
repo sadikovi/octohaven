@@ -1,237 +1,97 @@
-# define dependencies
-loader = @loader
-util = @util
+_loader = @loader
+_util = @util
 
+class AbstractApi
+    doRequest: (type, before, after, url, params) ->
+        atype = type.toLowerCase()
+        if params and atype == "get"
+            url = url + "?" + ("#{_util.quote(k)}=#{_util.quote(v)}" for k, v of params).join("&")
+            params = null
+        else if atype == "post"
+            params = JSON.stringify(params)
+        before?()
+        loader.sendrequest atype, url, {}, params
+        , (success, response) ->
+            json = util.jsonOrElse(response)
+            after?(!!json, json)
+        , (error, response) ->
+            json = util.jsonOrElse(response)
+            after?(false, json)
+
+    doGet: (before, after, url, data=null) -> @doRequest("get", before, after, url, data)
+
+    doPost: (before, after, url, data) -> @doRequest("post", before, after, url, data)
+
+################################################################
+### API
+################################################################
 # Status request. Fetches current status of server and Spark UI and Master URLs.
-class Status
-    # constants for status
-    @STATUS_PENDING = "Pending..."
-    @STATUS_READY = "Server is ready"
-    @STATUS_BUSY = "Server is busy"
-    @STATUS_UNREACHABLE = "Server is unreachable"
-
-    constructor: ->
-
+class StatusApi extends AbstractApi
     # Requests status from the server. Returns server status, UI and Master URL.
     # - before() -> function to run before sending request
-    # - after(status, uiURL, masterURL) -> function that will be called after response is received
-    requestStatus: (before, after) ->
-        # call before function
-        before?()
-        # send request to find out status
-        loader.sendrequest "get", "/api/v1/spark/status", {}, null
-        , (code, response) =>
-            json = util.jsonOrElse(response)
-            if json
-                data = json["content"]
-                [status, uiAddress, masterAddress] = [data["status"],
-                    data["spark-ui-address"], data["spark-master-address"]]
-                after?(status, uiAddress, masterAddress)
-            else
-                after?(false, false, false)
-        , (error, response) => after?(false, false, false)
+    # - after(ok, json) -> function that will be called after response is received
+    requestStatus: (before, after) -> @doGet(before, after, "/api/v1/spark/status", null)
 
-# set class to be global
-@Status ?= Status
+@StatusApi ?= StatusApi
 
 # Filelist object as a helper to fetch breadcrumbs and files
-class Filelist
-    constructor: ->
-
-    sendRequest: (url, before, after) ->
-        before?()
-        loader.sendrequest "get", url, {}, null
-        , (code, response) =>
-            json = util.jsonOrElse(response)
-            if json then after?(true, json) else after?(false, json)
-        , (error, response) =>
-            json = util.jsonOrElse(response)
-            after?(false, json)
-
+class FilelistApi extends AbstractApi
     breadcrumbs: (directory, before, after) ->
-        @sendRequest("/api/v1/file/breadcrumbs?path=#{util.quote(directory)}", before, after)
+        @doGet(before, after, "/api/v1/file/breadcrumbs", {path: "#{directory}"})
 
-    # Files request
     files: (directory, before, after) ->
-        @sendRequest("/api/v1/file/list?path=#{util.quote(directory)}", before, after)
+        @doGet(before, after, "/api/v1/file/list", {path: directory})
 
-# set class to be global
-@Filelist ?= Filelist
+@FilelistApi ?= FilelistApi
 
-# class to submit a job
-class JobResolver
-    constructor: ->
-
-    submit: (data, before, after) ->
-        before?()
-        loader.sendrequest "post", "/api/v1/job/submit", {}, data
-        , (code, response) =>
-            json = util.jsonOrElse(response)
-            if json then  after?(true, json) else after?(false, json)
-        , (error, response) =>
-            json = util.jsonOrElse(response)
-            after?(false, json)
-
-@JobResolver ?= JobResolver
-
-# class to fetch jobs for a certain status and limit
-class JobLoader
-    constructor: ->
-
+# class to fetch jobs for a certain status and limit, create or cancel jobs
+class JobApi extends AbstractApi
     get: (status, limit, before, after) ->
-        before?()
-        loader.sendrequest "get", "/api/v1/job/list?status=#{status}&limit=#{limit}", {}, null
-        , (success, response) ->
-            json = util.jsonOrElse(response)
-            after?(!!json, json)
-        , (error, response) ->
-            json = util.jsonOrElse(response)
-            after?(false, json)
+        params = status: "#{status}", limit: "#{limit}"
+        @doGet(before, after, "/api/v1/job/list", params)
 
-    close: (jobid, before, after) ->
-        before?()
-        loader.sendrequest "get", "/api/v1/job/close?jobid=#{jobid}", {}, null
-        , (success, response) ->
-            json = util.jsonOrElse(response)
-            after?(!!json, json)
-        , (error, response) ->
-            json = util.jsonOrElse(response)
-            after?(false, json)
+    close: (id, before, after) -> @doGet(before, after, "/api/v1/job/close", {jobid: "#{id}"})
 
-    getJob: (jobid, before, after) ->
-        before?()
-        loader.sendrequest "get", "/api/v1/job/get?jobid=#{jobid}", {}, null
-        , (success, response) ->
-            json = util.jsonOrElse(response)
-            after?(!!json, json)
-        , (error, response) ->
-            json = util.jsonOrElse(response)
-            after?(false, json)
+    getJob: (id, before, after) -> @doGet(before, after, "/api/v1/job/get", {jobid: "#{id}"})
 
-@JobLoader ?= JobLoader
+    submit: (data, before, after) -> @doPost(before, after, "/api/v1/job/submit", data)
+
+@JobApi ?= JobApi
+
 
 # loading templates
-class TemplateLoader
-    constructor: ->
+class TemplateApi extends AbstractApi
+    show: (before, after) -> @doGet(before, after, "/api/v1/template/list")
 
-    show: (before, after) ->
-        before?()
-        loader.sendrequest "get", "/api/v1/template/list", {}, null
-        , (success, response) ->
-            json = util.jsonOrElse(response)
-            after?(!!json, json)
-        , (error, response) ->
-            json = util.jsonOrElse(response)
-            after?(false, json)
+    delete: (id, before, after) ->
+        @doGet(before, after, "/api/v1/template/delete", {templateid: "#{id}"})
 
-    delete: (tid, before, after) ->
-        before?()
-        loader.sendrequest "get", "/api/v1/template/delete?templateid=#{tid}", {}, null
-        , (success, response) ->
-            json = util.jsonOrElse(response)
-            after?(!!json, json)
-        , (error, response) ->
-            json = util.jsonOrElse(response)
-            after?(false, json)
+    create: (data, before, after) -> @doPost(before, after, "/api/v1/template/create", data)
 
-    create: (data, before, after) ->
-        before?()
-        loader.sendrequest "post", "/api/v1/template/create", {}, data
-        , (success, response) ->
-            json = util.jsonOrElse(response)
-            after?(!!json, json)
-        , (error, response) ->
-            json = util.jsonOrElse(response)
-            after?(false, json)
-
-@TemplateLoader ?= TemplateLoader
+@TemplateApi ?= TemplateApi
 
 # loading log blocks
-class LogReader
-    constructor: ->
-
+class LogApi extends AbstractApi
     readFromStart: (jobid, type, page, before, after) ->
-        before?()
-        loader.sendrequest "get", "/api/v1/file/log?" +
-            "jobid=#{util.quote(jobid)}&type=#{util.quote(type)}&page=#{util.quote(page)}", {}, null
-        , (success, response) ->
-            json = util.jsonOrElse(response)
-            after?(!!json, json)
-        , (error, response) ->
-            json = util.jsonOrElse(response)
-            after?(false, json)
+        params = jobid: "#{jobid}", type: "#{type}", page: "#{page}"
+        @doGet(before, after, "/api/v1/file/log", params)
 
-@LogReader ?= LogReader
+@LogApi ?= LogApi
 
-# creating and loading timetables
-class TimetableLoader
-    constructor: ->
-
-    submit: (data, before, after) ->
-        before?()
-        loader.sendrequest "post", "/api/v1/timetable/create", {}, data
-        , (code, response) =>
-            json = util.jsonOrElse(response)
-            if json then  after?(true, json) else after?(false, json)
-        , (error, response) =>
-            json = util.jsonOrElse(response)
-            after?(false, json)
+# Timetable API to submit, fetch, reset timetables
+class TimetableApi extends AbstractApi
+    submit: (data, before, after) -> @doPost(before, after, "/api/v1/timetable/create", data)
 
     list: (includeJobs, statuses, before, after) ->
-        # _util.isArray(statuses)
-        before?()
-        loader.sendrequest "get",
-            "/api/v1/timetable/list?includejobs=#{util.quote(includeJobs)}&status=#{util.quote(statuses)}"
-        , {}, null
-        , (success, response) ->
-            json = util.jsonOrElse(response)
-            after?(!!json, json)
-        , (error, response) ->
-            json = util.jsonOrElse(response)
-            after?(false, json)
+        params = includejobs: "#{includeJobs}", status: "#{statuses}"
+        @doGet(before, after, "/api/v1/timetable/list", params)
 
-    get: (id, before, after) ->
-        before?()
-        loader.sendrequest "get", "/api/v1/timetable/get?id=#{util.quote(id)}"
-        , {}, null
-        , (success, response) ->
-            json = util.jsonOrElse(response)
-            after?(!!json, json)
-        , (error, response) ->
-            json = util.jsonOrElse(response)
-            after?(false, json)
+    get: (id, before, after) -> @doGet(before, after, "/api/v1/timetable/get", {id: "#{id}"})
 
-    pause: (id, before, after) ->
-        before?()
-        loader.sendrequest "get", "/api/v1/timetable/pause?id=#{util.quote(id)}"
-        , {}, null
-        , (success, response) ->
-            json = util.jsonOrElse(response)
-            after?(!!json, json)
-        , (error, response) ->
-            json = util.jsonOrElse(response)
-            after?(false, json)
+    pause: (id, before, after) -> @doGet(before, after, "/api/v1/timetable/pause", {id: "#{id}"})
 
-    resume: (id, before, after) ->
-        before?()
-        loader.sendrequest "get", "/api/v1/timetable/resume?id=#{util.quote(id)}"
-        , {}, null
-        , (success, response) ->
-            json = util.jsonOrElse(response)
-            after?(!!json, json)
-        , (error, response) ->
-            json = util.jsonOrElse(response)
-            after?(false, json)
+    resume: (id, before, after) -> @doGet(before, after, "/api/v1/timetable/resume", {id: "#{id}"})
 
-    cancel: (id, before, after) ->
-        before?()
-        loader.sendrequest "get", "/api/v1/timetable/cancel?id=#{util.quote(id)}"
-        , {}, null
-        , (success, response) ->
-            json = util.jsonOrElse(response)
-            after?(!!json, json)
-        , (error, response) ->
-            json = util.jsonOrElse(response)
-            after?(false, json)
+    cancel: (id, before, after) -> @doGet(before, after, "/api/v1/timetable/cancel", {id: "#{id}"})
 
-@TimetableLoader ?= TimetableLoader
+@TimetableApi ?= TimetableApi
