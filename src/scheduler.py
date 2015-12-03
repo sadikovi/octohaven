@@ -100,7 +100,9 @@ def fetch(scheduler):
         fetchTimer.daemon = True
         fetchTimer.start()
 
-def runJob(scheduler):
+# Run job method, uses "freshRun" option to indicate whether scheduler runs this method for the
+# first time just after being launched
+def runJob(scheduler, freshRun=False):
     try:
         lock.acquire()
         # as a first step, update currently running jobs, and handle some error-like situations
@@ -120,7 +122,15 @@ def runJob(scheduler):
                 if exitcode < 0:
                     scheduler.logger().info("Process %s is still running", process)
                     numRunningJobs += 1
+                    # also update finish time to be current time, since it is still running
+                    # assess performance, if this is very slow, remove this part
+                    job.updateFinishTime(currentTimeMillis())
+                    scheduler.updateJob(job, job.status, job.priority)
                 else:
+                    # finish job by settings status FINISHED and updating finish time
+                    # update time to unknown, if scheduler is running method for the first time
+                    finishtime = FINISH_TIME_UNKNOWN if freshRun else currentTimeMillis()
+                    job.updateFinishTime(finishtime)
                     scheduler.updateJob(job, FINISHED, job.priority)
                     scheduler.removeLink(link)
                     scheduler.logger().info("Process %s finished", process)
@@ -155,6 +165,8 @@ def runJob(scheduler):
                         job = None
                     else:
                         scheduler.logger().info("Running job %s", job.uid)
+                        # update actual start time of the job
+                        job.updateStartTime(currentTimeMillis())
                         scheduler.updateJob(job, RUNNING, job.priority)
                         link.processid = scheduler.executeSparkJob(job)
                         scheduler.updateLink(link)
@@ -165,7 +177,7 @@ def runJob(scheduler):
     finally:
         lock.release()
         # prepare timer for a subsequent operation
-        runTimer = Timer(scheduler.runJobInterval, runJob, [scheduler])
+        runTimer = Timer(scheduler.runJobInterval, runJob, [scheduler, False])
         runTimer.daemon = True
         runTimer.start()
 
@@ -348,7 +360,8 @@ class Scheduler(Octolog, object):
         self.logger().info("Scheduler is running")
         self.isRunning = True
         fetch(self)
-        runJob(self)
+        # set fresh run to True, so we can update running jobs properly
+        runJob(self, freshRun=True)
 
     # stop timers and scheduler
     def stop(self):

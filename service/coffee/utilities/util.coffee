@@ -84,6 +84,21 @@ class Util
         date = new Date timestamp
         "#{date.toLocaleString(locale)}"
 
+    # shows time difference nicely, e.g. 10min. Difference in milliseconds
+    humanReadableDiff: (diff) ->
+        seconds = Math.floor(diff / 1000)
+        hours = Math.floor(seconds / 3600)
+        minutes = Math.floor(seconds / 60)
+        if hours > 0
+            # display hours and minutes
+            "#{hours}hrs #{minutes % 60}min"
+        else if minutes > 0
+            # display minutes and seconds
+            "#{minutes}min #{seconds % 60}sec"
+        else
+            # display seconds
+            "#{seconds}sec (#{diff})"
+
     # return map of parameters from search string (window.location)
     windowParameters: ->
         unless window and window.location and window.location.search

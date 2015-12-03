@@ -59,7 +59,14 @@ if "jobid" of params
                 jar = job["sparkjob"]["jar"]
                 create = job["createtime"]
                 submit = job["submittime"]
+                start = job["starttime"]
+                finish = job["finishtime"]
                 sparkAppId = if job["sparkappid"] then job["sparkappid"] else "None"
+                # resolve elapsed time
+                if finish > 0 and start > 0
+                    elapsedTime = _util.humanReadableDiff(finish - start)
+                else
+                    elapsedTime = if finish == 0 then "None" else "Unknown"
 
                 # build rows
                 rowsElem = type: "div", cls: "segments", children: [
@@ -78,6 +85,14 @@ if "jobid" of params
                     row(property(
                         column(contentHeader("Expected run"), false),
                         column(type: "span", title: "#{_util.timestampToDate(submit)}", true)
+                    )),
+                    row(property(
+                        column(contentHeader("Actual run"), false),
+                        column(type: "span", title: "#{_util.timestampToDate(start)}", true)
+                    )),
+                    row(property(
+                        column(contentHeader("Elapsed time"), false),
+                        column(type: "span", title: "#{elapsedTime}", true)
                     )),
                     row(property(
                         column(contentHeader("Status"), false),

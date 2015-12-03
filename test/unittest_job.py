@@ -289,10 +289,15 @@ class JobTestSuite(unittest.TestCase):
         self.assertEqual(obj["duration"], self.duration)
         self.assertEqual(obj["sparkjob"], self.sparkjob.toDict())
         self.assertEqual(obj["priority"], self.submittime)
+        self.assertEqual(obj["finishtime"], FINISH_TIME_NONE)
         # change priority of a job
         job.priority = 99
         obj = job.toDict()
         self.assertEqual(obj["priority"], 99)
+        # change finish time
+        job.finishtime = currentTimeMillis()
+        obj = job.toDict()
+        self.assertTrue(obj["finishtime"] >= currentTimeMillis() - 1000L)
 
     def test_convertFromDict(self):
         job = Job(self.uid, self.status, self.createtime, self.submittime,
@@ -306,6 +311,11 @@ class JobTestSuite(unittest.TestCase):
         self.assertEqual(copy.duration, self.duration)
         self.assertEqual(copy.sparkjob.toDict(), self.sparkjob.toDict())
         self.assertEqual(copy.priority, job.priority)
+        self.assertEqual(copy.finishtime, FINISH_TIME_NONE)
+        # finish job check finish time again
+        job.updateFinishTime(currentTimeMillis())
+        copy = Job.fromDict(job.toDict())
+        self.assertTrue(copy.finishtime >= currentTimeMillis() - 1000L)
 
     def test_updateSparkAppId(self):
         job = Job(self.uid, self.status, self.createtime, self.submittime,
@@ -321,6 +331,26 @@ class JobTestSuite(unittest.TestCase):
         obj = job.toDict()
         self.assertEqual(obj["sparkappid"], sparkAppId)
         self.assertEqual(Job.fromDict(obj).sparkAppId, sparkAppId)
+
+    def test_updateFinishTime(self):
+        job = Job(self.uid, self.status, self.createtime, self.submittime,
+            self.duration, self.sparkjob, 1)
+        self.assertEqual(job.finishtime, FINISH_TIME_NONE)
+        job.updateFinishTime(FINISH_TIME_UNKNOWN)
+        self.assertEqual(job.finishtime, FINISH_TIME_UNKNOWN)
+        now = currentTimeMillis()
+        job.updateFinishTime(now)
+        self.assertEqual(job.finishtime, now)
+        # check out of range time
+        job.updateFinishTime(-1000L)
+        self.assertEqual(job.finishtime, FINISH_TIME_UNKNOWN)
+
+    def test_updateStartTime(self):
+        job = Job(self.uid, self.status, self.createtime, self.submittime,
+            self.duration, self.sparkjob, 1)
+        self.assertEqual(job.starttime, self.submittime)
+        job.updateStartTime(currentTimeMillis())
+        self.assertTrue(job.starttime >= currentTimeMillis() - 1000L)
 
 # Load test suites
 def _suites():

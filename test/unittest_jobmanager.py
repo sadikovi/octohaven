@@ -174,6 +174,20 @@ class JobManagerTestSuite(unittest.TestCase):
             status = "INVALID"
             jobManager.listJobsForStatus(status, limit=30, sort=True)
 
+    def test_finishJob(self):
+        jobManager = JobManager(self.sparkModule, self.storageManager)
+        sparkJob = jobManager.createSparkJob(self.name, self.entrypoint, self.jar,
+            self.driverMemory, self.executorMemory, self.options)
+        job = jobManager.createJob(sparkJob)
+        with self.assertRaises(StandardError):
+            jobManager.finishJob(job)
+        job.status = RUNNING
+        jobManager.finishJob(job)
+        updated = jobManager.jobForUid(job.uid)
+        assertType(updated, Job)
+        self.assertEqual(updated.status, FINISHED)
+        self.assertTrue(updated.finishtime >= (currentTimeMillis() - 1000L))
+
 # Load test suites
 def _suites():
     return [

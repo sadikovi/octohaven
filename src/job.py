@@ -37,6 +37,12 @@ SPARK_UID_KEY = "spark.octohaven.jobId"
 # default Spark job name
 DEFAULT_SPARK_NAME = "Just another job"
 
+# finish time values (since job can be killed, so we do not have finish time for that)
+# finish time when job is finished with status RUNNING, e.g. server was killed while running job
+FINISH_TIME_UNKNOWN = -1L
+# finish time when job has never been run before
+FINISH_TIME_NONE = 0L
+
 # Validation class to encapsulate all the checks that we have for Job and SparkJob
 class JobCheck(object):
     @staticmethod
@@ -179,16 +185,20 @@ class SparkJob(object):
 
 class Job(object):
     def __init__(self, uid, status, createtime, submittime, duration, sparkjob,
-        priority=DEFAULT_PRIORITY):
+        priority=DEFAULT_PRIORITY, finishtime=FINISH_TIME_NONE, starttime=-1L):
         if duration not in DURATIONS:
             raise StandardError("Duration " + duration + " is not supported")
-        if type(sparkjob) is not SparkJob:
-            raise StandardError("Expected SparkJob, got " + str(type(sparkjob)))
+        assertType(sparkjob, SparkJob)
         # internal properties
         self.uid = JobCheck.validateJobUid(uid)
         self.status = JobCheck.validateStatus(status)
         self.createtime = long(createtime)
         self.submittime = long(submittime)
+        # actual time when job got submitted to Spark
+        starttime = long(starttime)
+        self.starttime = self.submittime if starttime < self.submittime else starttime
+        # approximate time when job finished
+        self.finishtime = long(finishtime)
         self.duration = duration
         # Spark job
         self.sparkjob = sparkjob
@@ -207,12 +217,29 @@ class Job(object):
     def updateSparkAppId(self, sparkAppId):
         self.sparkAppId = sparkAppId
 
+    # update start time when job actually got submitted to Spark
+    # cannot be less than submittime
+    def updateStartTime(self, newTime):
+        assertType(newTime, LongType)
+        newTime = self.submittime if newTime < self.submittime else newTime
+        self.starttime = newTime
+
+    # Job property "finishtime" indicates when approximately job finished, can have values "> 0" -
+    # which is normal finish time, "== 0" - which is job has never been run, and "< 0", job is
+    # finished, but we cannot resolve finish time
+    def updateFinishTime(self, newTime):
+        assertType(newTime, LongType)
+        newTime = -1L if newTime < -1L else newTime
+        self.finishtime = newTime
+
     def toDict(self):
         return {
             "uid": self.uid,
             "status": self.status,
             "createtime": self.createtime,
             "submittime": self.submittime,
+            "starttime": self.starttime,
+            "finishtime": self.finishtime,
             "duration": self.duration,
             "sparkjob": self.sparkjob.toDict(),
             "priority": self.priority,
@@ -236,7 +263,11 @@ class Job(object):
         duration = obj["duration"]
         sparkjob = SparkJob.fromDict(obj["sparkjob"])
         priority = obj["priority"] if "priority" in obj else DEFAULT_PRIORITY
-        job = cls(uid, status, createtime, submittime, duration, sparkjob, priority)
+        finishtime = obj["finishtime"] if "finishtime" in obj else FINISH_TIME_UNKNOWN
+        starttime = obj["starttime"] if "starttime" in obj else -1L
+        # create job with all the parameters
+        job = cls(uid, status, createtime, submittime, duration, sparkjob, priority, finishtime,
+            starttime)
         # discover whether we have Spark app id assigned to the job.
         if "sparkappid" in obj:
             job.updateSparkAppId(obj["sparkappid"])

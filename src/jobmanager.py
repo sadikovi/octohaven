@@ -122,7 +122,9 @@ class JobManager(KeyspaceProvider, object):
     def changeStatus(self, job, newStatus, validationRule=None, pushToStorage=True):
         JobCheck.validateJob(job)
         oldStatus = job.status
-        if newStatus != oldStatus and validationRule and validationRule(oldStatus, newStatus):
+        if newStatus != oldStatus:
+            if validationRule:
+                validationRule(oldStatus, newStatus)
             job.updateStatus(newStatus)
             if pushToStorage:
                 self.storageManager.removeItemFromKeyspace(self.keyspace(oldStatus), job.uid)
@@ -136,6 +138,13 @@ class JobManager(KeyspaceProvider, object):
                 raise StandardError("Cannot close job with a status %s" % oldStatus)
             return True
         self.changeStatus(job, CLOSED, validate, True)
+
+    # private api to finish job properly (update status and finish time)
+    def finishJob(self, job):
+        if job.status is not RUNNING:
+            raise StandardError("Cannot finish job with a status %s" % job.status)
+        job.updateFinishTime(currentTimeMillis())
+        self.changeStatus(job, FINISHED, None, True)
 
     # simple wrapper for job extraction by id
     def jobForUid(self, uid):
