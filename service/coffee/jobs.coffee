@@ -1,12 +1,11 @@
 jobHistory = document.getElementById("octohaven-jobs-history")
-unless jobHistory
-    throw new Error("Job history element could not be found")
+throw new Error("Job history element could not be found") unless jobHistory
 
 _util = @util
 _mapper = @mapper
 _loader = @loader
 _misc = @misc
-_jobloader = new @JobLoader
+_jobapi = new @JobApi
 
 # job statuses
 [ALL, CREATED, FINISHED, WAITING, CLOSED, DELAYED, RUNNING] =
@@ -73,7 +72,7 @@ row = (jobObj) ->
             _util.addClass(e, "btn-disabled")
             e.innerHTML = if ok then "Closed" else "Error"
         # fire api request to close this job
-        _jobloader.close(e.uid, (-> fetch()), ((ok, json) -> update(ok)))
+        _jobapi.close(e.uid, (-> fetch()), ((ok, json) -> update(ok)))
     )
     columns = type: "div", cls: "columns", children:
         [jobCol, statusCol, if showClose then buttonCol else null]
@@ -82,7 +81,7 @@ row = (jobObj) ->
 
 reloadJobs = (status, limit = 30) ->
     # perform api call to fetch jobs
-    _jobloader.get(status, limit
+    _jobapi.get(status, limit
     , ->
         jobHistory.innerHTML = ""
     , (ok, json) ->

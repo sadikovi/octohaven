@@ -1,11 +1,11 @@
 (function() {
-  var FastEditor, Misc, _mapper, _util;
+  var Misc, _FastEditor, _mapper, _util;
 
   _mapper = this.mapper;
 
   _util = this.util;
 
-  FastEditor = this.FastEditor;
+  _FastEditor = this.FastEditor;
 
   Misc = (function() {
     function Misc() {}
@@ -118,7 +118,7 @@
       body.setAttribute("data-attr", "fast-editor-texter");
       row = this.segment(this.columns([header, trigger, body]));
       row.setAttribute("data-attr", "fast-editor");
-      new FastEditor(row, function(status, value) {
+      new _FastEditor(row, function(status, value) {
         return typeof onValueChanged === "function" ? onValueChanged(status, value) : void 0;
       });
       return row;

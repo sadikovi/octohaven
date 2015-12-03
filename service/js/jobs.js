@@ -1,5 +1,5 @@
 (function() {
-  var ALL, CLOSED, CREATED, DELAYED, FINISHED, RUNNING, WAITING, actionLabel, all, buttonColumn, closed, created, delayed, finished, jobColumn, jobHistory, reloadJobs, resetLabels, row, running, selectLabel, statusColour, statusColumn, waiting, _jobloader, _loader, _mapper, _misc, _ref, _util;
+  var ALL, CLOSED, CREATED, DELAYED, FINISHED, RUNNING, WAITING, actionLabel, all, buttonColumn, closed, created, delayed, finished, jobColumn, jobHistory, reloadJobs, resetLabels, row, running, selectLabel, statusColour, statusColumn, waiting, _jobapi, _loader, _mapper, _misc, _ref, _util;
 
   jobHistory = document.getElementById("octohaven-jobs-history");
 
@@ -15,7 +15,7 @@
 
   _misc = this.misc;
 
-  _jobloader = new this.JobLoader;
+  _jobapi = new this.JobApi;
 
   _ref = ["ALL", "CREATED", "FINISHED", "WAITING", "CLOSED", "DELAYED", "RUNNING"], ALL = _ref[0], CREATED = _ref[1], FINISHED = _ref[2], WAITING = _ref[3], CLOSED = _ref[4], DELAYED = _ref[5], RUNNING = _ref[6];
 
@@ -160,7 +160,7 @@
           return e.innerHTML = ok ? "Closed" : "Error";
         };
       })(this);
-      return _jobloader.close(e.uid, (function() {
+      return _jobapi.close(e.uid, (function() {
         return fetch();
       }), (function(ok, json) {
         return update(ok);
@@ -183,7 +183,7 @@
     if (limit == null) {
       limit = 30;
     }
-    return _jobloader.get(status, limit, function() {
+    return _jobapi.get(status, limit, function() {
       return jobHistory.innerHTML = "";
     }, function(ok, json) {
       var header, job, jobs, link, msg, rows, segment, text;

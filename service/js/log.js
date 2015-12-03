@@ -1,5 +1,5 @@
 (function() {
-  var askAnotherPage, elem, jobDetailsElem, jobLinkElem, jobLogsElem, jobid, menu, page, params, preContent, type, _jobloader, _mapper, _misc, _util,
+  var askAnotherPage, elem, jobDetailsElem, jobLinkElem, jobLogsElem, jobid, menu, page, params, preContent, type, _jobapi, _logapi, _mapper, _misc, _util,
     __slice = [].slice;
 
   jobLinkElem = document.getElementById("octohaven-job-link");
@@ -18,39 +18,33 @@
 
   _misc = this.misc;
 
-  _jobloader = new this.JobLoader;
+  _jobapi = new this.JobApi;
+
+  _logapi = new this.LogApi;
 
   elem = function() {
     var action, args, btn, input, type;
     type = arguments[0], args = 2 <= arguments.length ? __slice.call(arguments, 1) : [];
     if (type === "btn") {
-      return {
-        type: "div",
-        cls: "section",
-        children: [
-          {
-            type: "div",
-            cls: "btn " + args[1],
-            title: "" + args[0],
-            onclick: args[2]
-          }
-        ]
-      };
+      return _misc.section([
+        {
+          type: "div",
+          cls: "btn " + args[1],
+          title: "" + args[0],
+          onclick: args[2]
+        }
+      ]);
     } else if (type === "pair") {
-      return {
-        type: "div",
-        cls: "section",
-        children: [
-          {
-            type: "span",
-            cls: "text-mute",
-            title: "" + args[0]
-          }, {
-            type: "span",
-            title: "" + args[1]
-          }
-        ]
-      };
+      return _misc.section([
+        {
+          type: "span",
+          cls: "text-mute",
+          title: "" + args[0]
+        }, {
+          type: "span",
+          title: "" + args[1]
+        }
+      ]);
     } else if (type === "input") {
       input = _mapper.parseMapForParent({
         type: "input",
@@ -69,16 +63,12 @@
         }
       });
       btn.input = input;
-      return {
-        type: "div",
-        cls: "section",
-        children: [
-          input, {
-            type: "div",
-            cls: "separator"
-          }, btn
-        ]
-      };
+      return _misc.section([
+        input, {
+          type: "div",
+          cls: "separator"
+        }, btn
+      ]);
     } else {
       return null;
     }
@@ -134,10 +124,9 @@
   page = "1";
 
   askAnotherPage = function(type, jobid, page) {
-    var logReader, msg;
+    var msg;
     if (type && jobid) {
-      logReader = new LogReader;
-      return logReader.readFromStart(jobid, type, page, function() {
+      return _logapi.readFromStart(jobid, type, page, function() {
         jobLogsElem.innerHTML = "";
         jobDetailsElem.innerHTML = "";
         return jobLinkElem.href = "/";

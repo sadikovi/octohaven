@@ -1,56 +1,48 @@
-serverStatus = document.getElementById("octohaven-spark-server-status")
-serverUIAddress = document.getElementById("octohaven-spark-ui-address")
-serverMasterAddress = document.getElementById("octohaven-spark-master-address")
-unless serverStatus and serverUIAddress and serverMasterAddress
-    throw new Error("Server entries are unrecognized")
+status = document.getElementById("octohaven-spark-server-status")
+uiAddress = document.getElementById("octohaven-spark-ui-address")
+masterAddress = document.getElementById("octohaven-spark-master-address")
+unless status and uiAddress and masterAddress
+    throw new Error("Cluster status entries are undefined")
 
 _util = @util
+_api = new @StatusApi
+clstat = new @ClusterStatus
 
-################################################################
-# Request Spark Cluster status and set all the elements.
-################################################################
+STATUS_PENDING = "Pending..."
+STATUS_READY = "Cluster is ready"
+STATUS_BUSY = "Cluster is busy"
+STATUS_UNREACHABLE = "Cluster is unreachable"
 
-# setting status of Spark cluster on web UI
-setStatus = (status) ->
-    # clean up status
-    serverStatus.className = ""
-    if status == false
-        serverStatus.innerHTML = "#{@Status.STATUS_PENDING}"
-        _util.addClass(serverStatus, "text-mute")
-    else if status == 0
-        _util.addClass(serverStatus, "text-green")
-        serverStatus.innerHTML = "#{@Status.STATUS_READY}"
-    else if status == -1
-        _util.addClass(serverStatus, "text-yellow")
-        serverStatus.innerHTML = "#{@Status.STATUS_BUSY}"
-    else
-        _util.addClass(serverStatus, "text-red")
-        serverStatus.innerHTML = "#{@Status.STATUS_UNREACHABLE}"
+# map status number to text representation
+mapStatus = (status) ->
+    return STATUS_READY if status == "0"
+    return STATUS_BUSY if status == "-1"
+    return STATUS_UNREACHABLE if status == "-2"
+    return STATUS_PENDING
+# map status number to element class
+mapClass = (status) ->
+    return "text-green" if status == "0"
+    return "text-yellow" if status == "-1"
+    return "text-red" if status == "-2"
+    return "text-mute"
 
-# setting Spark UI address
-setUIAddress = (address) ->
-    # if address is not defined use question mark
-    serverUIAddress.innerHTML = if address then "#{address}" else "?"
-
-# setting Spark Master URL
-setMasterAddress = (address) ->
-    # if address is not defined use question mark
-    serverMasterAddress.innerHTML = if address then "#{address}" else "?"
+# settings cluster status
+setClusterStatus = (clstat) ->
+    status.className = ""
+    _util.addClass(status, mapClass(clstat.get("status"), null))
+    status.innerHTML = mapStatus(clstat.get("status"), null)
+    uiAddress.innerHTML = clstat.getOrElse("spark-ui-address", "?")
+    masterAddress.innerHTML = clstat.getOrElse("spark-master-address", "?")
 
 reloadStatus = ->
-    status = new @Status
     # run this function before performing any requests
-    before = ->
-        setStatus(false)
-        setUIAddress(false)
-        setMasterAddress(false)
+    before = -> setClusterStatus(clstat)
     # once we have received response set all the elements to reflect change
-    after = (status, uiAddress, masterAddress) ->
-        setStatus(status)
-        setUIAddress(uiAddress)
-        setMasterAddress(masterAddress)
+    after = (ok, json) ->
+        clstat = new @ClusterStatus(json["content"]) if ok
+        setClusterStatus(clstat)
     # ask status for Spark Cluster info
-    status.requestStatus(before, after)
+    _api.requestStatus(before, after)
 
 # reload status
 reloadStatus?()

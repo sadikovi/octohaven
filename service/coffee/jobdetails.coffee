@@ -5,7 +5,7 @@ throw new Error("Job details element is not found") unless jobDetailsElem
 _mapper = @mapper
 _util = @util
 _misc = @misc
-_jobloader = new @JobLoader
+_jobapi = new @JobApi
 
 contentHeader = (value) -> type: "span", cls: "text-mute", title: "#{value}"
 
@@ -43,7 +43,7 @@ params = _util.windowParameters()
 if "jobid" of params
     # extract jobid
     jobid = params["jobid"]
-    _jobloader.getJob(jobid
+    _jobapi.getJob(jobid
         , ->
             jobDetailsElem.innerHTML = ""
         , (ok, json) ->

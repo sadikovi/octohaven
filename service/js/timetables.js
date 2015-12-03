@@ -1,5 +1,5 @@
 (function() {
-  var ACTIVE, CANCELLED, PAUSED, actionLabel, actionName, active, cancelled, column, columnAction, columnName, columnStats, columnStatus, noncancelled, paused, resetLabels, row, selectLabel, statusColour, timetablesElem, update, _mapper, _misc, _ref, _timetableLoader, _util;
+  var ACTIVE, CANCELLED, PAUSED, actionLabel, actionName, active, cancelled, column, columnAction, columnName, columnStats, columnStatus, noncancelled, paused, resetLabels, row, selectLabel, statusColour, timetablesElem, update, _mapper, _misc, _ref, _timetableApi, _util;
 
   timetablesElem = document.getElementById("octohaven-timetables");
 
@@ -13,7 +13,7 @@
 
   _misc = this.misc;
 
-  _timetableLoader = new this.TimetableLoader;
+  _timetableApi = new this.TimetableApi;
 
   _ref = ["ACTIVE", "PAUSED", "CANCELLED"], ACTIVE = _ref[0], PAUSED = _ref[1], CANCELLED = _ref[2];
 
@@ -177,13 +177,13 @@
           };
         })(this);
         if (obj.status === ACTIVE) {
-          return _timetableLoader.pause(obj.uid, (function() {
+          return _timetableApi.pause(obj.uid, (function() {
             return fetch();
           }), (function(ok, json) {
             return update(ok);
           }));
         } else if (obj.status === PAUSED) {
-          return _timetableLoader.resume(obj.uid, (function() {
+          return _timetableApi.resume(obj.uid, (function() {
             return fetch();
           }), (function(ok, json) {
             return update(ok);
@@ -195,7 +195,7 @@
   };
 
   update = function(statuses) {
-    return _timetableLoader.list(false, statuses, function() {
+    return _timetableApi.list(false, statuses, function() {
       return timetablesElem.innerHTML = "";
     }, function(ok, json) {
       var msg, result, rows, timetable, timetables, view;

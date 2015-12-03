@@ -1,13 +1,19 @@
 (function() {
-  var DEFAULT_TEMPLATE, IS_SUBMITTED, breadcrumbs, breadcrumbsElem, createTemplate, currentJob, delayElem, delayEntry, delays, deleteTemplate, files, filesElem, initColumns, initRow, jobCanvas, jobOption, lastSelectedJarElem, loadTemplate, ls, selectedJarElem, setLoadStatus, setSubmitStatus, setTextStatus, showTemplates, statusBar, submitBtn, submitJob, templateButton, templateHeading, templateRow, _filelist, _mapper, _namer, _util;
+  var DEFAULT_TEMPLATE, IS_SUBMITTED, breadcrumbs, breadcrumbsElem, createTemplate, currentJob, delayElem, delayEntry, delays, deleteTemplate, files, filesElem, jobCanvas, lastSelectedJarElem, loadTemplate, ls, selectedJarElem, setLoadStatus, setSubmitStatus, setTextStatus, showTemplates, statusBar, submitBtn, submitJob, templateButton, templateHeading, templateRow, _filelist, _jobapi, _mapper, _misc, _namer, _tempapi, _util;
 
-  _filelist = new this.Filelist;
+  _filelist = new this.FilelistApi;
+
+  _tempapi = new this.TemplateApi;
+
+  _jobapi = new this.JobApi;
 
   _util = this.util;
 
   _mapper = this.mapper;
 
   _namer = this.namer;
+
+  _misc = this.misc;
 
   jobCanvas = document.getElementById("octohaven-job-settings");
 
@@ -85,64 +91,6 @@
       type: "span",
       title: "" + text
     });
-  };
-
-  initColumns = function(children) {
-    var cols;
-    cols = {
-      type: "div",
-      cls: "columns",
-      children: children
-    };
-    return _mapper.parseMapForParent(cols);
-  };
-
-  initRow = function(columns) {
-    var row;
-    row = {
-      type: "div",
-      cls: "segment",
-      children: columns
-    };
-    return _mapper.parseMapForParent(row);
-  };
-
-  jobOption = function(name, desc, value, onValueChanged) {
-    var body, header, row, trigger, triggerLink;
-    header = _mapper.parseMapForParent({
-      type: "span",
-      cls: "text-mute tooltipped tooltipped-n",
-      title: "" + name
-    });
-    header.setAttribute("aria-label", "" + desc);
-    header = _mapper.parseMapForParent({
-      type: "div",
-      cls: "one-fifth column",
-      children: header
-    });
-    triggerLink = _mapper.parseMapForParent({
-      type: "a",
-      href: "",
-      title: "Change"
-    });
-    triggerLink.setAttribute("data-attr", "fast-editor-trigger");
-    trigger = _mapper.parseMapForParent({
-      type: "div",
-      cls: "one-fifth column",
-      children: triggerLink
-    });
-    body = _mapper.parseMapForParent({
-      type: "div",
-      cls: "three-fifths column",
-      title: "" + value
-    });
-    body.setAttribute("data-attr", "fast-editor-texter");
-    row = initRow(initColumns([header, trigger, body]));
-    row.setAttribute("data-attr", "fast-editor");
-    new this.FastEditor(row, function(status, value) {
-      return typeof onValueChanged === "function" ? onValueChanged(status, value) : void 0;
-    });
-    return row;
   };
 
   ls = function(name, cls, path, onClick) {
@@ -279,45 +227,36 @@
   };
 
   loadTemplate = function(job) {
-    var addRow, changeDelay, jobRows, key, loadDelay, select, traverse, value;
+    var changeDelay, jobRows, key, loadDelay, select, settings, traverse, value;
     jobCanvas.innerHTML = "";
-    jobRows = _mapper.parseMapForParent({
-      type: "div",
-      cls: "segments"
-    }, jobCanvas);
-    addRow = function(row) {
-      return _mapper.parseMapForParent(row, jobRows);
-    };
-    addRow(jobOption("Job name", "Friendly job name", job.get("name"), function(ok, value) {
-      if (ok) {
-        return job.set("name", "" + value);
-      }
-    }));
-    addRow(jobOption("Main class", "Entrypoint for the job", job.get("entrypoint"), function(ok, value) {
-      if (ok) {
-        return job.set("entrypoint", "" + value);
-      }
-    }));
-    addRow(jobOption("Driver memory", "Memory for the driver programme", job.get("driver-memory"), function(ok, value) {
-      if (ok) {
-        return job.set("driver-memory", "" + value);
-      }
-    }));
-    addRow(jobOption("Executor memory", "Memory for Spark executors", job.get("executor-memory"), function(ok, value) {
-      if (ok) {
-        return job.set("executor-memory", "" + value);
-      }
-    }));
-    addRow(jobOption("Spark options", "Settings, e.g. JVM, networking, shuffle...", job.get("options"), function(ok, value) {
-      if (ok) {
-        return job.set("options", "" + value);
-      }
-    }));
-    addRow(jobOption("Job options", "Job options to pass to entrypoint", job.get("jobconf"), function(ok, value) {
-      if (ok) {
-        return job.set("jobconf", "" + value);
-      }
-    }));
+    settings = [
+      _misc.dynamicOption("Job name", "Friendly job name", job.get("name"), function(ok, value) {
+        if (ok) {
+          return job.set("name", "" + value);
+        }
+      }), _misc.dynamicOption("Main class", "Entrypoint for the job", job.get("entrypoint"), function(ok, value) {
+        if (ok) {
+          return job.set("entrypoint", "" + value);
+        }
+      }), _misc.dynamicOption("Driver memory", "Memory for the driver programme", job.get("driver-memory"), function(ok, value) {
+        if (ok) {
+          return job.set("driver-memory", "" + value);
+        }
+      }), _misc.dynamicOption("Executor memory", "Memory for Spark executors", job.get("executor-memory"), function(ok, value) {
+        if (ok) {
+          return job.set("executor-memory", "" + value);
+        }
+      }), _misc.dynamicOption("Spark options", "Settings, e.g. JVM, networking, shuffle...", job.get("options"), function(ok, value) {
+        if (ok) {
+          return job.set("options", "" + value);
+        }
+      }), _misc.dynamicOption("Job options", "Job options to pass to entrypoint", job.get("jobconf"), function(ok, value) {
+        if (ok) {
+          return job.set("jobconf", "" + value);
+        }
+      })
+    ];
+    jobRows = _misc.segments(settings, jobCanvas);
     selectedJarElem.innerHTML = job.get("jar") !== "" ? "" + (job.get("jar")) : "&nbsp;";
     traverse = function(elem) {
       if (elem.obj.tp === "JAR") {
@@ -370,13 +309,12 @@
   };
 
   submitJob = function(job) {
-    var resolver, settings;
+    var settings;
     setLoadStatus(true);
     if (!IS_SUBMITTED) {
       IS_SUBMITTED = true;
       settings = job.settings;
-      resolver = new JobResolver;
-      return resolver.submit(JSON.stringify(settings), null, function(ok, content) {
+      return _jobapi.submit(settings, null, function(ok, content) {
         var body, jobid, msg;
         setLoadStatus(false);
         if (ok) {
@@ -442,9 +380,7 @@
   };
 
   showTemplates = function() {
-    var tloader;
-    tloader = new TemplateLoader;
-    return tloader.show(function() {
+    return _tempapi.show(function() {
       var elem, next, _results;
       elem = templateHeading.nextSibling;
       _results = [];
@@ -475,9 +411,7 @@
   };
 
   deleteTemplate = function(uid) {
-    var tloader;
-    tloader = new TemplateLoader;
-    return tloader["delete"](uid, null, function(ok, json) {
+    return _tempapi["delete"](uid, null, function(ok, json) {
       var msg;
       msg = ok ? json["content"]["msg"] : "Something went wrong";
       setTextStatus(ok, msg);
@@ -486,14 +420,13 @@
   };
 
   createTemplate = function(name, content) {
-    var data, tloader;
+    var data;
     setLoadStatus(true);
     data = {
       name: "" + name,
       content: content
     };
-    tloader = new TemplateLoader;
-    return tloader.create(JSON.stringify(data), null, function(ok, json) {
+    return _tempapi.create(data, null, function(ok, json) {
       var msg;
       setLoadStatus(false);
       msg = json ? json["content"]["msg"] : "Something went wrong :(";

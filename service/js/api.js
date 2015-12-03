@@ -1,373 +1,255 @@
 (function() {
-  var Filelist, JobLoader, JobResolver, LogReader, Status, TemplateLoader, TimetableLoader, loader, util;
+  var AbstractApi, FilelistApi, JobApi, LogApi, StatusApi, TemplateApi, TimetableApi, _loader, _util,
+    __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    __hasProp = {}.hasOwnProperty;
 
-  loader = this.loader;
+  _loader = this.loader;
 
-  util = this.util;
+  _util = this.util;
 
-  Status = (function() {
-    Status.STATUS_PENDING = "Pending...";
+  AbstractApi = (function() {
+    function AbstractApi() {}
 
-    Status.STATUS_READY = "Server is ready";
-
-    Status.STATUS_BUSY = "Server is busy";
-
-    Status.STATUS_UNREACHABLE = "Server is unreachable";
-
-    function Status() {}
-
-    Status.prototype.requestStatus = function(before, after) {
-      if (typeof before === "function") {
-        before();
-      }
-      return loader.sendrequest("get", "/api/v1/spark/status", {}, null, (function(_this) {
-        return function(code, response) {
-          var data, json, masterAddress, status, uiAddress, _ref;
-          json = util.jsonOrElse(response);
-          if (json) {
-            data = json["content"];
-            _ref = [data["status"], data["spark-ui-address"], data["spark-master-address"]], status = _ref[0], uiAddress = _ref[1], masterAddress = _ref[2];
-            return typeof after === "function" ? after(status, uiAddress, masterAddress) : void 0;
-          } else {
-            return typeof after === "function" ? after(false, false, false) : void 0;
+    AbstractApi.prototype.doRequest = function(type, before, after, url, params) {
+      var atype, k, v;
+      atype = type.toLowerCase();
+      if (params && atype === "get") {
+        url = url + "?" + ((function() {
+          var _results;
+          _results = [];
+          for (k in params) {
+            v = params[k];
+            _results.push((_util.quote(k)) + "=" + (_util.quote(v)));
           }
-        };
-      })(this), (function(_this) {
-        return function(error, response) {
-          return typeof after === "function" ? after(false, false, false) : void 0;
-        };
-      })(this));
+          return _results;
+        })()).join("&");
+        params = null;
+      } else if (atype === "post") {
+        params = JSON.stringify(params);
+      }
+      if (typeof before === "function") {
+        before();
+      }
+      return loader.sendrequest(atype, url, {}, params, function(success, response) {
+        var json;
+        json = util.jsonOrElse(response);
+        return typeof after === "function" ? after(!!json, json) : void 0;
+      }, function(error, response) {
+        var json;
+        json = util.jsonOrElse(response);
+        return typeof after === "function" ? after(false, json) : void 0;
+      });
     };
 
-    return Status;
+    AbstractApi.prototype.doGet = function(before, after, url, data) {
+      if (data == null) {
+        data = null;
+      }
+      return this.doRequest("get", before, after, url, data);
+    };
+
+    AbstractApi.prototype.doPost = function(before, after, url, data) {
+      return this.doRequest("post", before, after, url, data);
+    };
+
+    return AbstractApi;
 
   })();
 
-  if (this.Status == null) {
-    this.Status = Status;
+
+  /* API
+   */
+
+  StatusApi = (function(_super) {
+    __extends(StatusApi, _super);
+
+    function StatusApi() {
+      return StatusApi.__super__.constructor.apply(this, arguments);
+    }
+
+    StatusApi.prototype.requestStatus = function(before, after) {
+      return this.doGet(before, after, "/api/v1/spark/status", null);
+    };
+
+    return StatusApi;
+
+  })(AbstractApi);
+
+  if (this.StatusApi == null) {
+    this.StatusApi = StatusApi;
   }
 
-  Filelist = (function() {
-    function Filelist() {}
+  FilelistApi = (function(_super) {
+    __extends(FilelistApi, _super);
 
-    Filelist.prototype.sendRequest = function(url, before, after) {
-      if (typeof before === "function") {
-        before();
-      }
-      return loader.sendrequest("get", url, {}, null, (function(_this) {
-        return function(code, response) {
-          var json;
-          json = util.jsonOrElse(response);
-          if (json) {
-            return typeof after === "function" ? after(true, json) : void 0;
-          } else {
-            return typeof after === "function" ? after(false, json) : void 0;
-          }
-        };
-      })(this), (function(_this) {
-        return function(error, response) {
-          var json;
-          json = util.jsonOrElse(response);
-          return typeof after === "function" ? after(false, json) : void 0;
-        };
-      })(this));
+    function FilelistApi() {
+      return FilelistApi.__super__.constructor.apply(this, arguments);
+    }
+
+    FilelistApi.prototype.breadcrumbs = function(directory, before, after) {
+      return this.doGet(before, after, "/api/v1/file/breadcrumbs", {
+        path: "" + directory
+      });
     };
 
-    Filelist.prototype.breadcrumbs = function(directory, before, after) {
-      return this.sendRequest("/api/v1/file/breadcrumbs?path=" + (util.quote(directory)), before, after);
+    FilelistApi.prototype.files = function(directory, before, after) {
+      return this.doGet(before, after, "/api/v1/file/list", {
+        path: directory
+      });
     };
 
-    Filelist.prototype.files = function(directory, before, after) {
-      return this.sendRequest("/api/v1/file/list?path=" + (util.quote(directory)), before, after);
-    };
+    return FilelistApi;
 
-    return Filelist;
+  })(AbstractApi);
 
-  })();
-
-  if (this.Filelist == null) {
-    this.Filelist = Filelist;
+  if (this.FilelistApi == null) {
+    this.FilelistApi = FilelistApi;
   }
 
-  JobResolver = (function() {
-    function JobResolver() {}
+  JobApi = (function(_super) {
+    __extends(JobApi, _super);
 
-    JobResolver.prototype.submit = function(data, before, after) {
-      if (typeof before === "function") {
-        before();
-      }
-      return loader.sendrequest("post", "/api/v1/job/submit", {}, data, (function(_this) {
-        return function(code, response) {
-          var json;
-          json = util.jsonOrElse(response);
-          if (json) {
-            return typeof after === "function" ? after(true, json) : void 0;
-          } else {
-            return typeof after === "function" ? after(false, json) : void 0;
-          }
-        };
-      })(this), (function(_this) {
-        return function(error, response) {
-          var json;
-          json = util.jsonOrElse(response);
-          return typeof after === "function" ? after(false, json) : void 0;
-        };
-      })(this));
+    function JobApi() {
+      return JobApi.__super__.constructor.apply(this, arguments);
+    }
+
+    JobApi.prototype.get = function(status, limit, before, after) {
+      var params;
+      params = {
+        status: "" + status,
+        limit: "" + limit
+      };
+      return this.doGet(before, after, "/api/v1/job/list", params);
     };
 
-    return JobResolver;
+    JobApi.prototype.close = function(id, before, after) {
+      return this.doGet(before, after, "/api/v1/job/close", {
+        jobid: "" + id
+      });
+    };
 
-  })();
+    JobApi.prototype.getJob = function(id, before, after) {
+      return this.doGet(before, after, "/api/v1/job/get", {
+        jobid: "" + id
+      });
+    };
 
-  if (this.JobResolver == null) {
-    this.JobResolver = JobResolver;
+    JobApi.prototype.submit = function(data, before, after) {
+      return this.doPost(before, after, "/api/v1/job/submit", data);
+    };
+
+    return JobApi;
+
+  })(AbstractApi);
+
+  if (this.JobApi == null) {
+    this.JobApi = JobApi;
   }
 
-  JobLoader = (function() {
-    function JobLoader() {}
+  TemplateApi = (function(_super) {
+    __extends(TemplateApi, _super);
 
-    JobLoader.prototype.get = function(status, limit, before, after) {
-      if (typeof before === "function") {
-        before();
-      }
-      return loader.sendrequest("get", "/api/v1/job/list?status=" + status + "&limit=" + limit, {}, null, function(success, response) {
-        var json;
-        json = util.jsonOrElse(response);
-        return typeof after === "function" ? after(!!json, json) : void 0;
-      }, function(error, response) {
-        var json;
-        json = util.jsonOrElse(response);
-        return typeof after === "function" ? after(false, json) : void 0;
+    function TemplateApi() {
+      return TemplateApi.__super__.constructor.apply(this, arguments);
+    }
+
+    TemplateApi.prototype.show = function(before, after) {
+      return this.doGet(before, after, "/api/v1/template/list");
+    };
+
+    TemplateApi.prototype["delete"] = function(id, before, after) {
+      return this.doGet(before, after, "/api/v1/template/delete", {
+        templateid: "" + id
       });
     };
 
-    JobLoader.prototype.close = function(jobid, before, after) {
-      if (typeof before === "function") {
-        before();
-      }
-      return loader.sendrequest("get", "/api/v1/job/close?jobid=" + jobid, {}, null, function(success, response) {
-        var json;
-        json = util.jsonOrElse(response);
-        return typeof after === "function" ? after(!!json, json) : void 0;
-      }, function(error, response) {
-        var json;
-        json = util.jsonOrElse(response);
-        return typeof after === "function" ? after(false, json) : void 0;
-      });
+    TemplateApi.prototype.create = function(data, before, after) {
+      return this.doPost(before, after, "/api/v1/template/create", data);
     };
 
-    JobLoader.prototype.getJob = function(jobid, before, after) {
-      if (typeof before === "function") {
-        before();
-      }
-      return loader.sendrequest("get", "/api/v1/job/get?jobid=" + jobid, {}, null, function(success, response) {
-        var json;
-        json = util.jsonOrElse(response);
-        return typeof after === "function" ? after(!!json, json) : void 0;
-      }, function(error, response) {
-        var json;
-        json = util.jsonOrElse(response);
-        return typeof after === "function" ? after(false, json) : void 0;
-      });
-    };
+    return TemplateApi;
 
-    return JobLoader;
+  })(AbstractApi);
 
-  })();
-
-  if (this.JobLoader == null) {
-    this.JobLoader = JobLoader;
+  if (this.TemplateApi == null) {
+    this.TemplateApi = TemplateApi;
   }
 
-  TemplateLoader = (function() {
-    function TemplateLoader() {}
+  LogApi = (function(_super) {
+    __extends(LogApi, _super);
 
-    TemplateLoader.prototype.show = function(before, after) {
-      if (typeof before === "function") {
-        before();
-      }
-      return loader.sendrequest("get", "/api/v1/template/list", {}, null, function(success, response) {
-        var json;
-        json = util.jsonOrElse(response);
-        return typeof after === "function" ? after(!!json, json) : void 0;
-      }, function(error, response) {
-        var json;
-        json = util.jsonOrElse(response);
-        return typeof after === "function" ? after(false, json) : void 0;
-      });
+    function LogApi() {
+      return LogApi.__super__.constructor.apply(this, arguments);
+    }
+
+    LogApi.prototype.readFromStart = function(jobid, type, page, before, after) {
+      var params;
+      params = {
+        jobid: "" + jobid,
+        type: "" + type,
+        page: "" + page
+      };
+      return this.doGet(before, after, "/api/v1/file/log", params);
     };
 
-    TemplateLoader.prototype["delete"] = function(tid, before, after) {
-      if (typeof before === "function") {
-        before();
-      }
-      return loader.sendrequest("get", "/api/v1/template/delete?templateid=" + tid, {}, null, function(success, response) {
-        var json;
-        json = util.jsonOrElse(response);
-        return typeof after === "function" ? after(!!json, json) : void 0;
-      }, function(error, response) {
-        var json;
-        json = util.jsonOrElse(response);
-        return typeof after === "function" ? after(false, json) : void 0;
-      });
-    };
+    return LogApi;
 
-    TemplateLoader.prototype.create = function(data, before, after) {
-      if (typeof before === "function") {
-        before();
-      }
-      return loader.sendrequest("post", "/api/v1/template/create", {}, data, function(success, response) {
-        var json;
-        json = util.jsonOrElse(response);
-        return typeof after === "function" ? after(!!json, json) : void 0;
-      }, function(error, response) {
-        var json;
-        json = util.jsonOrElse(response);
-        return typeof after === "function" ? after(false, json) : void 0;
-      });
-    };
+  })(AbstractApi);
 
-    return TemplateLoader;
-
-  })();
-
-  if (this.TemplateLoader == null) {
-    this.TemplateLoader = TemplateLoader;
+  if (this.LogApi == null) {
+    this.LogApi = LogApi;
   }
 
-  LogReader = (function() {
-    function LogReader() {}
+  TimetableApi = (function(_super) {
+    __extends(TimetableApi, _super);
 
-    LogReader.prototype.readFromStart = function(jobid, type, page, before, after) {
-      if (typeof before === "function") {
-        before();
-      }
-      return loader.sendrequest("get", "/api/v1/file/log?" + ("jobid=" + (util.quote(jobid)) + "&type=" + (util.quote(type)) + "&page=" + (util.quote(page))), {}, null, function(success, response) {
-        var json;
-        json = util.jsonOrElse(response);
-        return typeof after === "function" ? after(!!json, json) : void 0;
-      }, function(error, response) {
-        var json;
-        json = util.jsonOrElse(response);
-        return typeof after === "function" ? after(false, json) : void 0;
+    function TimetableApi() {
+      return TimetableApi.__super__.constructor.apply(this, arguments);
+    }
+
+    TimetableApi.prototype.submit = function(data, before, after) {
+      return this.doPost(before, after, "/api/v1/timetable/create", data);
+    };
+
+    TimetableApi.prototype.list = function(includeJobs, statuses, before, after) {
+      var params;
+      params = {
+        includejobs: "" + includeJobs,
+        status: "" + statuses
+      };
+      return this.doGet(before, after, "/api/v1/timetable/list", params);
+    };
+
+    TimetableApi.prototype.get = function(id, before, after) {
+      return this.doGet(before, after, "/api/v1/timetable/get", {
+        id: "" + id
       });
     };
 
-    return LogReader;
-
-  })();
-
-  if (this.LogReader == null) {
-    this.LogReader = LogReader;
-  }
-
-  TimetableLoader = (function() {
-    function TimetableLoader() {}
-
-    TimetableLoader.prototype.submit = function(data, before, after) {
-      if (typeof before === "function") {
-        before();
-      }
-      return loader.sendrequest("post", "/api/v1/timetable/create", {}, data, (function(_this) {
-        return function(code, response) {
-          var json;
-          json = util.jsonOrElse(response);
-          if (json) {
-            return typeof after === "function" ? after(true, json) : void 0;
-          } else {
-            return typeof after === "function" ? after(false, json) : void 0;
-          }
-        };
-      })(this), (function(_this) {
-        return function(error, response) {
-          var json;
-          json = util.jsonOrElse(response);
-          return typeof after === "function" ? after(false, json) : void 0;
-        };
-      })(this));
-    };
-
-    TimetableLoader.prototype.list = function(includeJobs, statuses, before, after) {
-      if (typeof before === "function") {
-        before();
-      }
-      return loader.sendrequest("get", "/api/v1/timetable/list?includejobs=" + (util.quote(includeJobs)) + "&status=" + (util.quote(statuses)), {}, null, function(success, response) {
-        var json;
-        json = util.jsonOrElse(response);
-        return typeof after === "function" ? after(!!json, json) : void 0;
-      }, function(error, response) {
-        var json;
-        json = util.jsonOrElse(response);
-        return typeof after === "function" ? after(false, json) : void 0;
+    TimetableApi.prototype.pause = function(id, before, after) {
+      return this.doGet(before, after, "/api/v1/timetable/pause", {
+        id: "" + id
       });
     };
 
-    TimetableLoader.prototype.get = function(id, before, after) {
-      if (typeof before === "function") {
-        before();
-      }
-      return loader.sendrequest("get", "/api/v1/timetable/get?id=" + (util.quote(id)), {}, null, function(success, response) {
-        var json;
-        json = util.jsonOrElse(response);
-        return typeof after === "function" ? after(!!json, json) : void 0;
-      }, function(error, response) {
-        var json;
-        json = util.jsonOrElse(response);
-        return typeof after === "function" ? after(false, json) : void 0;
+    TimetableApi.prototype.resume = function(id, before, after) {
+      return this.doGet(before, after, "/api/v1/timetable/resume", {
+        id: "" + id
       });
     };
 
-    TimetableLoader.prototype.pause = function(id, before, after) {
-      if (typeof before === "function") {
-        before();
-      }
-      return loader.sendrequest("get", "/api/v1/timetable/pause?id=" + (util.quote(id)), {}, null, function(success, response) {
-        var json;
-        json = util.jsonOrElse(response);
-        return typeof after === "function" ? after(!!json, json) : void 0;
-      }, function(error, response) {
-        var json;
-        json = util.jsonOrElse(response);
-        return typeof after === "function" ? after(false, json) : void 0;
+    TimetableApi.prototype.cancel = function(id, before, after) {
+      return this.doGet(before, after, "/api/v1/timetable/cancel", {
+        id: "" + id
       });
     };
 
-    TimetableLoader.prototype.resume = function(id, before, after) {
-      if (typeof before === "function") {
-        before();
-      }
-      return loader.sendrequest("get", "/api/v1/timetable/resume?id=" + (util.quote(id)), {}, null, function(success, response) {
-        var json;
-        json = util.jsonOrElse(response);
-        return typeof after === "function" ? after(!!json, json) : void 0;
-      }, function(error, response) {
-        var json;
-        json = util.jsonOrElse(response);
-        return typeof after === "function" ? after(false, json) : void 0;
-      });
-    };
+    return TimetableApi;
 
-    TimetableLoader.prototype.cancel = function(id, before, after) {
-      if (typeof before === "function") {
-        before();
-      }
-      return loader.sendrequest("get", "/api/v1/timetable/cancel?id=" + (util.quote(id)), {}, null, function(success, response) {
-        var json;
-        json = util.jsonOrElse(response);
-        return typeof after === "function" ? after(!!json, json) : void 0;
-      }, function(error, response) {
-        var json;
-        json = util.jsonOrElse(response);
-        return typeof after === "function" ? after(false, json) : void 0;
-      });
-    };
+  })(AbstractApi);
 
-    return TimetableLoader;
-
-  })();
-
-  if (this.TimetableLoader == null) {
-    this.TimetableLoader = TimetableLoader;
+  if (this.TimetableApi == null) {
+    this.TimetableApi = TimetableApi;
   }
 
 }).call(this);

@@ -1,8 +1,11 @@
 # dependencies
-_filelist = new @Filelist
+_filelist = new @FilelistApi
+_tempapi = new @TemplateApi
+_jobapi = new @JobApi
 _util = @util
 _mapper = @mapper
 _namer = @namer
+_misc = @misc
 
 # job settings elements
 jobCanvas = document.getElementById("octohaven-job-settings")
@@ -51,38 +54,6 @@ setSubmitStatus = (ok, internal) ->
     _mapper.parseMapForParent(obj, statusBar)
 
 setTextStatus = (ok, text) -> setSubmitStatus(ok, type: "span", title: "#{text}")
-
-################################################################
-# Spark job settings
-################################################################
-initColumns = (children) ->
-    cols = type: "div", cls: "columns", children: children
-    return _mapper.parseMapForParent(cols)
-
-initRow = (columns) ->
-    row = type: "div", cls: "segment", children: columns
-    return _mapper.parseMapForParent(row)
-
-jobOption = (name, desc, value, onValueChanged) ->
-    # header with setting name and tooltip attached
-    header = _mapper.parseMapForParent(
-        type: "span", cls: "text-mute tooltipped tooltipped-n", title: "#{name}")
-    header.setAttribute("aria-label", "#{desc}")
-    header = _mapper.parseMapForParent(type: "div", cls: "one-fifth column", children: header)
-    # trigger "Change"
-    triggerLink = _mapper.parseMapForParent(type: "a", href: "", title: "Change")
-    triggerLink.setAttribute("data-attr", "fast-editor-trigger")
-    trigger = _mapper.parseMapForParent(type: "div", cls: "one-fifth column", children: triggerLink)
-    # value body
-    body = _mapper.parseMapForParent(type: "div", cls: "three-fifths column", title: "#{value}")
-    body.setAttribute("data-attr", "fast-editor-texter")
-    # overall block of settings
-    row = initRow(initColumns([header, trigger, body]))
-    row.setAttribute("data-attr", "fast-editor")
-    # add fast editor
-    new @FastEditor(row, (status, value) -> onValueChanged?(status, value))
-    # return row element
-    return row
 
 ################################################################
 # Display file finder
@@ -181,21 +152,23 @@ delays = {
 loadTemplate = (job) ->
     # 1. create options
     jobCanvas.innerHTML = ""
-    jobRows = _mapper.parseMapForParent(type: "div", cls: "segments", jobCanvas)
-    addRow = (row) -> _mapper.parseMapForParent(row, jobRows)
     # build table
-    addRow(jobOption("Job name", "Friendly job name", job.get("name"),
-        (ok, value) -> job.set("name", "#{value}") if ok))
-    addRow(jobOption("Main class", "Entrypoint for the job", job.get("entrypoint"),
-        (ok, value) -> job.set("entrypoint", "#{value}") if ok))
-    addRow(jobOption("Driver memory", "Memory for the driver programme", job.get("driver-memory"),
-        (ok, value) -> job.set("driver-memory", "#{value}") if ok))
-    addRow(jobOption("Executor memory", "Memory for Spark executors", job.get("executor-memory"),
-        (ok, value) -> job.set("executor-memory", "#{value}") if ok))
-    addRow(jobOption("Spark options", "Settings, e.g. JVM, networking, shuffle...", job.get("options"),
-        (ok, value) -> job.set("options", "#{value}") if ok))
-    addRow(jobOption("Job options", "Job options to pass to entrypoint", job.get("jobconf"),
-        (ok, value) -> job.set("jobconf", "#{value}") if ok))
+    settings = [
+        _misc.dynamicOption("Job name", "Friendly job name", job.get("name"),
+            (ok, value) -> job.set("name", "#{value}") if ok)
+        _misc.dynamicOption("Main class", "Entrypoint for the job", job.get("entrypoint"),
+            (ok, value) -> job.set("entrypoint", "#{value}") if ok)
+        _misc.dynamicOption("Driver memory", "Memory for the driver programme",
+            job.get("driver-memory"), (ok, value) -> job.set("driver-memory", "#{value}") if ok)
+        _misc.dynamicOption("Executor memory", "Memory for Spark executors",
+            job.get("executor-memory"), (ok, value) -> job.set("executor-memory", "#{value}") if ok)
+        _misc.dynamicOption("Spark options", "Settings, e.g. JVM, networking, shuffle...",
+            job.get("options"), (ok, value) -> job.set("options", "#{value}") if ok)
+        _misc.dynamicOption("Job options", "Job options to pass to entrypoint",
+            job.get("jobconf"), (ok, value) -> job.set("jobconf", "#{value}") if ok)
+    ]
+    jobRows = _misc.segments(settings, jobCanvas)
+
     # 2. update jar file
     selectedJarElem.innerHTML = if job.get("jar") != "" then "#{job.get("jar")}" else "&nbsp;"
     traverse = (elem) ->
@@ -241,8 +214,7 @@ submitJob = (job) ->
         IS_SUBMITTED = true
         # extracting latest changes from the current job
         settings = job.settings
-        resolver = new JobResolver
-        resolver.submit JSON.stringify(settings), null, (ok, content) ->
+        _jobapi.submit settings, null, (ok, content) ->
             setLoadStatus(false)
             if ok
                 # extract job id
@@ -284,9 +256,7 @@ templateRow = (uid, name, content) ->
     return a
 
 showTemplates = () ->
-    # show templates
-    tloader = new TemplateLoader
-    tloader.show( ->
+    _tempapi.show( ->
         elem = templateHeading.nextSibling
         while (elem)
             next = elem.nextSibling
@@ -307,9 +277,7 @@ showTemplates = () ->
 
 
 deleteTemplate = (uid) ->
-    # delete template
-    tloader = new TemplateLoader
-    tloader.delete(uid, null, (ok, json) ->
+    _tempapi.delete(uid, null, (ok, json) ->
         msg = if ok then json["content"]["msg"] else "Something went wrong"
         setTextStatus(ok, msg)
         showTemplates()
@@ -318,8 +286,7 @@ deleteTemplate = (uid) ->
 createTemplate = (name, content) ->
     setLoadStatus(true)
     data = name: "#{name}", content: content
-    tloader = new TemplateLoader
-    tloader.create(JSON.stringify(data), null, (ok, json) ->
+    _tempapi.create(data, null, (ok, json) ->
         setLoadStatus(false)
         msg = if json then json["content"]["msg"] else "Something went wrong :("
         setTextStatus(ok, msg)

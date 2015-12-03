@@ -4,7 +4,7 @@ throw new Error("Timetable placeholder is not found") unless timetablesElem
 _mapper = @mapper
 _util = @util
 _misc = @misc
-_timetableLoader = new @TimetableLoader
+_timetableApi = new @TimetableApi
 # statuses
 [ACTIVE, PAUSED, CANCELLED] = ["ACTIVE", "PAUSED", "CANCELLED"]
 
@@ -80,14 +80,14 @@ row = (obj) ->
                 else
                     obj.innerHTML = "Error"
             if obj.status == ACTIVE
-                _timetableLoader.pause(obj.uid, (-> fetch()), ((ok, json) -> update(ok)))
+                _timetableApi.pause(obj.uid, (-> fetch()), ((ok, json) -> update(ok)))
             else if obj.status == PAUSED
-                _timetableLoader.resume(obj.uid, (-> fetch()), ((ok, json) -> update(ok)))
+                _timetableApi.resume(obj.uid, (-> fetch()), ((ok, json) -> update(ok)))
         )
     _misc.segment(_misc.columns([colStatus, colName, colStats, colAction]))
 
 update = (statuses) ->
-    _timetableLoader.list(false, statuses, ->
+    _timetableApi.list(false, statuses, ->
         timetablesElem.innerHTML = ""
     , (ok, json) ->
         if ok

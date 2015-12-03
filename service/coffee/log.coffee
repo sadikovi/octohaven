@@ -8,20 +8,17 @@ unless jobDetailsElem and jobLogsElem and jobLinkElem
 _mapper = @mapper
 _util = @util
 _misc = @misc
-_jobloader = new @JobLoader
+_jobapi = new @JobApi
+_logapi = new @LogApi
 
 elem = (type, args...) ->
     if type == "btn"
         # process button arguments
-        type: "div", cls: "section", children: [
-            type: "div", cls: "btn #{args[1]}", title: "#{args[0]}", onclick: args[2]
-        ]
+        _misc.section([type: "div", cls: "btn #{args[1]}", title: "#{args[0]}", onclick: args[2]])
     else if type == "pair"
         # process pair arguments
-        type: "div", cls: "section", children: [
-            {type: "span", cls: "text-mute", title: "#{args[0]}"},
-            {type: "span", title: "#{args[1]}"}
-        ]
+        _misc.section([{type: "span", cls: "text-mute", title: "#{args[0]}"},
+            {type: "span", title: "#{args[1]}"}])
     else if type == "input"
         # add input box and button with action
         input = _mapper.parseMapForParent({type: "input", inputtype: "text", cls: "input-squared"
@@ -31,12 +28,7 @@ elem = (type, args...) ->
             ,title: "#{args[0]}", arialabel: "Jump to the page", onclick: () ->
                 action?(this.input)})
         btn.input = input
-
-        type: "div", cls: "section", children: [
-            input,
-            {type: "div", cls: "separator"},
-            btn
-        ]
+        _misc.section([input, {type: "div", cls: "separator"}, btn])
     else
         null
 
@@ -71,8 +63,7 @@ page = "1"
 
 askAnotherPage = (type, jobid, page) ->
     if type and jobid
-        logReader = new LogReader
-        logReader.readFromStart(jobid, type, page, ->
+        _logapi.readFromStart(jobid, type, page, ->
             jobLogsElem.innerHTML = ""
             jobDetailsElem.innerHTML = ""
             jobLinkElem.href = "/"

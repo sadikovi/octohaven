@@ -1,57 +1,76 @@
 (function() {
-  var reloadStatus, serverMasterAddress, serverStatus, serverUIAddress, setMasterAddress, setStatus, setUIAddress, _util;
+  var STATUS_BUSY, STATUS_PENDING, STATUS_READY, STATUS_UNREACHABLE, clstat, mapClass, mapStatus, masterAddress, reloadStatus, setClusterStatus, status, uiAddress, _api, _util;
 
-  serverStatus = document.getElementById("octohaven-spark-server-status");
+  status = document.getElementById("octohaven-spark-server-status");
 
-  serverUIAddress = document.getElementById("octohaven-spark-ui-address");
+  uiAddress = document.getElementById("octohaven-spark-ui-address");
 
-  serverMasterAddress = document.getElementById("octohaven-spark-master-address");
+  masterAddress = document.getElementById("octohaven-spark-master-address");
 
-  if (!(serverStatus && serverUIAddress && serverMasterAddress)) {
-    throw new Error("Server entries are unrecognized");
+  if (!(status && uiAddress && masterAddress)) {
+    throw new Error("Cluster status entries are undefined");
   }
 
   _util = this.util;
 
-  setStatus = function(status) {
-    serverStatus.className = "";
-    if (status === false) {
-      serverStatus.innerHTML = "" + this.Status.STATUS_PENDING;
-      return _util.addClass(serverStatus, "text-mute");
-    } else if (status === 0) {
-      _util.addClass(serverStatus, "text-green");
-      return serverStatus.innerHTML = "" + this.Status.STATUS_READY;
-    } else if (status === -1) {
-      _util.addClass(serverStatus, "text-yellow");
-      return serverStatus.innerHTML = "" + this.Status.STATUS_BUSY;
-    } else {
-      _util.addClass(serverStatus, "text-red");
-      return serverStatus.innerHTML = "" + this.Status.STATUS_UNREACHABLE;
+  _api = new this.StatusApi;
+
+  clstat = new this.ClusterStatus;
+
+  STATUS_PENDING = "Pending...";
+
+  STATUS_READY = "Cluster is ready";
+
+  STATUS_BUSY = "Cluster is busy";
+
+  STATUS_UNREACHABLE = "Cluster is unreachable";
+
+  mapStatus = function(status) {
+    if (status === "0") {
+      return STATUS_READY;
     }
+    if (status === "-1") {
+      return STATUS_BUSY;
+    }
+    if (status === "-2") {
+      return STATUS_UNREACHABLE;
+    }
+    return STATUS_PENDING;
   };
 
-  setUIAddress = function(address) {
-    return serverUIAddress.innerHTML = address ? "" + address : "?";
+  mapClass = function(status) {
+    if (status === "0") {
+      return "text-green";
+    }
+    if (status === "-1") {
+      return "text-yellow";
+    }
+    if (status === "-2") {
+      return "text-red";
+    }
+    return "text-mute";
   };
 
-  setMasterAddress = function(address) {
-    return serverMasterAddress.innerHTML = address ? "" + address : "?";
+  setClusterStatus = function(clstat) {
+    status.className = "";
+    _util.addClass(status, mapClass(clstat.get("status"), null));
+    status.innerHTML = mapStatus(clstat.get("status"), null);
+    uiAddress.innerHTML = clstat.getOrElse("spark-ui-address", "?");
+    return masterAddress.innerHTML = clstat.getOrElse("spark-master-address", "?");
   };
 
   reloadStatus = function() {
-    var after, before, status;
-    status = new this.Status;
+    var after, before;
     before = function() {
-      setStatus(false);
-      setUIAddress(false);
-      return setMasterAddress(false);
+      return setClusterStatus(clstat);
     };
-    after = function(status, uiAddress, masterAddress) {
-      setStatus(status);
-      setUIAddress(uiAddress);
-      return setMasterAddress(masterAddress);
+    after = function(ok, json) {
+      if (ok) {
+        clstat = new this.ClusterStatus(json["content"]);
+      }
+      return setClusterStatus(clstat);
     };
-    return status.requestStatus(before, after);
+    return _api.requestStatus(before, after);
   };
 
   if (typeof reloadStatus === "function") {

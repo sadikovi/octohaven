@@ -1,5 +1,5 @@
 (function() {
-  var cancelBtn, cancelTimetable, column, id, keyElem, keyValue, mode, params, setLoadStatus, setSubmitStatus, setTextStatus, showControls, statusBar, timeToDate, timetableShowElem, view, _mapper, _misc, _timetableLoader, _util;
+  var cancelBtn, cancelTimetable, column, id, keyElem, keyValue, mode, params, setLoadStatus, setSubmitStatus, setTextStatus, showControls, statusBar, timeToDate, timetableShowElem, view, _mapper, _misc, _timetableApi, _util;
 
   timetableShowElem = document.getElementById("octohaven-timetable-show");
 
@@ -13,7 +13,7 @@
 
   _misc = this.misc;
 
-  _timetableLoader = new this.TimetableLoader;
+  _timetableApi = new this.TimetableApi;
 
   params = _util.windowParameters();
 
@@ -72,7 +72,7 @@
 
   cancelTimetable = function(uid) {
     setLoadStatus(true);
-    return _timetableLoader.cancel(uid, null, function(ok, content) {
+    return _timetableApi.cancel(uid, null, function(ok, content) {
       var msg;
       setLoadStatus(false);
       msg = content ? content["content"]["msg"] : "Something went wrong :(";
@@ -124,7 +124,7 @@
     return "" + alter;
   };
 
-  _timetableLoader.get(id, function() {
+  _timetableApi.get(id, function() {
     return timetableShowElem.innerHTML = "";
   }, function(ok, json) {
     var job, jobid, jobname, msg, result, rows, timetable;

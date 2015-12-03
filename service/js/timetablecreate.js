@@ -1,5 +1,5 @@
 (function() {
-  var DEFAULT_TIMETABLE, IS_SUBMITTED, controlBar, cronHelpElem, currentTimetable, id, mode, params, setLoadStatus, setSubmitStatus, setTextStatus, statusBar, submitBtn, submitTimetable, timetableCreateElem, view, _jobLoader, _mapper, _misc, _namer, _timetableLoader, _util;
+  var DEFAULT_TIMETABLE, IS_SUBMITTED, controlBar, cronHelpElem, currentTimetable, id, mode, params, setLoadStatus, setSubmitStatus, setTextStatus, statusBar, submitBtn, submitTimetable, timetableCreateElem, view, _jobapi, _mapper, _misc, _namer, _timetableApi, _util;
 
   timetableCreateElem = document.getElementById("octohaven-timetable-create");
 
@@ -17,9 +17,9 @@
 
   _namer = this.namer;
 
-  _jobLoader = new this.JobLoader;
+  _jobapi = new this.JobApi;
 
-  _timetableLoader = new this.TimetableLoader;
+  _timetableApi = new this.TimetableApi;
 
   params = _util.windowParameters();
 
@@ -93,7 +93,7 @@
     if (!IS_SUBMITTED) {
       IS_SUBMITTED = true;
       settings = timetable.settings;
-      return _timetableLoader.submit(JSON.stringify(settings), null, function(ok, content) {
+      return _timetableApi.submit(settings, null, function(ok, content) {
         var body, msg, uid;
         setLoadStatus(false);
         if (ok) {
@@ -127,7 +127,7 @@
     return e.stopPropagation();
   });
 
-  _jobLoader.getJob(id, function() {
+  _jobapi.getJob(id, function() {
     return timetableCreateElem.innerHTML = "";
   }, function(ok, json) {
     var job, jobid, jobname, msg, result, rows;

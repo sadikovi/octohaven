@@ -2,6 +2,7 @@
 
 import paths
 import os, sys, urllib, json
+from types import DictType
 from octolog import Octolog
 from urlparse import urlparse
 from BaseHTTPServer import HTTPServer, BaseHTTPRequestHandler
@@ -150,6 +151,8 @@ class APICall(Octolog, object):
                 data = jsonOrElse(raw, None)
                 if not data:
                     raise StandardError("Corrupt json data: " + raw)
+                if type(data) is not DictType:
+                    raise StandardError("Json data is not an object")
                 name = data["name"]
                 entry = data["entrypoint"]
                 dmem, emem = data["driver-memory"], data["executor-memory"]
@@ -230,6 +233,8 @@ class APICall(Octolog, object):
                 data = jsonOrElse(raw, None)
                 if not data:
                     raise StandardError("Corrupt json data: " + raw)
+                if type(data) is not DictType:
+                    raise StandardError("Json data is not an object")
                 name = data["name"]
                 content = data["content"]
                 template = self.templateManager.createTemplate(name, content)
@@ -256,6 +261,8 @@ class APICall(Octolog, object):
                 data = jsonOrElse(raw, None)
                 if not data:
                     raise StandardError("Corrupt json data: " + raw)
+                if type(data) is not DictType:
+                    raise StandardError("Json data is not an object")
                 name = data["name"]
                 pattern = data["pattern"]
                 crontab = CronTab.fromPattern(pattern)
@@ -388,8 +395,8 @@ class SimpleHandler(BaseHTTPRequestHandler, Octolog):
         isapi = self.path.startswith(API_V1)
         path = self.fullPath(urllib.unquote(parsed.path))
         query = [urllib.unquote(part) for part in parsed.query.split("&")]
-        self.log_message("Requested %s" % path)
-        self.log_message("Received query %s" % query)
+        self.log_message("Requested %s", path)
+        self.log_message("Received query %s", query)
         # parsing requested file
         if isapi:
             # process this as api request
@@ -416,15 +423,15 @@ class SimpleHandler(BaseHTTPRequestHandler, Octolog):
         parsed = urlparse(self.path)
         isapi = self.path.startswith(API_V1)
         path = self.fullPath(urllib.unquote(parsed.path))
-        self.log_message("Requested %s" % path)
+        self.log_message("Requested %s", path)
         if isapi:
             # process api request
             # get content in bytes
             content = self.headers.getheader("Content-Length")
-            self.log_message("Content received: %s" % (content is not None))
+            self.log_message("Content received: %s", (content is not None))
             # raw string content
             raw = self.rfile.read(int(content) if content else 0)
-            self.log_message("Raw content is %s" % raw)
+            self.log_message("Raw content is %s", raw)
             # in case of POST query is a list with one element which is unquoted raw string that
             # can be a json or xml, etc.
             query = ["content=%s" % urllib.unquote(raw)]

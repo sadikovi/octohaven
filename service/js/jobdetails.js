@@ -1,5 +1,5 @@
 (function() {
-  var column, contentHeader, contentList, contentValue, jobDetailsElem, jobid, params, property, row, updateLogLinks, updateScheduleLink, view, _jobloader, _mapper, _misc, _util,
+  var column, contentHeader, contentList, contentValue, jobDetailsElem, jobid, params, property, row, updateLogLinks, updateScheduleLink, view, _jobapi, _mapper, _misc, _util,
     __slice = [].slice;
 
   jobDetailsElem = document.getElementById("octohaven-job-details");
@@ -14,7 +14,7 @@
 
   _misc = this.misc;
 
-  _jobloader = new this.JobLoader;
+  _jobapi = new this.JobApi;
 
   contentHeader = function(value) {
     return {
@@ -116,7 +116,7 @@
 
   if ("jobid" in params) {
     jobid = params["jobid"];
-    _jobloader.getJob(jobid, function() {
+    _jobapi.getJob(jobid, function() {
       return jobDetailsElem.innerHTML = "";
     }, function(ok, json) {
       var create, entrypoint, jar, job, jobconf, masterurl, msg, name, options, rowsElem, sparkAppId, status, submit, uid, view, x, y;
