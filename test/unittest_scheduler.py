@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import unittest, os
+from subprocess import Popen, PIPE
 from src.redisconnector import RedisConnectionPool, RedisConnector
 from src.scheduler import Scheduler, Link
 from src.job import Job
@@ -76,6 +77,16 @@ class SchedulerTestSuite(unittest.TestCase):
             self.assertEqual(type(link), Link)
             self.assertEqual(link.jobid, jobids[i])
             i += 1
+
+    def test_updateProcessStatus(self):
+        output = Popen(["ps", "-o", "pid="], stdout=PIPE)
+        ls = output.communicate()[0]
+        pid = ls.split()[0]
+        wrong_pid = 99999
+        scheduler = Scheduler(self.settings)
+        self.assertEqual(scheduler.updateProcessStatus(None), 2)
+        self.assertEqual(scheduler.updateProcessStatus(wrong_pid), 0)
+        self.assertEqual(scheduler.updateProcessStatus(pid), -1)
 
 # Load test suites
 def _suites():

@@ -305,12 +305,12 @@ class Scheduler(Octolog, object):
     # 1: process exited with error
     # 0: process successfully finished
     # -1: process is still running
-    def updateProcessStatus(self, processid):
-        if not processid:
+    def updateProcessStatus(self, pid):
+        if not pid:
             return 2
         # replaced command to check process to fetch exact pid
-        p1 = Popen(["ps", "-h", "-p", str(processid), "-o", "pid,user,ppid,session,args"],
-            stdout=PIPE)
+        cmd = ["ps", "-p", str(pid), "-o", "pid=", "-o", "user=", "-o", "ppid=", "-o", "args="]
+        p1 = Popen(cmd, stdout=PIPE)
         output = p1.communicate()[0]
         # process is still running
         if output and len(output) > 0:
