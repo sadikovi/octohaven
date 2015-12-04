@@ -57,7 +57,7 @@ add more in the future):
 only available in a log file _octohaven-service.log_. If option is not specified, launches as
 normal process, equivalent to `--daemon=false`. Usage: `sbin/start.sh -d` or
 `sbin/start.sh --daemon=true`
-- `--usage` => displays usage of the script
+- `--usage` or `--help` => displays usage of the script
 
 Application will be available on `localhost:33900` or whatever port you specify in configuration
 file.

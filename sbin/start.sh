@@ -7,9 +7,11 @@ ROOT_DIR="`cd "$sbin/../"; pwd`"
 # functions (mainly for processing command-line arguments)
 def_usage() {
     cat <<EOM
+
 Usage: $0 [options]
--d | --daemon   launches service as daemon process, e.g. --daemon=true/false
---usage         displayes usage of the script
+-d | --daemon=*     launches service as daemon process, e.g. --daemon=true/false
+--usage | --help    displayes usage of the script
+
 EOM
     exit 0
 }
@@ -37,7 +39,7 @@ for i in "$@"; do
         -d|--daemon=*) def_daemon
         shift ;;
         # display usage
-        --usage) def_usage
+        --usage|--help) def_usage
         shift ;;
         *) ;;
     esac
