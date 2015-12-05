@@ -114,13 +114,22 @@ front-end you will be asked to install `coffee`, `sass` to compile scripts.
 $ bin/compile.sh
 ```
 
-To run tests execute command below. Be aware, that tests use db `15` of Redis instance, although it
-will check whether your production db and test db have the same number, it is worth changing it, if
-your db also uses db '15', you can do it by changing db in configuration or `bin/test.sh`.
+To run tests execute `bin/test.sh`. By default it will not run any tests, here are command options
+to define suites to run. Integration tests require unit tests to succeed when run together. Test
+settings are defined in `bin/test-config.sh`, this will be loaded after `sbin/config.sh`, therefore
+allows to overwrite / extend options.
 ```shell
-# run Python tests
-$ bin/test.sh
+# run Python tests (unit tests + integration tests)
+$ bin/test.sh -u -i
 ```
+
+Options available:
+- `-u` or `--unittest` run unit tests only, this will not require to start service
+- `-i` or `--integration` run integration tests, will start service in test mode automatically
+- `--help` display help
+
+> Integration tests will result in logs output into standard directory, potentially mixing up
+> normal logs
 
 Sometimes it is annoying to see `*.pyc` files everywhere. Run cleanup script to remove them.
 ```shell

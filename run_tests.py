@@ -123,7 +123,13 @@ if __name__ == '__main__':
     print ""
     print "### [:Octohaven] Running tests ###"
     print "-" * 70
-    unittest.TextTestRunner(verbosity=2).run(suites)
+    # results is a TextTestRunner object that is used to define exit code of tests
+    results = unittest.TextTestRunner(verbosity=2).run(suites)
     num = len([x for x in RUN_TESTS.values() if not x])
     print "%s Number of test blocks skipped: %d" %("OK" if num==0 else "WARN", num)
     print ""
+    # fail if there is at least 1 error or failure
+    if results and len(results.failures) == 0 and len(results.errors) == 0:
+        sys.exit(0)
+    else:
+        sys.exit(1)
