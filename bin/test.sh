@@ -70,11 +70,11 @@ if [ -n "$UNIT_TESTS_FAILED" ]; then
 fi
 
 ################################################################
-# Integration tests
+# Integration tests module
 ################################################################
 if [ -n "$RUN_INTEGRATION_TESTS" ]; then
     # launch service in test mode, always top service afterwards
-    eval "$ROOT_DIR/sbin/start.sh -d --test" && sleep 5 && \
+    eval "$ROOT_DIR/sbin/start.sh -d --test" && sleep 2 && \
     (eval "$WHICH_PYTHON $ROOT_DIR/run_integration_tests.py test $OCTOHAVEN_HOST $OCTOHAVEN_PORT" || \
         INTEGRATION_TESTS_FAILED="YES") && \
     eval "$ROOT_DIR/sbin/stop.sh"

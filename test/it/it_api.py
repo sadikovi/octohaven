@@ -1,9 +1,13 @@
 #!/usr/bin/env python
 
-import unittest, json
+import unittest, json, time
+from urllib2 import HTTPError
 from test.it.it_constants import Settings, Request
 
 class it_ApiSuite(unittest.TestCase):
+    def setUp(self):
+        time.sleep(1)
+
     def address(self):
         return "http://" + Settings.mp().get("host") + ":" + Settings.mp().get("port")
 
@@ -24,6 +28,22 @@ class it_ApiSuite(unittest.TestCase):
         self.assertTrue(status == -2)
         self.assertTrue(len(masterAddress) > 0)
         self.assertTrue(len(uiAddress) > 0)
+
+    def test_templates(self):
+        # empty content
+        try:
+            Request.post(self.api("/api/v1/template/create"), "")
+        except HTTPError as e:
+            self.assertEqual(e.code, 400)
+        else:
+            raise StandardError("Request did not fail")
+        # content is not dict type
+        try:
+            Request.post(self.api("/api/v1/template/create"), "content")
+        except HTTPError as e:
+            self.assertEqual(e.code, 400)
+        else:
+            raise StandardError("Request did not fail")
 
 # Load test suites
 def _suites():
