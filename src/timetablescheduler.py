@@ -11,7 +11,7 @@ from timetable import *
 from subscription import Emitter, Subscriber, GLOBAL_DISPATCHER
 from utils import *
 
-# minimal interval for timetable scheduling, it does not makes sense keep it less than 1 minute
+# minimal interval for timetable scheduling, it does not make sense keep it less than 1 minute
 MINIMAL_INTERVAL = 60.0
 
 # general lock for all runners
