@@ -94,7 +94,7 @@ class SchedulerTestSuite(unittest.TestCase):
         p1 = Popen(cmdList)
         try:
             self.assertEqual(scheduler.updateProcessStatus(p1.pid), -1)
-        except BaseException as e:
+        except Exception as e:
             print "[ERROR] Something bad happened while launching process p1: %s" % e.message
             self.assertEqual(False, True)
         finally:
