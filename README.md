@@ -131,8 +131,14 @@ Options available:
 > Integration tests will result in logs output into standard directory, potentially mixing up
 > normal logs
 
-Sometimes it is annoying to see `*.pyc` files everywhere. Run cleanup script to remove them.
+There is also clean-up script that will delete some useless files in project directory.
+`bin/cleanup.sh` removes:
+- **\*.pyc** files in project directory
+- **.sass-cache** folder
+- **octohaven-service-log\*** files (internal service logs)
+- **Spark logs** (stdout/stderr) files in project directory
 ```shell
+# Run clean-up of project directory
 $ bin/cleanup.sh
 ```
 
