@@ -86,7 +86,23 @@ class SchedulerTestSuite(unittest.TestCase):
         scheduler = Scheduler(self.settings)
         self.assertEqual(scheduler.updateProcessStatus(None), 2)
         self.assertEqual(scheduler.updateProcessStatus(wrong_pid), 0)
-        self.assertEqual(scheduler.updateProcessStatus(pid), -1)
+        # return 0 because "ls" process is not spark-submit
+        self.assertEqual(scheduler.updateProcessStatus(pid), 0)
+        # test running process with SparkSubmit
+        cmdList = ["/bin/bash", "-c",
+            "while true; do echo org.apache.spark.deploy.SparkSubmit; sleep 10; done"]
+        p1 = Popen(cmdList)
+        try:
+            self.assertEqual(scheduler.updateProcessStatus(p1.pid), -1)
+        except BaseException as e:
+            print "[ERROR] Something bad happened while launching process p1: %s" % e.message
+            self.assertEqual(False, True)
+        finally:
+            if p1:
+                p1.kill()
+            else:
+                raise StandardError("[ERROR] Cannot kill infinite process. Please make sure " + \
+                    "that it is not running, by using command [ps aux | grep -i while]")
 
 # Load test suites
 def _suites():
