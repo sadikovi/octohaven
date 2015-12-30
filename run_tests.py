@@ -17,7 +17,8 @@ RUN_TESTS = {
     "scheduler": True,
     "subscription": True,
     "timetable": True,
-    "crontab": True
+    "crontab": True,
+    "timetablescheduler": True
 }
 
 def checkTest(key):
@@ -107,6 +108,13 @@ def collectSystemTests(suites):
         suites.addTest(unittest_crontab.loadSuites())
     else:
         print "@skip: 'crontab' tests"
+
+    # timetablescheduler
+    if checkTest("timetablescheduler"):
+        import test.unittest_timetablescheduler as unittest_timetablescheduler
+        suites.addTest(unittest_timetablescheduler.loadSuites())
+    else:
+        print "@skip: 'timetablescheduler' tests"
 
 if __name__ == '__main__':
     args = sys.argv[2:]

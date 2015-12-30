@@ -259,6 +259,10 @@ class Scheduler(Octolog, object):
         self.storageManager.saveItem(job, Job)
         self.storageManager.addItemToKeyspace(provider.keyspace(newStatus), job.uid)
 
+    # update only job, assuming that all object properties have been updated
+    def updateJobOnly(self, job):
+        self.storageManager.saveItem(job, Job)
+
     def linkForUid(self, uid):
         return self.storageManager.itemForUid(uid, klass=Link)
 
@@ -335,6 +339,8 @@ class Scheduler(Octolog, object):
                 self.logger().warning("Job master url %s will be updated to new master url %s",
                     sparkJob.getMasterUrl(), self.sparkModule.masterAddress)
                 sparkJob.updateMasterUrl(self.sparkModule.masterAddress)
+                # update job in storage
+                self.updateJobOnly(job)
         # get execute command
         cmd = job.execCommand()
         self.logger().info("Executing command: %s", str(cmd))
