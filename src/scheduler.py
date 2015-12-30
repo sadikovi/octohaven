@@ -75,21 +75,24 @@ def fetch(scheduler):
                     scheduler.logger().info("Updated job %s to run as soon as possible", job.uid)
         # Fetches WAITING jobs first, sorting them by priority, then CREATED, if we have free slots.
         # If there is a delayed job that was updated as waiting, it will be queued and run as fast
-        # as possible. If pool is full, then we will have to wait for the next free slot.
-        numJobs = scheduler.poolSize - scheduler.pool.qsize()
-        if numJobs > 0:
-            arr = scheduler.jobsForStatus(WAITING, numJobs)
+        # as possible (note, that we still compare using submit time, therefore, if there are many
+        # waiting, but not delayed jobs, they will be executed first) -> see
+        # "Scheduler::jobsForStatus()" method. If pool is full, then we will have to wait for the
+        # next free slot.
+        if scheduler.poolSize > scheduler.pool.qsize():
+            arr = scheduler.jobsForStatus(WAITING, scheduler.poolSize)
             scheduler.logger().info("Fetched %s WAITING jobs from storage", len(arr))
-            if len(arr) < numJobs:
-                numJobs = numJobs - len(arr)
-                add = scheduler.jobsForStatus(CREATED, numJobs)
-                scheduler.logger().info("Fetched %s CREATED jobs from storage", len(add))
-                arr = arr + add
             for job in arr:
-                if job.status != WAITING:
+                scheduler.addLink(job, job.priority)
+            # after pool has been updated, check CREATED jobs, if there is empty space in pool
+            if scheduler.poolSize > scheduler.pool.qsize():
+                add = scheduler.jobsForStatus(CREATED, scheduler.poolSize - scheduler.pool.qsize())
+                scheduler.logger().info("Fetched %s CREATED jobs from storage", len(add))
+                for job in add:
+                    scheduler.logger().info("Updating job '%s' from %s to WAITING", job.uid,
+                        job.status)
                     scheduler.updateJob(job, WAITING, job.priority)
-                    scheduler.logger().info("Updated job %s on WAITING from %s", job.uid, job.status)
-                scheduler.add(job, job.priority)
+                    scheduler.addLink(job, job.priority)
         else:
             scheduler.logger().info("Scheduler pool is full, no new jobs were added")
         scheduler.logger().info("Refreshed queue size: %s", scheduler.pool.qsize())
@@ -183,7 +186,7 @@ def runJob(scheduler, freshRun=False):
 
 # super simple scheduler to run Spark jobs in background
 class Scheduler(Octolog, object):
-    def __init__(self, settings, poolSize=5):
+    def __init__(self, settings, poolSize=3):
         if type(poolSize) is not IntType:
             raise StandardError("Expected IntType, got " + str(type(poolSize)))
         # pull Spark settings
@@ -281,7 +284,7 @@ class Scheduler(Octolog, object):
 
     # add job to the pool by creating a link
     # it is a generic method - we do not check job status
-    def add(self, job, priority):
+    def addLink(self, job, priority):
         JobCheck.validateJob(job)
         JobCheck.validatePriority(priority)
         if self.isFull():
@@ -298,7 +301,8 @@ class Scheduler(Octolog, object):
         # case when job is already added to queue, thus we do not want to add it again.
         if dblink and not dblink.isSubmitted():
             if not self.hasNext():
-                self.logger().error("Tried skipping job while pool is empty. Recovering...")
+                self.logger().warning("Tried to skip job for empty pool. Job dump: %s. " + \
+                    "Recovering...", job.toDict())
                 self.removeLink(dblink)
             else:
                 self.logger().info("Skip job with uid %s and priority %s as it is already in " + \

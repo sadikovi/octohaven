@@ -86,3 +86,6 @@ fi
 if [ -n "$INTEGRATION_TESTS_FAILED" ]; then
     exit 1
 fi
+
+# if no fail tests display success message
+echo "All good!"

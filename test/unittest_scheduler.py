@@ -62,20 +62,20 @@ class SchedulerTestSuite(unittest.TestCase):
         job1 = JobSentinel.job()
         job2 = JobSentinel.job()
         scheduler = Scheduler(self.settings)
-        scheduler.add(job1, job1.priority)
+        scheduler.addLink(job1, job1.priority)
         self.assertEqual(scheduler.pool.qsize(), 1)
-        scheduler.add(job2, job2.priority)
+        scheduler.addLink(job2, job2.priority)
         self.assertEqual(scheduler.pool.qsize(), 2)
         # insert the same job again but with different priority
-        scheduler.add(job2, 1)
+        scheduler.addLink(job2, 1)
         self.assertEqual(scheduler.pool.qsize(), 2)
 
     def test_get(self):
         job1 = JobSentinel.job()
         job2 = JobSentinel.job()
         scheduler = Scheduler(self.settings)
-        scheduler.add(job1, 100)
-        scheduler.add(job2, 101)
+        scheduler.addLink(job1, 100)
+        scheduler.addLink(job2, 101)
         jobids, i = [job1.uid, job2.uid], 0
         while scheduler.hasNext():
             link = scheduler.nextLink()
