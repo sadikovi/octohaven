@@ -18,10 +18,10 @@ export OCTOHAVEN_SPARK_UI_ADDRESS="http://localhost:8080"
 # catalog starting from this folder specified. Please try specifying some more precise than root "/"
 export JAR_FOLDER="/Users/sadikovi/developer/octohaven/test/resources/filelist"
 # Force new Spark master address, recommended to set this option.
-# If variable is set, it will update master address for a staled job with previous address to the
-# valid address specified in configuration file before launching it, e.g. job was saved with
-# address "spark://old.address:7077", address was updated to "spark://new.address:7077", job will
-# be executed with new address, if configuration option is set.
+# If variable is set (non-empty), it will update master address for a staled job with previous
+# address to the valid address specified in configuration file before launching it, e.g. job was
+# saved with address "spark://old.address:7077", address was updated to "spark://new.address:7077",
+# job will be executed with new address, if configuration option is set.
 export FORCE_SPARK_MASTER_ADDRESS="YES"
 
 #################################################

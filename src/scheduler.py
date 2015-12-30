@@ -224,8 +224,8 @@ class Scheduler(Octolog, object):
         self.isRunning = False
         # force new Spark master address. If true, it will update master address for a staled job
         # to the valid address specified in configuration file before launching it, e.g. job was
-        # saved with address "spark://address1:7077", address was updated to "spark://update:7077",
-        # job will be executed with new address, if option is true.
+        # saved with address "spark://old.address:7077", address was updated to
+        # "spark://new.address:7077", job will be executed with new address, if option is true.
         self.forceSparkMasterAddress = settings["FORCE_SPARK_MASTER_ADDRESS"] if \
             "FORCE_SPARK_MASTER_ADDRESS" in settings else False
 
