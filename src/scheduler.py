@@ -309,13 +309,18 @@ class Scheduler(Octolog, object):
         if not pid:
             return 2
         # replaced command to check process to fetch exact pid
+        # make sure that pid is spark-submit job, because of a possibility of accessing assigned to
+        # other process pid after system restart
         cmd = ["ps", "-p", str(pid), "-o", "pid=", "-o", "user=", "-o", "ppid=", "-o", "args="]
         p1 = Popen(cmd, stdout=PIPE)
-        output = p1.communicate()[0]
+        p2 = Popen(["grep", "-i", "sparksubmit"], stdin=p1.stdout, stdout=PIPE)
+        p1.stdout.close()
+        output = p2.communicate()[0]
         # process is still running
         if output and len(output) > 0:
             return -1
-        # otherwise we always return 0 for now
+        # otherwise we always return 0 for finished process (either killed or finished
+        # successfully) for now
         return 0
 
     # execute Spark job commmand in NO_WAIT mode.
@@ -341,7 +346,7 @@ class Scheduler(Octolog, object):
             err = open(errPath, "wb")
         except:
             self.logger().exception("Error happened during creation of stdout and stderr for " + \
-                "job id %s. Using default None values" % job.uid)
+                "job id %s. Using default None values", job.uid)
             out = None
             err = None
         # run process
