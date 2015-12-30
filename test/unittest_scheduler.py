@@ -33,12 +33,14 @@ class SchedulerTestSuite(unittest.TestCase):
         with self.assertRaises(StandardError):
             scheduler = Scheduler({})
         scheduler = Scheduler(self.settings)
-        self.assertEqual(scheduler.poolSize, 5)
+        # check default pool size
+        self.assertEqual(scheduler.poolSize, 3)
         self.assertEqual(scheduler.isRunning, False)
         self.assertEqual(scheduler.forceSparkMasterAddress, False)
         # update settings to include "force-master-address" option
         self.settings["FORCE_SPARK_MASTER_ADDRESS"] = True
-        scheduler = Scheduler(self.settings)
+        scheduler = Scheduler(self.settings, 5)
+        self.assertEqual(scheduler.poolSize, 5)
         self.assertEqual(scheduler.forceSparkMasterAddress, True)
 
     def test_fetchStatus(self):
@@ -62,20 +64,20 @@ class SchedulerTestSuite(unittest.TestCase):
         job1 = JobSentinel.job()
         job2 = JobSentinel.job()
         scheduler = Scheduler(self.settings)
-        scheduler.add(job1, job1.priority)
+        scheduler.addLink(job1, job1.priority)
         self.assertEqual(scheduler.pool.qsize(), 1)
-        scheduler.add(job2, job2.priority)
+        scheduler.addLink(job2, job2.priority)
         self.assertEqual(scheduler.pool.qsize(), 2)
         # insert the same job again but with different priority
-        scheduler.add(job2, 1)
+        scheduler.addLink(job2, 1)
         self.assertEqual(scheduler.pool.qsize(), 2)
 
     def test_get(self):
         job1 = JobSentinel.job()
         job2 = JobSentinel.job()
         scheduler = Scheduler(self.settings)
-        scheduler.add(job1, 100)
-        scheduler.add(job2, 101)
+        scheduler.addLink(job1, 100)
+        scheduler.addLink(job2, 101)
         jobids, i = [job1.uid, job2.uid], 0
         while scheduler.hasNext():
             link = scheduler.nextLink()

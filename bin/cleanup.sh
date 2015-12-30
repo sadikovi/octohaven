@@ -10,7 +10,7 @@ for f in $(find "$ROOT_DIR" -name "*.pyc" -type f); do
 done
 # delete sass cache
 echo "[INFO] Removing sass-cache files in $ROOT_DIR"
-if [ -d "$ROOT_DIR/.sass-cache" ]; then
+if [[ -d "$ROOT_DIR/.sass-cache" ]]; then
     echo "- Removing directory"
     rm -r "$ROOT_DIR/.sass-cache"
 fi
