@@ -101,7 +101,8 @@ RUN_SERVICE_COMMAND="$WHICH_PYTHON $ROOT_DIR/run_service.py \
     --redis-host=$REDIS_HOST \
     --redis-port=$REDIS_PORT \
     --redis-db=$REDIS_DB \
-    --jar-folder=$JAR_FOLDER"
+    --jar-folder=$JAR_FOLDER \
+    --force-spark-master-address=$FORCE_SPARK_MASTER_ADDRESS"
 
 if [ -n "$OPTION_USE_DAEMON" ]; then
     echo "[INFO] Launching service as daemon process..."

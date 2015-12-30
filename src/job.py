@@ -171,6 +171,14 @@ class SparkJob(object):
         return SparkJob(uid, self.name, self.masterurl, self.entrypoint, self.jar, self.options,
             self.jobconf)
 
+    # update Spark master url
+    def updateMasterUrl(self, masterUrl):
+        self.masterurl = JobCheck.validateMasterUrl(masterUrl)
+
+    # return current master url
+    def getMasterUrl(self):
+        return self.masterurl
+
     @classmethod
     def fromDict(cls, obj):
         # validate spark job uid to fetch only SparkJob instances
@@ -231,6 +239,10 @@ class Job(object):
         assertType(newTime, LongType)
         newTime = -1L if newTime < -1L else newTime
         self.finishtime = newTime
+
+    # get current Spark job
+    def getSparkJob(self):
+        return self.sparkjob
 
     def toDict(self):
         return {

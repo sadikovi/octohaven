@@ -222,6 +222,12 @@ class Scheduler(Octolog, object):
         self.maxRunningJobs = 1
         # whether timers are running
         self.isRunning = False
+        # force new Spark master address. If true, it will update master address for a staled job
+        # to the valid address specified in configuration file before launching it, e.g. job was
+        # saved with address "spark://old.address:7077", address was updated to
+        # "spark://new.address:7077", job will be executed with new address, if option is true.
+        self.forceSparkMasterAddress = settings["FORCE_SPARK_MASTER_ADDRESS"] if \
+            "FORCE_SPARK_MASTER_ADDRESS" in settings else False
 
     @private
     def hasNext(self):
@@ -252,6 +258,10 @@ class Scheduler(Octolog, object):
         # resave job and update link
         self.storageManager.saveItem(job, Job)
         self.storageManager.addItemToKeyspace(provider.keyspace(newStatus), job.uid)
+
+    # update only job, assuming that all object properties have been updated
+    def updateJobOnly(self, job):
+        self.storageManager.saveItem(job, Job)
 
     def linkForUid(self, uid):
         return self.storageManager.itemForUid(uid, klass=Link)
@@ -327,6 +337,16 @@ class Scheduler(Octolog, object):
     # Also specify stdout and stderr folders for a job
     # Returns process id for a job
     def executeSparkJob(self, job):
+        if self.forceSparkMasterAddress:
+            # check if Spark master address is different from saved job address
+            sparkJob = job.getSparkJob()
+            if sparkJob.getMasterUrl() != self.sparkModule.masterAddress:
+                self.logger().warning("Job master url %s will be updated to new master url %s",
+                    sparkJob.getMasterUrl(), self.sparkModule.masterAddress)
+                sparkJob.updateMasterUrl(self.sparkModule.masterAddress)
+                # update job in storage
+                self.updateJobOnly(job)
+        # get execute command
         cmd = job.execCommand()
         self.logger().info("Executing command: %s", str(cmd))
         # open output and error files in folder specific for that jobid
