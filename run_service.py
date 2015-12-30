@@ -81,6 +81,8 @@ Options are:
     if not jar_folder or not os.path.exists(jar_folder):
         raise StandardError("Jar folder must be set " + \
             "and be a valid directory, got %s" % str(jar_folder))
+    # resolve "force-spark-master-address"
+    force_spark_addr = True if getOrElse(params, "--force-spark-master-address", None) else False
 
     # global settings necessary to run application
     settings = {
@@ -90,7 +92,8 @@ Options are:
         "JAR_FOLDER": jar_folder,
         "REDIS_HOST": redis_host,
         "REDIS_PORT": redis_port,
-        "REDIS_DB": redis_db
+        "REDIS_DB": redis_db,
+        "FORCE_SPARK_MASTER_ADDRESS": force_spark_addr
     }
 
     # prepare server
@@ -99,6 +102,7 @@ Options are:
 
     print "[INFO] Spark UI address is set to %s" % spark_ui_address
     print "[INFO] Spark Master address is set to %s" % spark_master_address
+    print "[INFO] Force new Spark Master address: %s" % force_spark_addr
     print "[INFO] Jar folder is set to %s" % jar_folder
     print "[INFO] Redis host and port are set to %s:%s" % (redis_host, redis_port)
     print "[INFO] Using Redis db %s" % redis_db

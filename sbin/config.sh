@@ -17,6 +17,12 @@ export OCTOHAVEN_SPARK_UI_ADDRESS="http://localhost:8080"
 # Root folder as starting point to show .jar files, can have nested folders, this will show file
 # catalog starting from this folder specified. Please try specifying some more precise than root "/"
 export JAR_FOLDER="/Users/sadikovi/developer/octohaven/test/resources/filelist"
+# Force new Spark master address, recommended to set this option.
+# If variable is set, it will update master address for a staled job with previous address to the
+# valid address specified in configuration file before launching it, e.g. job was saved with
+# address "spark://old.address:7077", address was updated to "spark://new.address:7077", job will
+# be executed with new address, if configuration option is set.
+export FORCE_SPARK_MASTER_ADDRESS="YES"
 
 #################################################
 ### Docker Redis settings
@@ -33,7 +39,8 @@ export REDIS_CONTAINER="octohaven-redis-container"
 ### Redis settings
 #################################################
 # If Docker is used (USE_DOCKER is non-empty) Redis host will be assigned as container host
-# (Docker ip address) automatically, and port will be bound to the REDIS_PORT specified.
+# (container IP address) automatically, and port will be bound to the REDIS_PORT specified. It is
+# recommended not to change these settings, if USE_DOCKER is set.
 # Otherwise, it will use REDIS_HOST and REDIS_PORT to connect to Redis instance running.
 export REDIS_HOST="sandbox"
 # Redis port

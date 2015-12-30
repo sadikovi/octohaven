@@ -35,6 +35,11 @@ class SchedulerTestSuite(unittest.TestCase):
         scheduler = Scheduler(self.settings)
         self.assertEqual(scheduler.poolSize, 5)
         self.assertEqual(scheduler.isRunning, False)
+        self.assertEqual(scheduler.forceSparkMasterAddress, False)
+        # update settings to include "force-master-address" option
+        self.settings["FORCE_SPARK_MASTER_ADDRESS"] = True
+        scheduler = Scheduler(self.settings)
+        self.assertEqual(scheduler.forceSparkMasterAddress, True)
 
     def test_fetchStatus(self):
         job1 = JobSentinel.job()

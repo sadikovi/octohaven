@@ -226,6 +226,22 @@ class SparkJobTestSuite(unittest.TestCase):
         obj["uid"] = None
         self.assertEqual(copyObj, obj)
 
+    def test_updateMasterUrl(self):
+        sparkjob = JobSentinel.sparkJob()
+        self.assertTrue(sparkjob.masterurl is not None)
+        with self.assertRaises(StandardError):
+            sparkjob.updateMasterUrl(None)
+        with self.assertRaises(StandardError):
+            sparkjob.updateMasterUrl("http://localhost:8080")
+        sparkjob.updateMasterUrl("spark://updated:7077")
+        self.assertEqual(sparkjob.masterurl, "spark://updated:7077")
+
+    def test_getMasterUrl(self):
+        sparkjob = JobSentinel.sparkJob()
+        self.assertEqual(sparkjob.getMasterUrl(), sparkjob.masterurl)
+        sparkjob.updateMasterUrl("spark://updated:7077")
+        self.assertEqual(sparkjob.getMasterUrl(), "spark://updated:7077")
+
 class JobTestSuite(unittest.TestCase):
     def setUp(self):
         self.uid = nextJobId()
@@ -351,6 +367,11 @@ class JobTestSuite(unittest.TestCase):
         self.assertEqual(job.starttime, self.submittime)
         job.updateStartTime(currentTimeMillis())
         self.assertTrue(job.starttime >= currentTimeMillis() - 1000L)
+
+    def test_getSparkJob(self):
+        job = Job(self.uid, self.status, self.createtime, self.submittime,
+            self.duration, self.sparkjob)
+        self.assertEqual(job.getSparkJob(), self.sparkjob)
 
 # Load test suites
 def _suites():
