@@ -107,7 +107,7 @@ _timetableApi.get(id, ->
             keyElem("Latest scheduled job", "Latest scheduled job for timetable",
                 {type: "a", href: "/job?jobid=#{timetable.latestjobid}", title: "view"}),
             keyValue("Latest run", "Latest run (if any)",
-                timeToDate(timetable["stoptime"], "None"))
+                timeToDate(timetable["latestruntime"], "None"))
         ]
         result = _misc.segments(rows)
 
