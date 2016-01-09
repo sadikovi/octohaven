@@ -4,7 +4,7 @@
 sbin="`dirname "$0"`"
 ROOT_DIR="`cd "$sbin/../"; pwd`"
 
-# load default variables (Octohaven and Redis settings)
+# load configuration variables
 . "$ROOT_DIR/sbin/config.sh"
 
 # check dependencies (python is always checked)
@@ -25,16 +25,15 @@ fi
 
 # check if we are using Docker and stop container if exists
 # should also recognize whether container exists or not
-echo "[INFO] Stopping Redis container..."
 if [ -n "$USE_DOCKER" ]; then
+    echo "[INFO] Stopping container..."
     . "$ROOT_DIR/sbin/check-docker.sh"
     # stop docker container
-    if [ -n "$DOCKER_REDIS_RUNNING" ]; then
-        eval "$WHICH_DOCKER stop $REDIS_CONTAINER" || \
-            (echo "[ERROR] Failed to stop. You can stop container manually" && exit 1)
-    elif [ -n "$DOCKER_REDIS_EXISTS" ]; then
-        echo "[INFO] Redis container is already stopped"
+    if [ -n "$DOCKER_CONTAINER_RUNNING" ]; then
+        eval "$WHICH_DOCKER stop $DOCKER_CONTAINER" || exit 1
+    elif [ -n "$DOCKER_CONTAINER_EXISTS" ]; then
+        echo "[INFO] Container is already stopped"
     else
-        echo "[INFO] No container '$REDIS_CONTAINER' found."
+        echo "[INFO] No container '$DOCKER_CONTAINER' found."
     fi
 fi

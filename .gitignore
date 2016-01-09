@@ -63,3 +63,9 @@ target/
 # temp folders
 temp/
 apache/
+
+# lib dependencies that are not permanent
+!lib/
+lib/*
+!lib/__init__.py
+!lib/redis

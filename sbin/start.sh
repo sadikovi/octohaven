@@ -60,7 +60,7 @@ for i in "$@"; do
     esac
 done
 
-# load default variables (Octohaven and Redis settings)
+# load configuration variables
 . "$ROOT_DIR/sbin/config.sh"
 
 # check dependencies (python is always checked)
@@ -82,27 +82,12 @@ fi
 if [ -n "$USE_DOCKER" ]; then
     # check that Docker is set properly
     . "$ROOT_DIR/sbin/check-docker.sh"
-    # launch Docker container and ensure that REDIS_HOST is set correctly
+    # launch Docker container and ensure that host is set correctly
     . "$ROOT_DIR/sbin/docker-launch.sh"
 fi
 
-# select test mode if available
-if [ -n "$OPTION_TEST_MODE" ]; then
-    echo "[WARN] Launching service in test mode"
-    . "$ROOT_DIR/bin/test-config.sh"
-fi
-
 # command to start service
-RUN_SERVICE_COMMAND="$WHICH_PYTHON $ROOT_DIR/run_service.py \
-    --host=$OCTOHAVEN_HOST \
-    --port=$OCTOHAVEN_PORT \
-    --spark-ui-address=$OCTOHAVEN_SPARK_UI_ADDRESS \
-    --spark-master-address=$OCTOHAVEN_SPARK_MASTER_ADDRESS \
-    --redis-host=$REDIS_HOST \
-    --redis-port=$REDIS_PORT \
-    --redis-db=$REDIS_DB \
-    --jar-folder=$JAR_FOLDER \
-    --force-spark-master-address=$FORCE_SPARK_MASTER_ADDRESS"
+RUN_SERVICE_COMMAND="$WHICH_PYTHON --version"
 
 if [ -n "$OPTION_USE_DAEMON" ]; then
     echo "[INFO] Launching service as daemon process..."

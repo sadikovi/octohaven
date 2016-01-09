@@ -69,45 +69,6 @@ def dateToTimestamp(date):
     return (date - datetime(1970, 1, 1)).total_seconds() * 1000L
 
 ################################################################
-# UID functions for model
-################################################################
-# create uid with prefix
-def auid(prefix=""):
-    return "%s" % prefix + uuid.uuid4().hex
-
-# check that uid belongs to certain group
-def isuid(uid, prefix):
-    return type(uid) is StringType and uid.startswith(prefix)
-
-# Job uid
-def nextJobId():
-    return auid("job_")
-
-def isJobId(uid):
-    return isuid(uid, "job_")
-
-# Spark job uid
-def nextSparkJobId():
-    return auid("spark_")
-
-def isSparkJobId(uid):
-    return isuid(uid, "spark_")
-
-# Template uid
-def nextTemplateId():
-    return auid("template_")
-
-def isTemplateId(uid):
-    return isuid(uid, "template_")
-
-# Timetable uid
-def nextTimetableId():
-    return auid("timetable_")
-
-def isTimetableId(uid):
-    return isuid(uid, "timetable_")
-
-################################################################
 # Assertions
 ################################################################
 # Helper method to check to type match

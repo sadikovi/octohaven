@@ -1,24 +1,23 @@
 #!/usr/bin/env python
 
-import unittest
-import paths
-import sys
+import sys, unittest, paths
+from cli import CLI
 
 # select what tests to run
 RUN_TESTS = {
-    "redisconnector": True,
-    "job": True,
-    "storagemanager": True,
-    "filemanager": True,
-    "jobmanager": True,
-    "utils": True,
-    "sparkmodule": True,
-    "template": True,
-    "scheduler": True,
-    "subscription": True,
-    "timetable": True,
-    "crontab": True,
-    "timetablescheduler": True
+    "redisconnector": False,
+    "job": False,
+    "storagemanager": False,
+    "filemanager": False,
+    "jobmanager": False,
+    "utils": False,
+    "sparkmodule": False,
+    "template": False,
+    "scheduler": False,
+    "subscription": False,
+    "timetable": False,
+    "crontab": False,
+    "timetablescheduler": False
 }
 
 def checkTest(key):
@@ -117,12 +116,13 @@ def collectSystemTests(suites):
         print "@skip: 'timetablescheduler' tests"
 
 if __name__ == '__main__':
-    args = sys.argv[2:]
-    if not args or len(args) < 3:
-        raise StandardError("Required: REDIS_HOST, REDIS_PORT, REDIS_TEST_DB, got %s" % args)
-    else:
-        from test.unittest_constants import RedisConst
-        RedisConst.setRedisSettings(args[0], args[1], args[2])
+    cli = CLI(sys.argv)
+    print cli.get("host")
+    print cli.get("port")
+    print cli.get("user")
+    print cli.get("password")
+    print cli.get("database")
+
     suites = unittest.TestSuite()
     print ""
     print "### [:Octohaven] Gathering tests info ###"

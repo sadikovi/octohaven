@@ -2,10 +2,10 @@
 
 # [NOTE] this script should be loaded after configuration, since we are using container name
 
-# find docker and check running redis container
+# find docker and check running container
 export WHICH_DOCKER=$(which docker)
 if [ -z "$WHICH_DOCKER" ]; then
-    echo "[ERROR] Docker is not found. Cannot start Redis server"
+    echo "[ERROR] Docker is not found."
     exit 1
 fi
 
@@ -28,5 +28,5 @@ export DOCKER_SERVER_VERSION=$($WHICH_DOCKER version | awk '{ind=($0~/Server/)?i
     {if (ind && $0~/Version/) print $2}' | grep -e '[[:digit:]]\.[[:digit:]]\.[[:digit:]]')
 
 # check if container exists and running
-export DOCKER_REDIS_EXISTS=$($WHICH_DOCKER ps -a | grep -e "\\s\+$REDIS_CONTAINER$")
-export DOCKER_REDIS_RUNNING=$($WHICH_DOCKER ps | grep -e "\\s\+$REDIS_CONTAINER$")
+export DOCKER_CONTAINER_EXISTS=$($WHICH_DOCKER ps -a | grep -e "\\s\+$DOCKER_CONTAINER$")
+export DOCKER_CONTAINER_RUNNING=$($WHICH_DOCKER ps | grep -e "\\s\+$DOCKER_CONTAINER$")
