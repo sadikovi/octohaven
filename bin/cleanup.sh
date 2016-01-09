@@ -5,8 +5,10 @@ ROOT_DIR="`cd "$bin/../"; pwd`"
 # delete .pyc files from project folder
 echo "[INFO] Removing *.pyc files in $ROOT_DIR"
 for f in $(find "$ROOT_DIR" -name "*.pyc" -type f); do
-    echo "- Removing $f"
-    rm "$f"
+    if [[ -f "$f" ]]; then
+        echo "- Removing $f"
+        rm "$f"
+    fi
 done
 # delete sass cache
 echo "[INFO] Removing sass-cache files in $ROOT_DIR"
@@ -17,8 +19,10 @@ fi
 # delete service logs
 echo "[INFO] Removing 'octohaven-service.log' files"
 for f in $(find "$ROOT_DIR" -name "octohaven-service.log*" -type f); do
-    echo "- Removing $f"
-    rm "$f"
+    if [[ -f "$f" ]]; then
+        echo "- Removing $f"
+        rm "$f"
+    fi
 done
 # delete apache/spark/logs dir and all subfolders
 echo "[INFO] Removing 'apache/spark/logs' directory for Spark job logs"
