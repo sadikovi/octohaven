@@ -1,5 +1,11 @@
 #!/usr/bin/env python
 
+import json, utils
+from types import DictType
+from src.db.sqlcontext import SQLContext
+
+TEMPLATE_DEFAULT_NAME = "Unknown"
+
 # Templates is a add-on functionality that saves all job parameters as a template job.
 # You can request it later in order to populate UI forms and all, minimizing filling up time. It is
 # different from a job, as template is non validated set of parameters, unlike job, e.g. dumping
@@ -13,24 +19,9 @@
 #       some object with all the parameters that we received
 #   }
 # }
-
-from types import DictType, StringType
-from storagemanager import StorageManager, KeyspaceProvider
-from utils import *
-
-TEMPLATE_KEYSPACE = "TEMPLATE"
-TEMPLATE_NAME_UNKNOWN = "Unknown"
-
-class TemplateCheck(object):
-    @staticmethod
-    def validateUid(uid):
-        if not isTemplateId(uid):
-            raise StandardError("UID is not Template UID")
-        return uid
-
 class Template(object):
     def __init__(self, uid, name, createtime, content):
-        self.uid = TemplateCheck.validateUid(uid)
+        self.uid = uid
         self.name = name
         self.createtime = long(createtime)
         if type(content) is not DictType:
@@ -40,7 +31,7 @@ class Template(object):
         for key, value in content.items():
             self.content[str(key)] = str(value)
 
-    def toDict(self):
+    def json(self):
         return {
             "uid": self.uid,
             "name": self.name,
@@ -48,33 +39,45 @@ class Template(object):
             "content": self.content
         }
 
+    # flat dictionary of properties
+    def dict(self):
+        return {
+            "uid": self.uid,
+            "name": self.name,
+            "createtime": self.createtime,
+            "content": json.dumps(self.content)
+        }
+
     @classmethod
     def fromDict(cls, obj):
         # validate template uid to fetch only Template instances
-        uid = TemplateCheck.validateUid(obj["uid"])
+        uid = obj["uid"]
         name = obj["name"]
-        createtime = obj["createtime"]
-        content = obj["content"]
+        createtime = long(obj["createtime"])
+        content = utils.jsonOrElse(obj["content"], None)
+        if not content:
+            raise StandardError("Could not process content %s" % obj["content"])
         return cls(uid, name, createtime, content)
 
-class TemplateManager(KeyspaceProvider, object):
-    def __init__(self, storageManager):
-        assertType(storageManager, StorageManager)
-        self.storageManager = storageManager
+# Template manager for creating, updating, and removing templates. Uses sql context to interact with
+# storage. Note that sql context is one for entire application
+class TemplateManager(object):
+    def __init__(self, sqlContext):
+        utils.assertInstance(sqlContext, SQLContext)
+        self.sqlcnx = sqlContext
 
     def createTemplate(self, name, content):
-        uid = nextTemplateId()
         # we use default name if current name cannot be resolved
-        name = name if type(name) is StringType and len(name) > 0 else TEMPLATE_NAME_UNKNOWN
+        name = str(name).strip()
+        name = name if len(name) > 0 else TEMPLATE_DEFAULT_NAME
         # creation time in milliseconds
-        createtime = currentTimeMillis()
+        createtime = utils.currentTimeMillis()
         # check that content is a dictionary
-        assertType(content, DictType, "Content is wrong and cannot be parsed")
-        return Template(uid, str(name), createtime, content)
-
-    def saveTemplate(self, template):
-        self.storageManager.saveItem(template, klass=Template)
-        self.storageManager.addItemToKeyspace(self.keyspace(TEMPLATE_KEYSPACE), template.uid)
+        assertType(content, DictType, "Content is wrong and cannot be parsed: %s" % type(content))
+        # insert into templates table
+        pr = {"name": name, "createtime": createtime, "content": json.dumps(content)}
+        uid = sqlcnx.insert("templates", pr)
+        return Template(uid, name, createtime, content)
 
     def templates(self):
         # we retrieve all the templates, do not limit them.
@@ -86,8 +89,7 @@ class TemplateManager(KeyspaceProvider, object):
 
     def templateForUid(self, uid):
         return self.storageManager.itemForUid(uid, klass=Template)
-
-    # we do not really delete template, we just remove reference to it from keyspace
+    
     def deleteTemplate(self, template):
         assertType(template, Template)
         keyspace = self.keyspace(TEMPLATE_KEYSPACE)

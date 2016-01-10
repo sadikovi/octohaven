@@ -32,16 +32,6 @@ class UtilsTestSuite(unittest.TestCase):
         self.assertEqual(utils.boolOrElse("0", True), False)
         self.assertEqual(utils.boolOrElse("no", True), False)
 
-    def test_uid(self):
-        self.assertEqual(utils.isJobId(utils.nextJobId()), True)
-        self.assertEqual(utils.isSparkJobId(utils.nextSparkJobId()), True)
-        self.assertEqual(utils.isTemplateId(utils.nextTemplateId()), True)
-        self.assertEqual(utils.isTimetableId(utils.nextTimetableId()), True)
-        # inter-compare uids
-        self.assertEqual(utils.isJobId(utils.nextTemplateId()), False)
-        self.assertEqual(utils.isJobId(utils.nextTimetableId()), False)
-        self.assertEqual(utils.isJobId(utils.nextSparkJobId()), False)
-
     def test_assert(self):
         with self.assertRaises(StandardError):
             utils.assertType(1, StringType)
@@ -50,6 +40,15 @@ class UtilsTestSuite(unittest.TestCase):
         utils.assertType(1L, LongType)
         utils.assertType(1, IntType)
         utils.assertType("1L", StringType)
+
+    def test_assertInstance(self):
+        with self.assertRaises(StandardError):
+            utils.assertInstance(1, StringType)
+        with self.assertRaises(StandardError):
+            utils.assertInstance(1, LongType)
+        utils.assertInstance(1L, LongType)
+        utils.assertInstance("1L", StringType)
+        utils.assertInstance("1L", object)
 
 # Load test suites
 def _suites():

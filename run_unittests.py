@@ -1,127 +1,46 @@
 #!/usr/bin/env python
 
-import sys, unittest, paths
+import sys, unittest, importlib, paths, test
 from cli import CLI
 
 # select what tests to run
 RUN_TESTS = {
-    "redisconnector": False,
-    "job": False,
-    "storagemanager": False,
-    "filemanager": False,
-    "jobmanager": False,
-    "utils": False,
+    "utils": True,
+    "mysqlcontext": True,
     "sparkmodule": False,
-    "template": False,
-    "scheduler": False,
-    "subscription": False,
-    "timetable": False,
-    "crontab": False,
-    "timetablescheduler": False
+    "subscription": True,
+    "crontab": True,
+    "filemanager": True
 }
 
 def checkTest(key):
     return key in RUN_TESTS and RUN_TESTS[key]
 
+# add individual test module
+def addTests(name, moduleName):
+    if checkTest(name):
+        module = importlib.import_module(moduleName)
+        suites.addTest(module.loadSuites())
+    else:
+        print "@skip: '%s' tests" % name
+
+# collect all the tests in the system
 def collectSystemTests(suites):
-    # redis connector
-    if checkTest("redisconnector"):
-        import test.unittest_redisconnector as unittest_redisconnector
-        suites.addTest(unittest_redisconnector.loadSuites())
-    else:
-        print "@skip: 'redisconnector' tests"
-
-    # job class
-    if checkTest("job"):
-        import test.unittest_job as unittest_job
-        suites.addTest(unittest_job.loadSuites())
-    else:
-        print "@skip: 'job' tests"
-
-    # storage manager
-    if checkTest("storagemanager"):
-        import test.unittest_storagemanager as unittest_storagemanager
-        suites.addTest(unittest_storagemanager.loadSuites())
-    else:
-        print "@skip: 'storagemanager' tests"
-
-    # file manager
-    if checkTest("filemanager"):
-        import test.unittest_filemanager as unittest_filemanager
-        suites.addTest(unittest_filemanager.loadSuites())
-    else:
-        print "@skip: 'filemanager' tests"
-
-    # job manager
-    if checkTest("jobmanager"):
-        import test.unittest_jobmanager as unittest_jobmanager
-        suites.addTest(unittest_jobmanager.loadSuites())
-    else:
-        print "@skip: 'jobmanager' tests"
-
-    # utils
-    if checkTest("utils"):
-        import test.unittest_utils as unittest_utils
-        suites.addTest(unittest_utils.loadSuites())
-    else:
-        print "@skip: 'utils' tests"
-
-    # sparkmodule
-    if checkTest("sparkmodule"):
-        import test.unittest_sparkmodule as unittest_sparkmodule
-        suites.addTest(unittest_sparkmodule.loadSuites())
-    else:
-        print "@skip: 'sparkmodule' tests"
-
-    # template
-    if checkTest("template"):
-        import test.unittest_template as unittest_template
-        suites.addTest(unittest_template.loadSuites())
-    else:
-        print "@skip: 'template' tests"
-
-    # scheduler
-    if checkTest("scheduler"):
-        import test.unittest_scheduler as unittest_scheduler
-        suites.addTest(unittest_scheduler.loadSuites())
-    else:
-        print "@skip: 'scheduler' tests"
-
-    # subscription
-    if checkTest("subscription"):
-        import test.unittest_subscription as unittest_subscription
-        suites.addTest(unittest_subscription.loadSuites())
-    else:
-        print "@skip: 'subscription' tests"
-
-    # timetable
-    if checkTest("timetable"):
-        import test.unittest_timetable as unittest_timetable
-        suites.addTest(unittest_timetable.loadSuites())
-    else:
-        print "@skip: 'timetable' tests"
-
-    # crontab
-    if checkTest("crontab"):
-        import test.unittest_crontab as unittest_crontab
-        suites.addTest(unittest_crontab.loadSuites())
-    else:
-        print "@skip: 'crontab' tests"
-
-    # timetablescheduler
-    if checkTest("timetablescheduler"):
-        import test.unittest_timetablescheduler as unittest_timetablescheduler
-        suites.addTest(unittest_timetablescheduler.loadSuites())
-    else:
-        print "@skip: 'timetablescheduler' tests"
+    addTests("utils", "test.unittest_utils")
+    addTests("sparkmodule", "test.unittest_sparkmodule")
+    addTests("subscription", "test.unittest_subscription")
+    addTests("mysqlcontext", "test.db.unittest_mysqlcontext")
+    addTests("crontab", "test.unittest_crontab")
+    addTests("filemanager", "test.unittest_filemanager")
 
 if __name__ == '__main__':
     cli = CLI(sys.argv)
-    print cli.get("host")
-    print cli.get("port")
-    print cli.get("user")
-    print cli.get("password")
-    print cli.get("database")
+    # add shared connection settings
+    test.Settings.mp().set("host", cli.get("host"))
+    test.Settings.mp().set("port", cli.get("port"))
+    test.Settings.mp().set("user", cli.get("user"))
+    test.Settings.mp().set("password", cli.get("password"))
+    test.Settings.mp().set("database", cli.get("database"))
 
     suites = unittest.TestSuite()
     print ""

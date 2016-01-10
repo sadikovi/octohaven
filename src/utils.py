@@ -77,3 +77,10 @@ def assertType(passed, expected, msg=None):
         msg = msg if msg else "Expected %s, got %s" % (expected, str(type(passed)))
         raise StandardError(msg)
     return True
+
+# Assert instance on subclasses
+def assertInstance(passed, expectedType, msg=None):
+    if not isinstance(passed, expectedType):
+        msg = msg if msg else "Instance %s is not of type %s" % (passed, str(expectedType))
+        raise StandardError(msg)
+    return True

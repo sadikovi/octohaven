@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
-import unittest
-import os
+import os, unittest
 from paths import ROOT_PATH
 from src.sparkmodule import SparkModule, FREE, BUSY, DOWN
 
