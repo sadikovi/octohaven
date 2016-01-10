@@ -10,8 +10,8 @@ def_usage() {
 
 Usage: $0 [options]
 -d | --daemon=*     launches service as daemon process, e.g. --daemon=true/false
+--reset             reset application, remove all data
 --usage | --help    displayes usage of the script
--t | --test         launches service in test mode
 
 EOM
     exit 0
@@ -32,29 +32,26 @@ def_daemon() {
     fi
 }
 
-def_test_mode() {
-    OPTION_TEST_MODE="${i#*=}"
-    if [ "$OPTION_TEST_MODE" == "-t" ]; then
-        OPTION_TEST_MODE="true"
-    elif [ "$OPTION_TEST_MODE" == "--test" ]; then
-        OPTION_TEST_MODE="true"
+def_reset() {
+    OPTION_RESET="${i#*=}"
+    if [ "$OPTION_RESET" == "--reset" ]; then
+        OPTION_RESET="true"
     else
-        OPTION_TEST_MODE=""
+        OPTION_RESET=""
     fi
 }
 
 # command-line options for start-up:
-# -d | --daemon => runs service as a daemon process
 for i in "$@"; do
     case $i in
         # daemon process on/off
         -d|--daemon=*) def_daemon
         shift ;;
+        # reset data
+        --reset) def_reset
+        shift ;;
         # display usage
         --usage|--help) def_usage
-        shift ;;
-        # test mode
-        -t|--test) def_test_mode
         shift ;;
         *) ;;
     esac
@@ -86,8 +83,17 @@ if [ -n "$USE_DOCKER" ]; then
     . "$ROOT_DIR/sbin/docker-launch.sh"
 fi
 
+# setup sql instance
+eval "$WHICH_PYTHON $ROOT_DIR/setup.py \
+    user=$MYSQL_USER \
+    password=$MYSQL_PASSWORD \
+    host=$MYSQL_HOST \
+    port=$MYSQL_PORT \
+    database=$MYSQL_DATABASE \
+    drop_existing=$OPTION_RESET" || exit 1
+
 # command to start service
-RUN_SERVICE_COMMAND="$WHICH_PYTHON --version"
+RUN_SERVICE_COMMAND=""
 
 if [ -n "$OPTION_USE_DAEMON" ]; then
     echo "[INFO] Launching service as daemon process..."

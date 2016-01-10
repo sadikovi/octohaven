@@ -45,6 +45,15 @@ echo "[WARN] Tests will use docker to launch test MySQL instance specified in te
 . "$ROOT_DIR/sbin/check-docker.sh"
 . "$ROOT_DIR/sbin/docker-launch.sh"
 
+# run setup command
+eval "$WHICH_PYTHON $ROOT_DIR/setup.py \
+    user=$MYSQL_USER \
+    password=$MYSQL_PASSWORD \
+    host=$MYSQL_HOST \
+    port=$MYSQL_PORT \
+    database=$MYSQL_DATABASE \
+    drop_existing=YES" || exit 1
+
 echo "[INFO] Running tests..."
 
 ################################################################
