@@ -2,7 +2,7 @@
 
 import os, re, math
 from types import FileType, IntType
-from utils import *
+from src.octo.utils import *
 
 class File(object):
     # name is a file's name

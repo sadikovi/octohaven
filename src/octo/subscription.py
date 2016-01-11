@@ -3,7 +3,7 @@
 from threading import Lock
 from types import StringType
 from octolog import Octolog
-from utils import *
+from src.octo.utils import *
 
 lock = Lock()
 

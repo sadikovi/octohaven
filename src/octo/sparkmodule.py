@@ -5,7 +5,7 @@ from types import ListType
 from job import JobCheck, SPARK_UID_KEY
 from webparser import Parser
 from octolog import Octolog
-from utils import *
+from src.octo.utils import *
 
 SPARK_REST_ENDPOINT = "/api/v1"
 SPARK_REST_APPLICATIONS = "/applications"

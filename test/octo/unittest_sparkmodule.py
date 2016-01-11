@@ -2,7 +2,7 @@
 
 import os, unittest
 from paths import ROOT_PATH
-from src.sparkmodule import SparkModule, FREE, BUSY, DOWN
+from src.octo.sparkmodule import SparkModule, FREE, BUSY, DOWN
 
 class SparkModuleTestSuite(unittest.TestCase):
     def setUp(self):

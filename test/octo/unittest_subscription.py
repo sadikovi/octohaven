@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import unittest
-from src.subscription import Dispatcher, Emitter, Subscriber
+from src.octo.subscription import Dispatcher, Emitter, Subscriber
 
 TEST_DISPATCHER = Dispatcher("TEST DISPATCHER")
 

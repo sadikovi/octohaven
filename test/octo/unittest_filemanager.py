@@ -1,9 +1,8 @@
 #!/usr/bin/env python
 
-import unittest
-import os
+import os, unittest
 from paths import TEST_PATH
-from src.filemanager import FileManager, SEP, ROOT, File, Directory, JarFile
+from src.octo.filemanager import FileManager, SEP, ROOT, File, Directory, JarFile
 
 class FileManagerTestSuite(unittest.TestCase):
     def setUp(self):

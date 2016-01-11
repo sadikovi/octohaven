@@ -2,7 +2,7 @@
 
 import unittest
 from types import IntType, LongType, StringType
-import src.utils as utils
+import src.octo.utils as utils
 
 class UtilsTestSuite(unittest.TestCase):
     def setUp(self):

@@ -52,33 +52,66 @@ class MySQLContext(Octolog, object):
     ############################################################
     # Transaction support
     ############################################################
-    # Transaction support for sql connector, passes object "SQLAtomicOperations" as part of
-    # "with clause":
+    # Transaction support for sql connector, passes cursor as part of "with clause":
     # ```
-    # with sqlcon.transaction(ops):
-    #   ops.insert(...)
-    #   ops.insert(...)
-    #   ops.update(...)
-    # Everything within that clause will be executed as single transaction
-    # Atomic operations must not be used within transactions, since they handle connections and
-    # cursors, other resources automatically. Use provided SQLAtomicOperations object instead.
+    # with sqlcon.cursor(with_transaction = True) as cr:
+    #   ...
+    #   cr.execute(sql, args)
+    # ```
+    # Everything within that clause will be executed as single block, and as transaction, if
+    # "with_transaction" is set to True.
     @contextmanager
-    def transaction(self):
+    def cursor(self, with_transaction=True):
         conn = self.connection()
         cursor = None
         operations = None
         try:
             cursor = conn.cursor(dictionary = True, buffered = True)
-            operations = MySQLAtomicOperations(cursor)
-            yield operations
+            yield cursor
         except SQLGlobalError as e:
-            conn.rollback()
-            self.logger().debug("Transaction failed with '%s'. Apply rollback", e.msg)
+            if with_transaction:
+                conn.rollback()
+                self.logger().debug("Transaction failed with '%s'. Apply rollback", e.msg)
             raise e
         else:
-            conn.commit()
+            if with_transaction:
+                conn.commit()
         finally:
             if cursor:
                 cursor.close()
             operations = None
             conn.close()
+
+    ############################################################
+    # DDL atomic operations
+    ############################################################
+    def truncateTable(self, tableName):
+        with self.cursor(with_transaction=False) as cr:
+            ddl = "TRUNCATE TABLE `%s`" % tableName
+            cr.execute(ddl)
+        return True
+
+    def dropTable(self, tableName):
+        status = True
+        with self.cursor(with_transaction=False) as cr:
+            ddl = "DROP TABLE IF EXISTS `%s`" % tableName
+            try:
+                cr.execute(ddl)
+            except SQLGlobalError as err:
+                if err.errno == errorcode.ER_BAD_TABLE_ERROR:
+                    status = False
+                else:
+                    raise err
+        return status
+
+    def createTable(self, ddl):
+        status = True
+        with self.cursor(with_transaction=False) as cr:
+            try:
+                cr.execute(ddl)
+            except SQLGlobalError as err:
+                if err.errno == errorcode.ER_TABLE_EXISTS_ERROR:
+                    status = False
+                else:
+                    raise err
+        return status

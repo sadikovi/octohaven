@@ -2,8 +2,8 @@
 
 import unittest
 from datetime import datetime
-from crontab import CronTab
-from utils import *
+from src.octo.crontab import CronTab
+from src.octo.utils import *
 
 class CronTabTestSuite(unittest.TestCase):
     def setUp(self):

@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 
-import json, utils
+import json, src.octo.utils as utils
 from types import DictType
-from src.db.sqlcontext import SQLContext
+from src.octo.mysqlcontext import MySQLContext
 
 TEMPLATE_DEFAULT_NAME = "Unknown"
 
@@ -89,7 +89,7 @@ class TemplateManager(object):
 
     def templateForUid(self, uid):
         return self.storageManager.itemForUid(uid, klass=Template)
-    
+
     def deleteTemplate(self, template):
         assertType(template, Template)
         keyspace = self.keyspace(TEMPLATE_KEYSPACE)

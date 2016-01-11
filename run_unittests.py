@@ -26,12 +26,12 @@ def addTests(name, moduleName):
 
 # collect all the tests in the system
 def collectSystemTests(suites):
-    addTests("utils", "test.unittest_utils")
-    addTests("sparkmodule", "test.unittest_sparkmodule")
-    addTests("subscription", "test.unittest_subscription")
-    addTests("mysqlcontext", "test.db.unittest_mysqlcontext")
-    addTests("crontab", "test.unittest_crontab")
-    addTests("filemanager", "test.unittest_filemanager")
+    addTests("utils", "test.octo.unittest_utils")
+    addTests("sparkmodule", "test.octo.unittest_sparkmodule")
+    addTests("subscription", "test.octo.unittest_subscription")
+    addTests("mysqlcontext", "test.octo.unittest_mysqlcontext")
+    addTests("crontab", "test.octo.unittest_crontab")
+    addTests("filemanager", "test.octo.unittest_filemanager")
 
 if __name__ == '__main__':
     cli = CLI(sys.argv)

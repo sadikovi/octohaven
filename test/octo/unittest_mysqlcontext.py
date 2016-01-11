@@ -1,9 +1,8 @@
 #!/usr/bin/env python
 
-import unittest, test, mysql
-from src.db.mysqlcontext import MySQLContext
+import unittest, test, mysql, src.octo.utils as utils
+from src.octo.mysqlcontext import MySQLContext
 from mysql.connector.errors import PoolError, Error as SQLGlobalError
-from utils import *
 
 class MySQLContextTestSuite(unittest.TestCase):
     def setUp(self):
@@ -69,91 +68,90 @@ class MySQLContextTestSuite(unittest.TestCase):
         # close all connections
         sqlcnx.closeAll()
 
+    def test_create(self):
+        sqlcnx = MySQLContext(**self.config)
+        sqlcnx.dropTable(self.table)
+        status = sqlcnx.createTable(self.ddl)
+        self.assertEqual(status, True)
+        # try creating table again
+        status = sqlcnx.createTable(self.ddl)
+        self.assertEqual(status, False)
+
+    def test_drop(self):
+        sqlcnx = MySQLContext(**self.config)
+        sqlcnx.createTable(self.ddl)
+        status = sqlcnx.dropTable(self.table)
+        self.assertEqual(status, True)
+        # try deleting it again
+        status = sqlcnx.dropTable(self.table)
+        self.assertEqual(status, False)
+
     def test_insert(self):
         sqlcnx = MySQLContext(**self.config)
         sqlcnx.dropTable(self.table)
         sqlcnx.createTable(self.ddl)
         uid = None
-        with sqlcnx.transaction() as ops:
-            uid = ops.insert(self.table, **{"name": "a", "createtime": 123})
-        rows = sqlcnx.select(self.table, 1, **{"uid": uid})
+        with sqlcnx.cursor(with_transaction=True) as cr:
+            dml = "INSERT INTO test (name, createtime) VALUES(%(name)s, %(createtime)s)"
+            cr.execute(dml, {"name": "a", "createtime": 123})
+            uid = cr.lastrowid
+        # fetching without transaction
+        rows = None
+        with sqlcnx.cursor(with_transaction=False) as cr:
+            sql = "SELECT uid, name, createtime FROM test WHERE uid = %(uid)s"
+            cr.execute(sql, {"uid": uid})
+            rows = cr.fetchall()
         self.assertEqual(len(rows), 1)
         self.assertEqual(rows[0]["uid"], uid)
         self.assertEqual(rows[0]["name"], "a")
         self.assertEqual(rows[0]["createtime"], 123)
         # test failed transaction
         with self.assertRaises(StandardError):
-            with sqlcnx.transactions() as ops:
-                uid = ops.insert(self.table, **{"name": "a", "createtime": 123})
+            with sqlcnx.cursor(with_transaction=True) as cr:
+                dml = "INSERT INTO test (name, createtime) VALUES(%(name)s, %(createtime)s)"
+                cr.execute(dml, {"name": "a", "createtime": 123})
                 raise StandardError()
-        rows = sqlcnx.select(self.table, -1)
+        # check that no records were inserted
+        with sqlcnx.cursor(with_transaction=False) as cr:
+            sql = "SELECT uid, name, createtime FROM test"
+            cr.execute(sql)
+            rows = cr.fetchall()
         self.assertEqual(len(rows), 1)
-
-    def test_update(self):
-        sqlcnx = MySQLContext(**self.config)
-        sqlcnx.dropTable(self.table)
-        sqlcnx.createTable(self.ddl)
-        uid = None
-        with sqlcnx.transaction() as ops:
-            uid = ops.insert(self.table, **{"name": "a", "createtime": 123})
-            ops.update(self.table, **{"name": "b", "createtime": 124, "uid": uid})
-        rows = sqlcnx.select(self.table, 1, **{"uid": uid})
-        self.assertEqual(len(rows), 1)
-        self.assertEqual(rows[0]["uid"], uid)
-        self.assertEqual(rows[0]["name"], "b")
-        self.assertEqual(rows[0]["createtime"], 124)
-        # test update without uid
-        with self.assertRaises(StandardError):
-            ops.update(self.table, **{"name": "b", "createtime": 124})
-
-    def test_delete(self):
-        sqlcnx = MySQLContext(**self.config)
-        sqlcnx.dropTable(self.table)
-        sqlcnx.createTable(self.ddl)
-        uid = None
-        with sqlcnx.transaction() as ops:
-            uid = ops.insert(self.table, **{"name": "a", "createtime": 123})
-            ops.delete(self.table, **{"uid": uid})
-        rows = sqlcnx.select(self.table, 1, **{"uid": uid})
-        self.assertTrue(not rows)
-
-    def test_atomic_operations(self):
-        sqlcnx = MySQLContext(**self.config)
-        sqlcnx.dropTable(self.table)
-        sqlcnx.createTable(self.ddl)
-        uid = sqlcnx.insert(self.table, **{"name": "test1", "createtime": 1})
-        sqlcnx.update(self.table, **{"name": "test2", "createtime": 2, "uid": uid})
-        rows = sqlcnx.select(self.table, 1, **{"uid": uid})
-        self.assertEqual(len(rows), 1)
-        self.assertEqual(rows[0]["uid"], uid)
-        self.assertEqual(rows[0]["name"], "test2")
-        self.assertEqual(rows[0]["createtime"], 2)
-        # test failure
-        uid = sqlcnx.insert(self.table, **{"name": "test3", "createtime": 3})
-        with self.assertRaises(SQLGlobalError):
-            sqlcnx.update(self.table, **{"name": "test2", "createtime": "test", "uid": uid})
-        rows = sqlcnx.select(self.table, -1)
-        # check that row has been inserted
-        self.assertEqual(len(rows), 2)
 
     def test_transaction(self):
         sqlcnx = MySQLContext(**self.config)
         sqlcnx.dropTable(self.table)
         sqlcnx.createTable(self.ddl)
-        with sqlcnx.transaction() as ops:
-            uid = ops.insert(self.table, **{"name": "test1", "createtime": 1})
-            ops.update(self.table, **{"name": "test2", "createtime": 2, "uid": uid})
-        rows = sqlcnx.select(self.table, 1, **{"uid": uid})
+        uid = None
+        with sqlcnx.cursor(with_transaction=True) as cr:
+            dml = "INSERT INTO test (name, createtime) VALUES(%(name)s, %(time)s)"
+            cr.execute(dml, {"name": "test1", "time": 1})
+            uid = cr.lastrowid
+            # now update that record
+            dml = "UPDATE test SET name = %(name)s, createtime = %(time)s WHERE uid = %(uid)s"
+            cr.execute(dml, {"name": "test2", "time": 2, "uid": uid})
+        # fetch updated record
+        with sqlcnx.cursor(with_transaction=False) as cr:
+            sql = "SELECT uid, name, createtime FROM test"
+            cr.execute(sql)
+            rows = cr.fetchall()
         self.assertEqual(len(rows), 1)
         self.assertEqual(rows[0]["uid"], uid)
         self.assertEqual(rows[0]["name"], "test2")
         self.assertEqual(rows[0]["createtime"], 2)
         # test failure, should rollback inserted records
         with self.assertRaises(SQLGlobalError):
-            with sqlcnx.transaction() as ops:
-                uid = ops.insert(self.table, **{"name": "test3", "createtime": 3})
-                ops.update(self.table, **{"name": "test2", "createtime": "test", "uid": uid})
-        rows = sqlcnx.select(self.table, -1)
+            with sqlcnx.cursor(with_transaction=True) as cr:
+                dml = "INSERT INTO test (name, createtime) VALUES(%(name)s, %(time)s)"
+                cr.execute(dml, {"name": "test1", "time": 1})
+                uid = cr.lastrowid
+                dml = "UPDATE test SET name = %(n)s, createtime = %(t)s WHERE uid = %(uid)s"
+                cr.execute(dml, {"n": "test2", "t": "test", "uid": uid})
+        # fetch records
+        with sqlcnx.cursor(with_transaction=False) as cr:
+            sql = "SELECT uid, name, createtime FROM test"
+            cr.execute(sql)
+            rows = cr.fetchall()
         # check that row has been inserted
         self.assertEqual(len(rows), 1)
 
