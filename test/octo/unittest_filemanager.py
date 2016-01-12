@@ -204,7 +204,6 @@ class FileManagerTestSuite(unittest.TestCase):
         manager = FileManager(self.root)
         with open(self.file) as f:
             block = manager.readFromStart(f, 3, chunk=100, offset=0)
-            print block
             self.assertEqual(block, "d to config.sh\n\nThe whole job of scheduler is checking " +
                 "whether cluster is available and running jobs")
             block = manager.readFromStart(f, 3, chunk=100, offset=100)
