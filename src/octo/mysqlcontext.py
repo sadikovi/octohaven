@@ -7,6 +7,29 @@ from mysql.connector.errors import PoolError, Error as SQLGlobalError
 from mysql.connector.pooling import MySQLConnectionPool
 from octolog import Octolog
 
+# [OCTO-57] keep track of number of instances of MySQLContext. Currently allow only one instance
+# per application.
+class MySQLLock(Octolog, object):
+    # maximum contexts
+    MAX_ALLOWERD_NUM_INSTANCES = 1
+    # current number of contexts
+    MYSQLCONTEXT_NUM_INSTANCES = 0
+
+    @classmethod
+    def incrementNum(cls):
+        cls.MYSQLCONTEXT_NUM_INSTANCES = cls.MYSQLCONTEXT_NUM_INSTANCES + 1
+
+    @classmethod
+    def validateLock(cls):
+        if cls.MYSQLCONTEXT_NUM_INSTANCES + 1 > cls.MAX_ALLOWERD_NUM_INSTANCES:
+            raise StandardError("Cannot instantiate MySQLContext, " +
+                "only %s contexts are allowed per application" % cls.MAX_ALLOWERD_NUM_INSTANCES)
+
+    # method for testing only
+    @classmethod
+    def reset(cls):
+        cls.MYSQLCONTEXT_NUM_INSTANCES = 0
+
 # `MySQLContext` is the main entry and wrapper to deal with storing and retrieving data from MySQL.
 # It maintains connection pool and handles new connection allocations automatically.
 # There is only one context per application, therefore should be created globally; it is not
@@ -28,6 +51,9 @@ class MySQLContext(Octolog, object):
         # instantiate pool
         self.logger().debug("Init pool %s with size %s", config["pool_name"], config["pool_size"])
         self.cnxpool = MySQLConnectionPool(**config)
+        # check that instantiation of sql context is within required bound
+        MySQLLock.validateLock()
+        MySQLLock.incrementNum()
 
     ############################################################
     # Connection handling

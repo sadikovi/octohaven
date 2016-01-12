@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import unittest, test, mysql, src.octo.utils as utils
-from src.octo.mysqlcontext import MySQLContext
+from src.octo.mysqlcontext import MySQLContext, MySQLLock
 from mysql.connector.errors import PoolError, Error as SQLGlobalError
 
 class MySQLContextTestSuite(unittest.TestCase):
@@ -22,20 +22,29 @@ class MySQLContextTestSuite(unittest.TestCase):
             "   createtime bigint unsigned"
             ") engine = InnoDB"
         )
+        MySQLLock.reset()
 
     def tearDown(self):
         pass
 
-    def test_init(self):
+    def test_init1(self):
         sqlcnx = MySQLContext(**self.config)
         self.assertEqual(len(sqlcnx.cnxpool.pool_name), 32)
         self.assertEqual(sqlcnx.cnxpool.pool_size, 2)
-        # init specific name and pool size
+
+    # init specific name and pool size
+    def test_init2(self):
         self.config["pool_name"] = "dummy"
         self.config["pool_size"] = 10
         sqlcnx = MySQLContext(**self.config)
         self.assertEqual(sqlcnx.cnxpool.pool_name, self.config["pool_name"])
         self.assertEqual(sqlcnx.cnxpool.pool_size, self.config["pool_size"])
+
+    # test allowed number of connections per application
+    def test_lockNumContext(self):
+        sqlcnx1 = MySQLContext(**self.config)
+        with self.assertRaises(StandardError):
+            sqlcnx2 = MySQLContext(**self.config)
 
     def test_connection(self):
         sqlcnx = MySQLContext(**self.config)
