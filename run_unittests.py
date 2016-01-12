@@ -38,7 +38,7 @@ def collectSystemTests(suites):
     addTests("template", "test.octo.unittest_template")
 
 if __name__ == '__main__':
-    cli = CLI(sys.argv)
+    cli = CLI(sys.argv[1:])
     # add shared connection settings
     test.Settings.mp().set("host", cli.get("host"))
     test.Settings.mp().set("port", cli.get("port"))

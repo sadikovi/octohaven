@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import unittest, json, test, setup, src.octo.utils as utils
+import unittest, json, test, src.octo.storagesetup as setup, src.octo.utils as utils
 from src.octo.mysqlcontext import MySQLContext, MySQLLock
 from src.octo.storagemanager import StorageManager
 from src.octo.template import Template, TemplateManager

@@ -101,27 +101,3 @@ def loadTables(sqlContext, drop_existing=False, logging=False):
                 print "- Created '%s'" % name
             else:
                 print "- Table '%s' already exists" % name
-
-if __name__ == '__main__':
-    cli = CLI(sys.argv[1:])
-    config = {
-        "host": cli.get("host"),
-        "port": cli.get("port"),
-        "user": cli.get("user"),
-        "password": cli.get("password"),
-        "database": cli.get("database")
-    }
-    # other options
-    drop_existing = cli.get("drop_existing")
-
-    print "[INFO] Setup MySQL instance..."
-    print "[INFO] Using configuration:"
-    print " host: %s" % config["host"]
-    print " port: %s" % config["port"]
-    print " user: %s" % config["user"]
-    print " password: %s" % "*****"
-    print " database: %s" % config["database"]
-
-    sqlcnx = MySQLContext(**config)
-    loadTables(sqlcnx, drop_existing, logging=True)
-    print "[INFO] Done"
