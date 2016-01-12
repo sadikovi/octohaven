@@ -10,7 +10,9 @@ RUN_TESTS = {
     "sparkmodule": False,
     "subscription": True,
     "crontab": True,
-    "filemanager": True
+    "filemanager": True,
+    "storagemanager": True,
+    "template": True
 }
 
 def checkTest(key):
@@ -32,6 +34,8 @@ def collectSystemTests(suites):
     addTests("mysqlcontext", "test.octo.unittest_mysqlcontext")
     addTests("crontab", "test.octo.unittest_crontab")
     addTests("filemanager", "test.octo.unittest_filemanager")
+    addTests("storagemanager", "test.octo.unittest_storagemanager")
+    addTests("template", "test.octo.unittest_template")
 
 if __name__ == '__main__':
     cli = CLI(sys.argv)

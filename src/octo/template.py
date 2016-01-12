@@ -1,8 +1,9 @@
 #!/usr/bin/env python
 
 import json, src.octo.utils as utils
-from types import DictType
+from types import DictType, NoneType, BooleanType, IntType, LongType, FloatType
 from src.octo.mysqlcontext import MySQLContext
+from src.octo.storagemanager import StorageManager
 
 TEMPLATE_DEFAULT_NAME = "Unknown"
 
@@ -24,13 +25,19 @@ class Template(object):
         self.uid = uid
         self.name = name
         self.createtime = long(createtime)
-        if type(content) is not DictType:
-            raise StandardError("Template expected DictType, got " + str(type(content)))
+        utils.assertInstance(content, DictType,
+            "Template expected DictType, got %s" % type(content))
         self.content = {}
-        # make sure that fields in content are strings and do not have nested structure
+        # make sure that fields in content are primitive types and do not have nested structure
         for key, value in content.items():
-            self.content[str(key)] = str(value)
+            if isinstance(value, NoneType) or isinstance(value, BooleanType) or \
+                isinstance(value, IntType) or isinstance(value, LongType) or \
+                isinstance(value, FloatType):
+                self.content[str(key)] = value
+            else:
+                self.content[str(key)] = str(value)
 
+    # json representation of Template
     def json(self):
         return {
             "uid": self.uid,
@@ -55,17 +62,18 @@ class Template(object):
         name = obj["name"]
         createtime = long(obj["createtime"])
         content = utils.jsonOrElse(obj["content"], None)
-        if not content:
+        if content is None:
             raise StandardError("Could not process content %s" % obj["content"])
         return cls(uid, name, createtime, content)
 
 # Template manager for creating, updating, and removing templates. Uses sql context to interact with
 # storage. Note that sql context is one for entire application
 class TemplateManager(object):
-    def __init__(self, sqlContext):
-        utils.assertInstance(sqlContext, SQLContext)
-        self.sqlcnx = sqlContext
+    def __init__(self, storageManager):
+        utils.assertInstance(storageManager, StorageManager)
+        self.storage = storageManager
 
+    # Return newly created Template object that is already stored
     def createTemplate(self, name, content):
         # we use default name if current name cannot be resolved
         name = str(name).strip()
@@ -73,24 +81,28 @@ class TemplateManager(object):
         # creation time in milliseconds
         createtime = utils.currentTimeMillis()
         # check that content is a dictionary
-        assertType(content, DictType, "Content is wrong and cannot be parsed: %s" % type(content))
+        utils.assertInstance(content, DictType,
+            "Content is wrong and cannot be parsed: %s" % type(content))
         # insert into templates table
-        pr = {"name": name, "createtime": createtime, "content": json.dumps(content)}
-        uid = sqlcnx.insert("templates", pr)
+        uid = self.storage.createTemplate(name, createtime, json.dumps(content))
         return Template(uid, name, createtime, content)
 
+    # Retrieve all the templates, do not limit them, also sort templates by name, this is done on
+    # sql level in storage manager. Return them as list of Template objects, results is guaranteed
+    # to be a list
     def templates(self):
-        # we retrieve all the templates, do not limit them.
-        # sort templates by name
-        def func(x, y):
-            return cmp(x.name, y.name)
-        keyspace = self.keyspace(TEMPLATE_KEYSPACE)
-        return self.storageManager.itemsForKeyspace(keyspace, -1, func, klass=Template)
+        # rows is a list of templates
+        rows = self.storage.getTemplates()
+        if not rows:
+            rows = []
+        # convert every row into Template object
+        return map(lambda row: Template.fromDict(row), rows)
 
+    # Retrieve template for a specific uid. Return Template object, if found, otherwise None
     def templateForUid(self, uid):
-        return self.storageManager.itemForUid(uid, klass=Template)
+        row = self.storage.getTemplate(uid)
+        return Template.fromDict(row) if row else None
 
-    def deleteTemplate(self, template):
-        assertType(template, Template)
-        keyspace = self.keyspace(TEMPLATE_KEYSPACE)
-        self.storageManager.removeItemFromKeyspace(keyspace, template.uid)
+    # Delete template for a specific uid
+    def deleteTemplate(self, uid):
+        self.storage.deleteTemplate(uid)
