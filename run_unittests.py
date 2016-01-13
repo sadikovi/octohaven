@@ -7,7 +7,7 @@ from cli import CLI
 RUN_TESTS = {
     "utils": True,
     "mysqlcontext": True,
-    "sparkmodule": False,
+    "sparkmodule": True,
     "subscription": True,
     "crontab": True,
     "filemanager": True,

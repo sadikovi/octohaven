@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import json, time, uuid
+import os, re, json, time
 from datetime import datetime
 from types import UnicodeType, StringType, DictType, ListType
 
@@ -41,14 +41,14 @@ def jsonOrElse(raw, value):
     except ValueError:
         return value
 
-# getOrElse for integer, returns default, if cannot parse raw string
+# getOrElse for integer, returns default, if cannot parse raw string, or object
 def intOrElse(raw, value):
     try:
         return int(raw)
-    except ValueError:
+    except (ValueError, TypeError):
         return value
 
-# getOrElse for boolean, returns default, if cannot parse raw string
+# getOrElse for boolean, returns default, if cannot parse raw string, or object
 def boolOrElse(raw, value):
     try:
         pre = raw.lower()
@@ -57,7 +57,7 @@ def boolOrElse(raw, value):
         if pre == "false" or pre == "0" or pre == "no":
             return False
         return bool(pre)
-    except ValueError:
+    except (ValueError, TypeError):
         return value
 
 # return current time in milliseconds
@@ -84,3 +84,55 @@ def assertInstance(passed, expectedType, msg=None):
         msg = msg if msg else "Instance %s is not of type %s" % (passed, str(expectedType))
         raise StandardError(msg)
     return True
+
+################################################################
+# Checks for urls, statuses, etc.
+################################################################
+# Try parsing regular expression, raise Error, if parsing fails.
+# Return groups of parsed data
+def _parseRe(regexp, value, msg_on_failure=None):
+    groups = re.match(regexp, value)
+    if groups is None:
+        msg = "Failed to parse" if not msg_on_failure else msg_on_failure % value
+        raise StandardError(msg)
+    return groups
+
+def validateMemory(value):
+    return _parseRe(r"^(\d+)(k|kb|m|mb|g|gb|t|tb|p|pb)$", value.lower(),
+        "Memory is incorrect: %s").group(0)
+
+def validatePriority(value):
+    wrapped = intOrElse(value, -1)
+    if wrapped < 0:
+        raise StandardError("Priority is incorrect: %s" % value)
+    return value
+
+# if "as_uri_parts" is True, returns result as tuple (uri, host, port)
+def validateMasterUrl(masterurl, as_uri_parts=False):
+    groups = _parseRe(r"^spark://([\w\.-]+):(\d+)$", masterurl, "Spark Master URL is incorrect: %s")
+    if as_uri_parts:
+        host = groups.group(1)
+        port = int(groups.group(2))
+        return (masterurl, host, port)
+    else:
+        return masterurl
+
+# if "as_uri_parts" is True, returns result as tuple (uri, host, port)
+def validateUiUrl(uiurl, as_uri_parts=False):
+    groups = _parseRe(r"^http(s)?://([\w\.-]+):(\d+)$", uiurl, "Spark UI URL is incorrect: %s")
+    if as_uri_parts:
+        host = groups.group(2)
+        port = int(groups.group(3))
+        return (uiurl, host, port)
+    else:
+        return uiurl
+
+def validateEntrypoint(entrypoint):
+    return _parseRe(r"^(\w+)(\.\w+)*$", entrypoint, "Entrypoint is incorrect: %s").group(0)
+
+def validateJarPath(jar):
+    # do not validate on existence, only on path structure
+    ok = os.path.isabs(jar) and jar.lower().endswith(".jar")
+    if not ok:
+        raise StandardError("Path %s is not valid" % jar)
+    return jar

@@ -1,15 +1,17 @@
 #!/usr/bin/env python
 
-import urllib2, json, re
+import urllib2, json, re, src.octo.utils as utils
 from types import ListType
-from job import JobCheck, SPARK_UID_KEY
 from webparser import Parser
 from octolog import Octolog
-from src.octo.utils import *
 
 SPARK_REST_ENDPOINT = "/api/v1"
 SPARK_REST_APPLICATIONS = "/applications"
 SPARK_RES_ENVIRONMENT = "/environment"
+# Job id in Spark UI that is assigned by Spark
+SPARK_APP_ID = "spark.app.id"
+# Job id assigned by Octohaven
+SPARK_OCTOHAVEN_JOB_ID = "spark.octohaven.jobId"
 
 # Spark cluster statuses
 FREE = 0
@@ -19,14 +21,12 @@ DOWN = -2
 class SparkModule(Octolog, object):
     def __init__(self, masterAddress, uiAddress, uiRunAddress):
         # master address to launch applications using "spark-submit"
-        self.masterAddress = JobCheck.validateMasterUrl(masterAddress)
+        self.masterAddress = utils.validateMasterUrl(masterAddress)
         # address for Spark UI
-        self.uiAddress = JobCheck.validateUiUrl(uiAddress)
+        self.uiAddress = utils.validateUiUrl(uiAddress)
         # address for a running application in Spark
-        self.uiRunAddress = JobCheck.validateUiUrl(uiRunAddress)
-        groups = re.match(r"^http://([\w\.-]+):(\d+)$", self.uiRunAddress)
-        self.uiRunHost = groups.group(1)
-        self.uiRunPort = int(groups.group(2))
+        data = utils.validateUiUrl(uiRunAddress, as_uri_parts=True)
+        self.uiRunAddress, self.uiRunHost, self.uiRunPort = data
 
     def clusterInfo(self):
         # Returns applications info from Spark.
@@ -95,14 +95,15 @@ class SparkModule(Octolog, object):
             tempUrl = "http://" + self.uiRunHost + ":" + str(port) + SPARK_RES_ENVIRONMENT
             data = self.getWebpageData(tempUrl)
             if data:
-                sparkid = self.getValueForKey(self.search(data, "spark.app.id"), "spark.app.id")
-                jobid = self.getValueForKey(self.search(data, SPARK_UID_KEY), SPARK_UID_KEY)
+                sparkid = self.getValueForKey(self.search(data, SPARK_APP_ID), SPARK_APP_ID)
+                jobid = self.getValueForKey(self.search(data, SPARK_OCTOHAVEN_JOB_ID),
+                    SPARK_OCTOHAVEN_JOB_ID)
                 updated.append({"sparkid": sparkid, "jobid": jobid})
             # increment port for the next application
             port = port + 1
         return updated
 
-    @private
+    @utils.private
     def search(self, obj, key):
         # search a particular key on a webpage. In this case of Spark UI, we know that options we
         # extract are always in table format.
@@ -123,7 +124,7 @@ class SparkModule(Octolog, object):
         else:
             return None
 
-    @private
+    @utils.private
     def getWebpageData(self, url):
         # this method is very page specific, do not use it for any other pages different from Spark
         # UI web page for running job.
@@ -140,7 +141,7 @@ class SparkModule(Octolog, object):
             result = {"data": [x.getJSON() for x in parser._root]}
             return result["data"][9]
 
-    @private
+    @utils.private
     def getValueForKey(self, dom, key):
         # after receiving table row, we know that it has two columns, one of them is key and
         # another is value. We match to the key passed and return value that fails match.
