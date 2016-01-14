@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import os, re, utils
+import os, re, src.octo.utils as utils
 from types import IntType, LongType
 
 # Job statuses that are supported
@@ -26,8 +26,6 @@ CLOSABLE_STATUSES = [READY, DELAYED]
 
 # default priority for a job
 DEFAULT_PRIORITY = 100
-# default Spark job name
-DEFAULT_JOB_NAME = "Just another job"
 
 # finish time values (since job can be killed, so we do not have finish time for that)
 # finish time when job is finished with status RUNNING, e.g. server was killed while running job
@@ -37,44 +35,31 @@ FINISH_TIME_NONE = -1L
 
 # Spark job to consolidate all the settings to launch spark-submit script
 class SparkJob(object):
-    def __init__(self, uid, name, masterurl, entrypoint, jar, options, jobconf=[]):
-        self.uid = JobCheck.validateSparkJobUid(uid)
-        # set name, if name is empty then assign default name
-        name = str(name).strip()
-        self.name = name if len(name) > 0 else DEFAULT_SPARK_NAME
-        self.masterurl = JobCheck.validateMasterUrl(masterurl)
-        self.entrypoint = JobCheck.validateEntrypoint(entrypoint)
-        self.jar = JobCheck.validateJarPath(jar)
+    def __init__(self, uid, name, entrypoint, jar, options, jobconf=[]):
+        self.uid = uid
+        self.name = name
+        self.entrypoint = utils.validateEntrypoint(entrypoint)
+        self.jar = utils.validateJarPath(jar)
         self.options = {}
-        # jobconf is a job configuration relevant to the jar running,
-        # another words, parameters for the main class of the jar
-        self.jobconf = jobconf
         # perform options check
         for (key, value) in options.items():
             if key == "spark.driver.memory" or key == "spark.executor.memory":
-                self.options[key] = JobCheck.validateMemory(value)
+                self.options[key] = utils.validateMemory(value)
             else:
                 self.options[key] = value
-
-    def toDict(self):
-        return {
-            "uid": self.uid,
-            "name": self.name,
-            "masterurl": self.masterurl,
-            "entrypoint": self.entrypoint,
-            "jar": self.jar,
-            "options": self.options,
-            "jobconf": self.jobconf
-        }
+        # jobconf is a job configuration relevant to the jar running, or parameters for the main
+        # class of the jar
+        self.jobconf = jobconf
 
     # returns shell command to execute as a list of arguments
+    # - master => Spark Master URL, or "local[*]" for running in local mode
     # - additionalOptions => extra options to add to the execute command. They are transient and
     # therefor will not be saved as job options.
-    def execCommand(self, additionalOptions={}):
+    def execCommand(self, master, additionalOptions={}):
         # spark-submit --master sparkurl --conf "" --conf "" --class entrypoint jar
         sparkSubmit = ["spark-submit"]
         name = ["--name", "%s" % self.name]
-        master = ["--master", "%s" % self.masterurl]
+        master = ["--master", "%s" % master]
         # update options with `additionalOptions` argument
         confOptions = self.options.copy()
         confOptions.update(additionalOptions)
@@ -89,54 +74,67 @@ class SparkJob(object):
         cmd = sparkSubmit + name + master + conf + entrypoint + jar + jobconf
         return cmd
 
-    # clones current SparkJob and returns copy with new uid
-    def clone(self):
-        uid = nextSparkJobId()
-        return SparkJob(uid, self.name, self.masterurl, self.entrypoint, self.jar, self.options,
-            self.jobconf)
 
-    # update Spark master url
-    def updateMasterUrl(self, masterUrl):
-        self.masterurl = JobCheck.validateMasterUrl(masterUrl)
+    def json(self):
+        return {
+            "uid": self.uid,
+            "name": self.name,
+            "entrypoint": self.entrypoint,
+            "jar": self.jar,
+            "options": self.options,
+            "jobconf": self.jobconf
+        }
 
-    # return current master url
-    def getMasterUrl(self):
-        return self.masterurl
+    def dict(self):
+        return {
+            "uid": self.uid,
+            "name": self.name,
+            "entrypoint": self.entrypoint,
+            "jar": self.jar,
+            "options": json.dumps(self.options),
+            "jobconf": json.dumps(self.jobconf)
+        }
 
     @classmethod
     def fromDict(cls, obj):
         # validate spark job uid to fetch only SparkJob instances
-        uid = JobCheck.validateSparkJobUid(obj["uid"])
+        uid = obj["uid"]
         name = obj["name"]
-        masterurl = obj["masterurl"]
         entrypoint = obj["entrypoint"]
         jar = obj["jar"]
-        options = obj["options"]
-        jobconf = obj["jobconf"] if "jobconf" in obj else []
-        return cls(uid, name, masterurl, entrypoint, jar, options, jobconf)
+        options = utils.jsonOrElse(obj["options"], None)
+        jobconf = utils.jsonOrElse(obj["jobconf"], None)
+        if options is None:
+            raise StandardError("Could not process options: %s" % obj["options"])
+        if jobconf is None:
+            raise StandardError("Could not process job configuration: %s" % obj["jobconf"])
+        return cls(uid, name, entrypoint, jar, options, jobconf)
 
+# Main abstraction in Octohaven. The primary properties are "name", "status", and "SparkJob"
+# instance. Name is a duplicate of SparkJob instance, though later can be updated to be different,
+# this was done mainly for the performance benefits, as we do need to go the fetch Spark job in
+# order to just find out name. Job also maintains a few time states:
+# - createtime -> time when job was actually created and stored in database
+# - submittime -> time when job was actually submitted as command into Spark
+# - finishtime -> time when job was identified as finished, it may not be exact time when job is
+# finished in Spark. Also if we cannot resolve finish time, e.g. Octohaven was shut down while
+# running a job and came up after three weeks, time will be set as "FINISH_TIME_UNKNOWN"
 class Job(object):
-    def __init__(self, uid, status, createtime, submittime, duration, sparkjob,
-        priority=DEFAULT_PRIORITY, finishtime=FINISH_TIME_NONE, starttime=-1L):
-        if duration not in DURATIONS:
-            raise StandardError("Duration " + duration + " is not supported")
-        assertType(sparkjob, SparkJob)
+    def __init__(self, uid, name, status, createtime, submittime, finishtime=FINISH_TIME_NONE,
+        sparkjob, priority=DEFAULT_PRIORITY):
+        utils.assertInstance(sparkjob, SparkJob)
         # internal properties
-        self.uid = JobCheck.validateJobUid(uid)
-        self.status = JobCheck.validateStatus(status)
+        self.uid = uid
+        self.status = Job.checkStatus(status)
         self.createtime = long(createtime)
         self.submittime = long(submittime)
-        # actual time when job got submitted to Spark
-        starttime = long(starttime)
-        self.starttime = self.submittime if starttime < self.submittime else starttime
         # approximate time when job finished
         self.finishtime = long(finishtime)
-        self.duration = duration
         # Spark job
         self.sparkjob = sparkjob
         # default job priority is it's submittime, older jobs are executed first
         priority = self.submittime if priority == DEFAULT_PRIORITY else priority
-        self.priority = JobCheck.validatePriority(priority)
+        self.priority = utils.validatePriority(priority)
         # Spark app id from Spark UI (if possible to fetch)
         self.sparkAppId = None
 
@@ -208,3 +206,11 @@ class Job(object):
         if "sparkappid" in obj:
             job.updateSparkAppId(obj["sparkappid"])
         return job
+
+    # Check if status is a valid one. Raise error, if wrong status is encountered.
+    @staticmethod
+    def checkStatus(status):
+        if status not in STATUSES:
+            raise StandardError("Status %s is wrong. Expected one of %s" % (status,
+                ", ".join(STATUSES)))
+        return status
