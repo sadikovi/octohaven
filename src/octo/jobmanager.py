@@ -95,10 +95,10 @@ class JobManager(object):
 
         # build dummy dictionaries without ids, store content, update uid and return Job
         # store Spark job, get uid => update Job => store Job => get uid
-        dummySparkJobDict = SparkJob(None, name, entrypoint, jar, options, jobconf).dict()
-        dummyJobDict = Job(None, name, status, createtime, submittime, sparkjob).dict()
-        dummyJobDict["uid"] = self.storage.createJob(dummySparkJobDict, dummyJobDict)
-        return Job.fromDict(dummyJobDict)
+        sparkDict = SparkJob(None, name, entrypoint, jar, updatedOptions, updatedJobConf).dict()
+        jobDict = Job(None, name, status, createtime, submittime, None).dict()
+        jobDict["uid"] = self.storage.createJob(sparkDict, jobDict)
+        return Job.fromDict(jobDict)
 
     # Close job safely, checks whether status can be changed on CLOSED
     def closeJob(self, job):
@@ -106,13 +106,14 @@ class JobManager(object):
         if job.status not in CLOSABLE_STATUSES:
             raise StandardError("Cannot close job with status %s" % job.status)
         self.storage.updateStatus(job.uid, CLOSED)
+        job.updateStatus(CLOSED)
 
     # Extract job with Spark job data. Return tuple where first element is job instance and second
     # element is SparkJob instance
-    def jobForUid(self, uid):
+    def jobForUid(self, uid, withSparkJob=True):
         data = self.storage.getJob(uid, withSparkJob=True)
         if not data:
-            return None
+            return (None, None)
         # parse data into 2 separate dictionaries
         jdict, sdict = {}, {}
         for key, value in data.items():
@@ -120,7 +121,9 @@ class JobManager(object):
                 sdict[key.replace("spark_", "")] = value
             else:
                 jdict[key] = value
-        return (Job.fromDict(jdict), SparkJob.fromDict(sdict))
+        job = Job.fromDict(jdict)
+        sparkjob = SparkJob.fromDict(sdict) if withSparkJob else None
+        return (job, sparkjob)
 
     # Return list of jobs with any status with limit
     def jobs(self, limit=50):
@@ -141,4 +144,7 @@ class JobManager(object):
         utils.assertInstance(job, Job)
         if job.status is not RUNNING:
             raise StandardError("Cannot finish job with status %s" % job.status)
-        self.storage.updateStatusAndFinishTime(job.uid, FINISHED, utils.currentTimeMillis())
+        now = utils.currentTimeMillis()
+        self.storage.updateStatusAndFinishTime(job.uid, FINISHED, now)
+        job.updateStatus(FINISHED)
+        job.updateFinishTime(now)
