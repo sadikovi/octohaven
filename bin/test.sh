@@ -66,6 +66,7 @@ eval "$WHICH_DOCKER stop $DOCKER_CONTAINER"
 
 # assess results, stop if unit tests failed
 if [ -n "$UNIT_TESTS_FAILED" ]; then
+    echo "[ERROR] Unit tests failed"
     exit 1
 fi
 

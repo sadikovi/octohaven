@@ -2,7 +2,6 @@
 
 import json, src.octo.utils as utils
 from types import DictType, NoneType, BooleanType, IntType, LongType, FloatType
-from src.octo.mysqlcontext import MySQLContext
 from src.octo.storagemanager import StorageManager
 
 TEMPLATE_DEFAULT_NAME = "Unknown"
@@ -93,10 +92,8 @@ class TemplateManager(object):
     def templates(self):
         # rows is a list of templates
         rows = self.storage.getTemplates()
-        if not rows:
-            rows = []
         # convert every row into Template object
-        return map(lambda row: Template.fromDict(row), rows)
+        return map(lambda row: Template.fromDict(row), rows) if rows else []
 
     # Retrieve template for a specific uid. Return Template object, if found, otherwise None
     def templateForUid(self, uid):

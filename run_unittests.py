@@ -12,7 +12,10 @@ RUN_TESTS = {
     "crontab": True,
     "filemanager": True,
     "storagemanager": True,
-    "template": True
+    "template": True,
+    "sparkjob": True,
+    "job": True,
+    "jobmanager": True
 }
 
 def checkTest(key):
@@ -36,6 +39,9 @@ def collectSystemTests(suites):
     addTests("filemanager", "test.octo.unittest_filemanager")
     addTests("storagemanager", "test.octo.unittest_storagemanager")
     addTests("template", "test.octo.unittest_template")
+    addTests("sparkjob", "test.octo.unittest_sparkjob")
+    addTests("job", "test.octo.unittest_job")
+    addTests("jobmanager", "test.octo.unittest_jobmanager")
 
 if __name__ == '__main__':
     cli = CLI(sys.argv[1:])
