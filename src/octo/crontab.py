@@ -118,7 +118,7 @@ class CronTab(object):
             self.compare(date.day, self.day) and self.compare(date.month, self.month) and \
             self.compare(date.isoweekday(), self.weekday) and self.compare(date.year, self.year)
 
-    def toDict(self):
+    def dict(self):
         return {
             "pattern": self.pattern,
             "minute": self.minute,

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import utils
+import src.octo.utils as utils
 from types import DictType
 from src.octo.mysqlcontext import MySQLContext
 
@@ -144,3 +144,44 @@ class StorageManager(object):
             cr.execute(sql, {"status": status})
             data = cr.fetchall()
         return data
+
+    ############################################################
+    # Timetable API
+    ############################################################
+    def createTimetable(self, dct):
+        rowid = None
+        with self.sqlContext.cursor(with_transaction=True) as cr:
+            dml = ("INSERT INTO timetables(name, status, clonejob, starttime, stoptime, "
+                "cron_pattern) VALUES(%(name)s, %(status)s, %(clonejob)s, %(starttime)s, "
+                "%(stoptime)s, %(cron_pattern)s)")
+            cr.execute(dml, dct)
+            rowid = cr.lastrowid
+        return rowid
+
+    def getTimetable(self, uid):
+        data = None
+        with self.sqlContext.cursor(with_transaction=False) as cr:
+            sql = ("SELECT uid, name, status, clonejob, starttime, stoptime, cron_pattern "
+                    "FROM timetables WHERE uid = %(uid)s")
+            cr.execute(sql, {"uid": uid})
+            data = cr.fetchone()
+        return data
+
+    def getTimetables(self, status):
+        data = None
+        with self.sqlContext.cursor(with_transaction=False) as cr:
+            if not status:
+                sql = ("SELECT uid, name, status, clonejob, starttime, stoptime, cron_pattern "
+                        "FROM timetables ORDER BY name ASC")
+            else:
+                sql = ("SELECT uid, name, status, clonejob, starttime, stoptime, cron_pattern "
+                        "FROM timetables WHERE status = %(status)s ORDER BY name ASC")
+            cr.execute(sql, {"status": status})
+            data = cr.fetchall()
+        return data
+
+    def updateTimetable(self, dct):
+        with self.sqlContext.cursor(with_transaction=True) as cr:
+            dml = ("UPDATE timetables SET status = %(status)s, stoptime = %(stoptime)s "
+                    "WHERE uid = %(uid)s")
+            cr.execute(dml, dct)

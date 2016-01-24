@@ -15,7 +15,8 @@ RUN_TESTS = {
     "template": True,
     "sparkjob": True,
     "job": True,
-    "jobmanager": True
+    "jobmanager": True,
+    "timetable": True
 }
 
 def checkTest(key):
@@ -42,6 +43,7 @@ def collectSystemTests(suites):
     addTests("sparkjob", "test.octo.unittest_sparkjob")
     addTests("job", "test.octo.unittest_job")
     addTests("jobmanager", "test.octo.unittest_jobmanager")
+    addTests("timetable", "test.octo.unittest_timetable")
 
 if __name__ == '__main__':
     cli = CLI(sys.argv[1:])

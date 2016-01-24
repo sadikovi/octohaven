@@ -94,7 +94,7 @@ class CronTabTestSuite(unittest.TestCase):
 
     def test_loadSave(self):
         one = CronTab.fromPattern("*/15 */6 1,15,31 * 1-5 *")
-        two = CronTab.fromDict(one.toDict())
+        two = CronTab.fromDict(one.dict())
         self.assertEquals(one.minute, two.minute)
         self.assertEquals(one.hour, two.hour)
         self.assertEquals(one.day, two.day)
