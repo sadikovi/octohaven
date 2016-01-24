@@ -68,4 +68,6 @@ apache/
 !lib/
 lib/*
 !lib/__init__.py
-!lib/redis
+
+# virtual environment
+venv/
