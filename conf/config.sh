@@ -20,20 +20,8 @@ export OCTOHAVEN_SPARK_UI_ADDRESS="http://localhost:8080"
 export JAR_FOLDER="/Users/sadikovi/developer/octohaven/test/resources/filelist"
 
 #################################################
-# Docker settings
-#################################################
-# if USE_DOCKER is non-empty, application will start setting up docker container DOCKER_CONTAINER,
-# if it does not already exist. In this case MySQL settings will be automatically bound to the
-# settings specified below, including when running using docker-machine. Note that operations
-# sometimes include cleanup/removal of container, therefore do not specify other existing container
-export USE_DOCKER="YES"
-export DOCKER_CONTAINER="octohaven-mysql-container"
-
-#################################################
 # MySQL settings
 #################################################
-# If Docker is used (USE_DOCKER is non-empty) settings will be mapped to container settings
-# Otherwise, it will use settings to connect to MySQL instance directly.
 export MYSQL_HOST="sandbox"
 export MYSQL_PORT="3306"
 export MYSQL_USER="user"

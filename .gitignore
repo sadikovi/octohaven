@@ -71,3 +71,6 @@ lib/*
 
 # virtual environment
 venv/
+
+MANIFEST
+!MANIFEST.in
