@@ -51,5 +51,21 @@ $ bin/pip install -r requirements.txt
 Use `bin/python` and `bin/pip` to use `python` and `pip` respectively, as it uses virtual
 environment installation.
 
+Once you set up the environment, compile static files (Coffeescript and SCSS).
+```shell
+$ bin/static.sh
+```
+
+After that you can launch service.
+```shell
+$ bin/python setup.py start_octohaven \
+    --host=localhost \
+    --port=33900 \
+    --spark-master=spark://local.lan:7077 \
+    --spark-ui=http://localhost:8080 \
+    --jar-folder=/tmp \
+    --connection=jdbc:mysql_connection_string
+```
+
 ## Contribute
 All suggestions, features, issues and PRs are very welcome:)
