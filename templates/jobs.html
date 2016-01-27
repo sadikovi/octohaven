@@ -10,58 +10,62 @@
         <meta name="author" content="">
 
         <title>
-            Main &middot; Octohaven
+            Jobs &middot; Octohaven
         </title>
 
-        <link rel="icon" type="image/x-icon" href="img/favicon.ico">
-        <link rel="stylesheet" href="css/internal.min.css">
-        <script type="text/javascript" src="js/timezone.min.js"></script>
+        <link rel="icon" type="image/x-icon" href="/static/img/favicon.ico">
+        <link rel="stylesheet" href="/static/octohaven.min.css">
+        <script type="text/javascript" src="/static/octohaven.misc.min.js"></script>
     </head>
     <body>
         <div class="page container">
             <div class="columns">
                 <div class="one-fourth column">
                     <nav class="menu">
-                        <div class="menu-heading">Octohaven</div>
+                        <div class="menu-heading">Octohaven {{ version }}</div>
                         <div class="menu-item" id="octohaven-spark-server">
                             <span class="text-mute">Status:</span>
-                            <span class="text-mute" id="octohaven-spark-server-status">Pending...</span>
+                            {% if cluster_status == 0 %}
+                            <span class="text-green">Cluster is free</span>
+                            {% elif cluster_status == -1 %}
+                            <span class="text-yellow">Cluster is busy</span>
+                            {% else %}
+                            <span class="text-red">Cluster is down</span>
+                            {% endif %}
                         </div>
                         <a class="menu-item" href="/create">Create new job</a>
                         <div class="menu-heading">Timetables</div>
                         <a class="menu-item" href="/timetables">View all</a>
-                        <div class="menu-heading">Filter jobs</div>
-                        <a class="menu-item" href="#" id="octohaven-jobs-all">ALL</a>
-                        <a class="menu-item" href="#" id="octohaven-jobs-created">CREATED</a>
-                        <a class="menu-item" href="#" id="octohaven-jobs-waiting">WAITING</a>
-                        <a class="menu-item" href="#" id="octohaven-jobs-delayed">DELAYED</a>
-                        <a class="menu-item" href="#" id="octohaven-jobs-running">RUNNING</a>
-                        <a class="menu-item" href="#" id="octohaven-jobs-finished">FINISHED</a>
-                        <a class="menu-item" href="#" id="octohaven-jobs-closed">CLOSED</a>
                     </nav>
+                    <ul class="filter-list">
+                        {% for elem in statuses %}
+                        <li>
+                            <a href="/jobs/{{ elem.lower() }}" class="filter-item {{ 'selected' if status == elem }}">
+                                {{ elem }}
+                            </a>
+                        </li>
+                        {% endfor %}
+                    </ul>
                 </div>
                 <div class="three-fourths column">
                     <div class="top attached blue bordered segment">
                         <div>
                             <span class="text-mute">Spark UI: </span>
-                            <code id="octohaven-spark-ui-address">?</code>
+                            <code id="octohaven-spark-ui-address">{{ spark_ui }}</code>
                         </div>
                         <div>
                             <span class="text-mute">Spark Master: </span>
-                            <code id="octohaven-spark-master-address">?</code>
+                            <code id="octohaven-spark-master-address">{{ spark_master }}</code>
                         </div>
                     </div>
                     <div class="attached secondary segment">
                         <h1 class="text-thin">Job history</h1>
-                        <h4 class="text-thin text-mute">Shows last 30 jobs</h4>
+                        <h4 class="text-thin text-mute">Shows last 50 jobs</h4>
                     </div>
                     <div class="bottom attached segment" id="octohaven-jobs-history">
                     </div>
                 </div>
             </div>
         </div>
-        <script type="text/javascript" src="js/util.min.js"></script>
-        <script type="text/javascript" src="js/misc.min.js"></script>
-        <script type="text/javascript" src="js/jobs.min.js"></script>
     </body>
 </html>
