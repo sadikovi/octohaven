@@ -34,9 +34,9 @@ FREE = 0
 BUSY = -1
 DOWN = -2
 
-class SparkModule(Loggable, object):
+class SparkContext(Loggable, object):
     def __init__(self, masterAddress, uiAddress, uiRunAddress):
-        super(SparkModule, self).__init__()
+        super(SparkContext, self).__init__()
         # master address to launch applications using "spark-submit"
         self.masterAddress = utils.validateMasterUrl(masterAddress)
         # address for Spark UI
@@ -44,7 +44,7 @@ class SparkModule(Loggable, object):
         # address for a running application in Spark
         data = utils.validateUiUrl(uiRunAddress, as_uri_parts=True)
         self.uiRunAddress, self.uiRunHost, self.uiRunPort = data
-        self.logger.debug("Created Spark module with master '%s', UI '%s'",
+        self.logger.debug("Created Spark context with master '%s', UI '%s'",
             masterAddress, uiAddress)
 
     def clusterInfo(self):
@@ -95,7 +95,7 @@ class SparkModule(Loggable, object):
         if type(info) is ListType:
             running = [app for app in info if app["completed"] is False]
             return FREE if len(running) == 0 else BUSY
-        self.logger.warning("Spark cluster is not running according to %s", str(info))
+        self.logger.warning("Spark cluster is not running - %s", str(info))
         return DOWN
 
     # Returns list of current apps running, each element of an array is a dictionary:

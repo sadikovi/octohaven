@@ -152,3 +152,16 @@ def validateJarPath(jar):
     if not ok:
         raise StandardError("Path %s is not valid" % jar)
     return jar
+
+# Validate connection string for MySQL
+def validateMySQLJDBC(connection):
+    groups = _parseRe(r"^jdbc:mysql:\/\/([\w\.]+):(\d+)\/(\w+)\?user=(\w+)&password=(\S+)$",
+        connection, "Connection string is incorrect: %s. Should be " +
+            "jdbc:mysql://HOST:PORT/DATABASE?user=USER&password=PASSWORD")
+    return {
+        "host": groups.group(1),
+        "port": groups.group(2),
+        "database": groups.group(3),
+        "user": groups.group(4),
+        "password": groups.group(5)
+    }

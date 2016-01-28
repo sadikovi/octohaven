@@ -1,72 +1,24 @@
-<!DOCTYPE html>
-<html lang="en">
-    <head>
-        <meta charset="utf-8">
-        <meta http-equiv="X-UA-Compatible" content="IE=edge">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-
-        <meta name="description" content="">
-        <meta name="keywords" content="">
-        <meta name="author" content="">
-
-        <title>
-            Jobs &middot; Octohaven
-        </title>
-
-        <link rel="icon" type="image/x-icon" href="/static/img/favicon.ico">
-        <link rel="stylesheet" href="/static/octohaven.min.css">
-        <script type="text/javascript" src="/static/octohaven.misc.min.js"></script>
-    </head>
-    <body>
-        <div class="page container">
-            <div class="columns">
-                <div class="one-fourth column">
-                    <nav class="menu">
-                        <div class="menu-heading">Octohaven {{ version }}</div>
-                        <div class="menu-item" id="octohaven-spark-server">
-                            <span class="text-mute">Status:</span>
-                            {% if cluster_status == 0 %}
-                            <span class="text-green">Cluster is free</span>
-                            {% elif cluster_status == -1 %}
-                            <span class="text-yellow">Cluster is busy</span>
-                            {% else %}
-                            <span class="text-red">Cluster is down</span>
-                            {% endif %}
-                        </div>
-                        <a class="menu-item" href="/create">Create new job</a>
-                        <div class="menu-heading">Timetables</div>
-                        <a class="menu-item" href="/timetables">View all</a>
-                    </nav>
-                    <h3>Filter</h3>
-                    <ul class="filter-list">
-                        {% for elem in statuses %}
-                        <li>
-                            <a href="/jobs/{{ elem.lower() }}" class="filter-item {{ 'selected' if status == elem }}">
-                                {{ elem }}
-                            </a>
-                        </li>
-                        {% endfor %}
-                    </ul>
-                </div>
-                <div class="three-fourths column">
-                    <div class="top attached blue bordered segment">
-                        <div>
-                            <span class="text-mute">Spark UI: </span>
-                            <code id="octohaven-spark-ui-address">{{ spark_ui }}</code>
-                        </div>
-                        <div>
-                            <span class="text-mute">Spark Master: </span>
-                            <code id="octohaven-spark-master-address">{{ spark_master }}</code>
-                        </div>
-                    </div>
-                    <div class="attached secondary segment">
-                        <h1 class="text-thin">Job history</h1>
-                        <h4 class="text-thin text-mute">Shows last 50 jobs</h4>
-                    </div>
-                    <div class="bottom attached segment" id="octohaven-jobs-history">
-                    </div>
-                </div>
-            </div>
-        </div>
-    </body>
-</html>
+{% extends "base.html" %}
+{% block title %} Index {% endblock %}
+{% block nav %}
+    <div class="menu-heading">Actions</div>
+    <a class="menu-item" href="/create">Create new job</a>
+    <a class="menu-item" href="/timetables">View timetables</a>
+{% endblock %}
+{% block menu %}
+    <h4>Filter</h4>
+    <ul class="filter-list">
+        {% for elem in statuses %}
+        <li>
+            <a href="/jobs/{{ elem.lower() }}" class="filter-item {{ 'selected' if status == elem }}">
+                {{ elem }}
+            </a>
+        </li>
+        {% endfor %}
+    </ul>
+{% endblock %}
+{% block header %} Job history {% endblock %}
+{% block subheader %} Shows last 50 jobs {% endblock %}
+{% block content %}
+    <div>Test</div>
+{% endblock %}

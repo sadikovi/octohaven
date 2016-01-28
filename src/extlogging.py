@@ -17,9 +17,9 @@
 #
 
 import os, logging, logging.config
-from config import GlobalConfig
+from config import CONF_PATH, CONF_NAME
 
-confFile = os.path.join(GlobalConfig.CONF_PATH, GlobalConfig.CONF_NAME)
+confFile = os.path.join(CONF_PATH, CONF_NAME)
 # try loading configuration file, if not found, leave default
 if os.path.exists(confFile):
     logging.config.fileConfig(confFile)

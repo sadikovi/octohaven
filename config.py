@@ -22,34 +22,39 @@ import os
 # Internal configuration
 ################################################################
 
+# Application version
+VERSION = "0.2.0.dev1"
+
+# Root directory of the project
+ROOT_PATH = os.path.dirname(os.path.realpath(__file__))
+
+# Path to the configuration
+CONF_PATH = os.path.join(ROOT_PATH, "conf")
+CONF_NAME = "log.conf"
+
 # Global configuration that encapsulates all the main settings
-class GlobalConfig(object):
+class Options(object):
+    # Flask options
     JSONIFY_PRETTYPRINT_REGULAR = False
-
-    # Application version
-    VERSION = "0.2.0.dev1"
-
-    # root directory of the project
-    ROOT_PATH = os.path.dirname(os.path.realpath(__file__))
-
-    # path to the configuration
-    CONF_PATH = os.path.join(ROOT_PATH, "conf")
-    CONF_NAME = "log.conf"
-
-    # parameters to overwrite on application start
+    # Parameters to overwrite on application start
     HOST = None
     PORT = None
     SPARK_MASTER_ADDRESS = None
     SPARK_UI_ADDRESS = None
     JAR_FOLDER = None
-    MYSQL_CONNECTION = None
+    # MySQL settings
+    MYSQL_HOST = None
+    MYSQL_PORT = None
+    MYSQL_DATABASE = None
+    MYSQL_USER = None
+    MYSQL_PASSWORD = None
 
 # Configuration with testing mode on
-class TestConfig(GlobalConfig):
+class TestConfig(Options):
     DEBUG = True
     TESTING = True
 
 # Configuration for production
-class ProductionConfig(GlobalConfig):
+class ProductionConfig(Options):
     DEBUG = False
     TESTING = False

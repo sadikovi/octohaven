@@ -16,10 +16,10 @@
 # limitations under the License.
 #
 
-import sys, os
+import sys, os, src.utils as utils
 from distutils.core import setup
 from setuptools import Command
-from config import GlobalConfig
+from config import Options, VERSION
 
 # Only Python 2.7 is supported
 PYTHON_VERSION_MAJOR = 2
@@ -43,7 +43,8 @@ class StartOctohaven(Command):
         ("spark-ui=", "u", "Spark UI address, e.g. http://..."),
         ("jar-folder=", "j", "Jar root folder, e.g. /tmp/jars"),
         ("connection=", "c", "MySQL connection string, e.g. " +
-            "jdbc:mysql://HOST:PORT/DATABASE?user=USER&password=PASSWORD")
+            "jdbc:mysql://HOST:PORT/DATABASE?user=USER&password=PASSWORD"),
+        ("test-mode", "t", "Test mode, runs unit-tests for the application")
     ]
 
     def initialize_options(self):
@@ -53,6 +54,8 @@ class StartOctohaven(Command):
         self.spark_ui = None
         self.jar_folder = None
         self.connection = None
+        # misc
+        self.test_mode = False
 
     def finalize_options(self):
         # OCTOHAVEN_HOST
@@ -90,22 +93,32 @@ class StartOctohaven(Command):
         if not self.connection:
             print "[ERROR] MySQL connection string is required, use --connection=? to specify"
             sys.exit(1)
+        # assign dictionary of values instead of connection string
+        self.connection = utils.validateMySQLJDBC(self.connection)
 
     def run(self):
         # overwrite parameters in configuration, so application will load it on the next step
-        GlobalConfig.HOST = str(self.host)
-        GlobalConfig.PORT = int(self.port)
-        GlobalConfig.SPARK_MASTER_ADDRESS = self.spark_master
-        GlobalConfig.SPARK_UI_ADDRESS = self.spark_ui
-        GlobalConfig.JAR_FOLDER = self.jar_folder
-        GlobalConfig.MYSQL_CONNECTION = self.connection
+        Options.HOST = str(self.host)
+        Options.PORT = int(self.port)
+        Options.SPARK_MASTER_ADDRESS = self.spark_master
+        Options.SPARK_UI_ADDRESS = self.spark_ui
+        Options.JAR_FOLDER = self.jar_folder
+        # assign MySQL settings
+        Options.MYSQL_HOST = self.connection["host"]
+        Options.MYSQL_PORT = self.connection["port"]
+        Options.MYSQL_DATABASE = self.connection["database"]
+        Options.MYSQL_USER = self.connection["user"]
+        Options.MYSQL_PASSWORD = self.connection["password"]
         # start service
         import src.octohaven as octohaven
-        octohaven.run()
+        if self.test_mode:
+            octohaven.test()
+        else:
+            octohaven.run()
 
 setup(
     name="octohaven",
-    version=GlobalConfig.VERSION,
+    version=VERSION,
     description="Apache Spark job server",
     long_description="Apache Spark job server",
     author="Ivan Sadikov",
