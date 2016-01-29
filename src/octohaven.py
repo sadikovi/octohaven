@@ -21,6 +21,7 @@ from config import VERSION
 from extlogging import Loggable
 from sparkmodule import SparkContext
 from sqlmodule import MySQLContext
+from sqlschema import loadSchema
 
 ################################################################
 # Application setup
@@ -40,7 +41,7 @@ app_log.logger.info("MySQL connection - host - %s" % app.config["MYSQL_HOST"])
 app_log.logger.info("MySQL connection - port - %s" % app.config["MYSQL_PORT"])
 app_log.logger.info("MySQL connection - database - %s" % app.config["MYSQL_DATABASE"])
 app_log.logger.info("MySQL connection - user - %s" % app.config["MYSQL_USER"])
-app_log.logger.info("MySQL connection - password - %s" % app.config["MYSQL_PASSWORD"][:3] + "***")
+app_log.logger.info("MySQL connection - password - %s" % "*******")
 
 # Spark module is one per application, currently UI Run address is not supported, so we pass UI
 # address as dummy value
@@ -50,6 +51,8 @@ sparkContext = SparkContext(app.config["SPARK_MASTER_ADDRESS"], app.config["SPAR
 sqlContext = MySQLContext(host=app.config["MYSQL_HOST"], port=app.config["MYSQL_PORT"],
     database=app.config["MYSQL_DATABASE"], user=app.config["MYSQL_USER"],
     password=app.config["MYSQL_PASSWORD"], pool_size=10)
+# Check database schema to make sure that we have all tables to continue
+loadSchema(sqlContext, app.config["MYSQL_SCHEMA_RESET"])
 
 def run():
     app.run(debug=app.debug, host=app.config["HOST"], port=app.config["PORT"])
@@ -61,7 +64,6 @@ def test():
 ################################################################
 # Pages routing
 ################################################################
-
 # Render page with parameters passed, base template parameters automatically added
 def render_page(page, **params):
     return render_template(page,

@@ -48,11 +48,14 @@ class Options(object):
     MYSQL_DATABASE = None
     MYSQL_USER = None
     MYSQL_PASSWORD = None
+    # MySQL schema reset (if True then drops and recreates table every time service is launched)
+    MYSQL_SCHEMA_RESET = False
 
 # Configuration with testing mode on
 class TestConfig(Options):
     DEBUG = True
     TESTING = True
+    MYSQL_SCHEMA_RESET = True
 
 # Configuration for production
 class ProductionConfig(Options):
