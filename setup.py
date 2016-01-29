@@ -44,7 +44,7 @@ class StartOctohaven(Command):
         ("jar-folder=", "j", "Jar root folder, e.g. /tmp/jars"),
         ("connection=", "c", "MySQL connection string, e.g. " +
             "jdbc:mysql://HOST:PORT/DATABASE?user=USER&password=PASSWORD"),
-        ("test-mode", "t", "Test mode, runs unit-tests for the application")
+        ("test", "t", "Test mode, runs unit-tests for the application")
     ]
 
     def initialize_options(self):
@@ -55,7 +55,7 @@ class StartOctohaven(Command):
         self.jar_folder = None
         self.connection = None
         # misc
-        self.test_mode = False
+        self.test = False
 
     def finalize_options(self):
         # OCTOHAVEN_HOST
@@ -111,7 +111,7 @@ class StartOctohaven(Command):
         Options.MYSQL_PASSWORD = self.connection["password"]
         # start service
         import src.octohaven as octohaven
-        if self.test_mode:
+        if self.test:
             octohaven.test()
         else:
             octohaven.run()

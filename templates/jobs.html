@@ -1,8 +1,8 @@
 {% extends "base.html" %}
-{% block title %} Index {% endblock %}
+{% block title %} Jobs {% endblock %}
 {% block nav %}
     <div class="menu-heading">Actions</div>
-    <a class="menu-item" href="/create">Create new job</a>
+    <a class="menu-item" href="/create/job">Create new job</a>
     <a class="menu-item" href="/timetables">View timetables</a>
 {% endblock %}
 {% block menu %}
@@ -20,5 +20,8 @@
 {% block header %} Job history {% endblock %}
 {% block subheader %} Shows last 50 jobs {% endblock %}
 {% block content %}
-    <div>Test</div>
+    <div class="blankslate">
+        <h1 class="text-thin">No jobs found</h1>
+        <p>Try <a href="/create/job">creating a new one</a></p>
+    </div>
 {% endblock %}

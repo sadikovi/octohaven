@@ -1,0 +1,28 @@
+{% macro job_option(name, desc, value="", can_edit=False) -%}
+<div class="segment" {{ 'data-attr="fast-editor"' if can_edit }}>
+    <div class="columns">
+        <div class="one-fifth column">
+            <span class="text-mute tooltipped tooltipped-n" aria-label="{{ desc }}">{{ name }}</span>
+        </div>
+        <div class="one-sixth column">
+            {% if can_edit %}
+                <a href="#" data-attr="fast-editor-trigger">Edit</a>
+            {% else %}
+                <span>&nbsp;</span>
+            {% endif %}
+        </div>
+        <div class="three-fifths column" {{ 'data-attr="fast-editor-texter"' if can_edit}}>
+            <span>{{ value }}</span>
+        </div>
+    </div>
+</div>
+{%- endmacro %}
+
+
+{% macro template_option(name, can_delete=True) -%}
+<a href="#" class="filter-item">{{ name }}
+    {% if can_delete %}
+        <span class="count tooltipped tooltipped-w" aria-label="Delete">&times;</span>
+    {% endif %}
+</a>
+{%- endmacro %}

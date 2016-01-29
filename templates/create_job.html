@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% from "macros.html" import job_option, template_option %}
+
+{% block title %} Create job {% endblock %}
+{% block nav %}
+    <div class="menu-heading">Actions</div>
+    <a class="menu-item" href="/jobs">View jobs</a>
+{% endblock %}
+{% block menu %}
+    <h4>Templates</h4>
+    <ul class="filter-list small">
+        <li>
+            {{ template_option("my first template") }}
+            {{ template_option("fire job") }}
+            {{ template_option("sample") }}
+            {{ template_option("testing performance for") }}
+        </li>
+    </ul>
+{% endblock %}
+{% block header %} Create new Spark job {% endblock %}
+{% block subheader %} Use templates to quickly preload data {% endblock %}
+{% block content %}
+    <div class="segments">
+        {{ job_option("Job name", "Friendly job name", "Something", True) }}
+        {{ job_option("Main class", "Entrypoint for the job", "com.github.sadikovi.Main", True) }}
+        {{ job_option("Driver memory", "Memory for the driver program", "4g", True) }}
+        {{ job_option("Executor memory", "Memory for Spark executors", "4g", True) }}
+        {{ job_option("Spark options", "Settings, e.g. JVM, networking, shuffle...", "", True) }}
+        {{ job_option("Job options", "Job options to pass to entrypoint", "", True) }}
+        <div class="segment">
+            <h3 class="text-thin">Finder</h3>
+            <div class="breadcrumb">
+                <a class="section">home</a>
+                <div class="separator">/</div>
+                <div class="section active">octohaven</div>
+                <div class="separator">/</div>
+            </div>
+            <div class="menu">
+                <a href="" class="menu-item">..</a>
+                <a href="" class="menu-item">&#128193; bin</a>
+                <a href="" class="menu-item">&#128193; sbin</a>
+                <a href="" class="menu-item">&#128193; conf</a>
+                <a href="" class="menu-item">&#128196; setup.py</a>
+                <a href="" class="menu-item">&#128196; config.py</a>
+                <a href="" class="menu-item">&#128196; requirements.txt</a>
+            </div>
+        </div>
+        <div class="segment">
+            <h3 class="text-thin">Timer</h3>
+            <ul class="filter-list small">
+                <li>
+                    <a href="#" class="filter-item selected">Right away</a>
+                    <a href="#" class="filter-item">In 10 minutes</a>
+                    <a href="#" class="filter-item">In 30 minutes</a>
+                    <a href="#" class="filter-item">In 1 hour</a>
+                    <a href="#" class="filter-item">In 3 hours</a>
+                    <a href="#" class="filter-item">Next day</a>
+                </li>
+            </ul>
+        </div>
+        <div class="segment">
+            <div class="breadcrumb">
+                <div class="section">
+                    <div class="btn btn-success">Submit job</div>
+                </div>
+                <div class="separator">|</div>
+                <div class="section">
+                    <div class="btn">Save as template</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endblock %}

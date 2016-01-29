@@ -55,7 +55,6 @@ def run():
     app.run(debug=app.debug, host=app.config["HOST"], port=app.config["PORT"])
 
 def test():
-    print "[!] Running tests"
     import test
     test.main()
 
@@ -87,6 +86,15 @@ def jobs_for_status(status):
     if status not in statuses:
         status = "ALL"
     return render_page("jobs.html", status=status, statuses=statuses)
+
+@app.route("/create/<entity>")
+def create(entity):
+    entity = str(entity).lower()
+    if entity == "job":
+        # redirect to the page of creating a job
+        return render_page("create_job.html")
+    else:
+        return abort(404)
 
 ################################################################
 # REST API
