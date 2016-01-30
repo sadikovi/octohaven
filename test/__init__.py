@@ -22,7 +22,8 @@ import sys, unittest, importlib
 RUN_TESTS = {
     "utils": True,
     "sqlmodule": True,
-    "sparkmodule": True
+    "sparkmodule": True,
+    "fs": True
 }
 
 # default empty test suite
@@ -48,6 +49,7 @@ def collectSystemTests(suites):
     addTests2("utils")
     addTests2("sqlmodule")
     addTests2("sparkmodule")
+    addTests2("fs")
 
 def main(args=[]):
     print ""

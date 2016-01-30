@@ -22,6 +22,7 @@ from extlogging import Loggable
 from sparkmodule import SparkContext
 from sqlmodule import MySQLContext
 from sqlschema import loadSchema
+from fs import FileManager
 
 ################################################################
 # Application setup
@@ -94,7 +95,9 @@ def create(entity):
     entity = str(entity).lower()
     if entity == "job":
         # redirect to the page of creating a job
-        return render_page("create_job.html")
+        return render_page("create_job.html", default_job_name="", default_main_class="",
+            default_driver_memory="4g", default_executor_memory="4g", default_spark_options="",
+            default_job_options="")
     else:
         return abort(404)
 
@@ -102,22 +105,32 @@ def create(entity):
 # REST API
 ################################################################
 # successful response helper
-def success(payload, code=200):
-    return make_response(jsonify({"code": code, "payload": payload}), code)
+def success(payload):
+    return make_response(jsonify({"code": 200, "payload": payload}), 200)
 
-@app.errorhandler(400)
-def bad_request(error):
-    return make_response(jsonify({"code": 400, "msg": "Bad request"}), 400)
+@app.errorhandler(StandardError)
+def standard_error(error):
+    return make_response(jsonify({"code": 400, "msg": "%s" % error.message}), 400)
 
-@app.errorhandler(404)
-def not_found(error):
-    return make_response(jsonify({"code": 404, "msg": "Not found"}), 404)
-
-@app.errorhandler(500)
-def internal_error(error):
-    return make_response(jsonify({"code": 500, "msg": "Internal error"}), 500)
+@app.errorhandler(BaseException)
+def base_exception(error):
+    return make_response(jsonify({"code": 500, "msg": "%s" % error.message}), 500)
 
 @app.route("/api/v1/spark/status", methods=["GET"])
 def spark_status():
     status = sparkContext.clusterStatus()
     return success({"status": status})
+
+def _finder_home(parts):
+    manager = FileManager(app.config["JAR_FOLDER"], alias="/api/v1/finder/home")
+    tree, lstree = manager.ls(*parts)
+    return success({"path": tree, "ls": lstree})
+
+@app.route("/api/v1/finder/home", methods=["GET"])
+def finder_home():
+    return _finder_home([])
+
+@app.route("/api/v1/finder/home/<path:rel_path>", methods=["GET"])
+def finder_home_path(rel_path):
+    parts = rel_path.split("/")
+    return _finder_home(parts)

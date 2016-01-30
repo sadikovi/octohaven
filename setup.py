@@ -82,9 +82,9 @@ class StartOctohaven(Command):
             print "[ERROR] Jar root folder is required, use --jar-folder=? to specify"
             sys.exit(1)
         # check that jar folder exists, absolute and open to read
-        self.jar_folder = os.path.abspath(self.jar_folder) if self.jar_folder else None
-        if not self.jar_folder or not os.path.exists(self.jar_folder):
-            print "[ERROR] Jar folder must be set and be valid directory, got %s" % self.jar_folder
+        self.jar_folder = os.path.realpath(os.path.abspath(str(self.jar_folder)))
+        if not os.path.isdir(self.jar_folder):
+            print "[ERROR] Jar folder must be valid directory, got '%s'" % self.jar_folder
             sys.exit(1)
         if not os.access(self.jar_folder, os.R_OK):
             print "[ERROR] Permission denied (READ_ONLY) for %s" % self.jar_folder

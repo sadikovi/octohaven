@@ -1,5 +1,5 @@
-{% macro job_option(name, desc, value="", can_edit=False) -%}
-<div class="segment" {{ 'data-attr="fast-editor"' if can_edit }}>
+{% macro job_option(id, name, desc, value="", can_edit=False) -%}
+<div id="{{ id }}" class="segment" {{ 'data-attr="fast-editor"' if can_edit }}>
     <div class="columns">
         <div class="one-fifth column">
             <span class="text-mute tooltipped tooltipped-n" aria-label="{{ desc }}">{{ name }}</span>
