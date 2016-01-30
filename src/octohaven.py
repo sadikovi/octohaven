@@ -110,10 +110,12 @@ def success(payload):
 
 @app.errorhandler(StandardError)
 def standard_error(error):
+    app_log.logger.exception("StandardError: %s", error.message)
     return make_response(jsonify({"code": 400, "msg": "%s" % error.message}), 400)
 
 @app.errorhandler(BaseException)
 def base_exception(error):
+    app_log.logger.exception("Exception occuried: %s", error.message)
     return make_response(jsonify({"code": 500, "msg": "%s" % error.message}), 500)
 
 @app.route("/api/v1/spark/status", methods=["GET"])

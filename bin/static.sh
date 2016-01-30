@@ -47,8 +47,6 @@ $WHICH_UGLIFYJS \
     $TEMP_DIR/utilities/loader.js \
     $TEMP_DIR/utilities/mapper.js \
     $TEMP_DIR/utilities/fasteditor.js \
-    $TEMP_DIR/utilities/misc.js \
-    $TEMP_DIR/utilities/namer.js \
     -o "$STATIC_DIR/octohaven.util.min.js" -c -m
 
 
