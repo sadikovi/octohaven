@@ -33,3 +33,9 @@ class StatusApi extends AbstractApi
     requestStatus: (before, after) -> @doGet(before, after, "/api/v1/spark/status", null)
 
 @STATUS_API ?= new StatusApi
+
+# File finder API
+class FileApi extends AbstractApi
+    ls: (before, after, url="/api/v1/finder/home") -> @doGet(before, after, url, null)
+
+@FILE_API ?= new FileApi

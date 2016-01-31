@@ -40,6 +40,9 @@ mkdir -p "$TEMP_DIR"
 echo "[INFO] .coffee >>> .js"
 $WHICH_COFFEE --no-header --compile --output "$TEMP_DIR" "$STATIC_DIR/coffee"
 
+echo "[INFO] Compress preload functions (timezone, ...) >> octohaven.preload.min.js"
+$WHICH_UGLIFYJS $TEMP_DIR/preload/timezone.js -o "$STATIC_DIR/octohaven.preload.min.js" -c -m
+
 # compress scripts in specific order, because of the dependencies
 echo "[INFO] Compress utilities folder >> util.min.js"
 $WHICH_UGLIFYJS \
@@ -47,14 +50,11 @@ $WHICH_UGLIFYJS \
     $TEMP_DIR/utilities/loader.js \
     $TEMP_DIR/utilities/mapper.js \
     $TEMP_DIR/utilities/fasteditor.js \
+    $TEMP_DIR/utilities/api.js \
     -o "$STATIC_DIR/octohaven.util.min.js" -c -m
 
-
-echo "[INFO] Compress general functions (api, timezone, ...) >> octohaven.misc.min.js"
-$WHICH_UGLIFYJS \
-    $TEMP_DIR/api.js \
-    $TEMP_DIR/timezone.js \
-    -o "$STATIC_DIR/octohaven.misc.min.js" -c -m
+echo "[INFO] Compress 'create_job.coffee'"
+$WHICH_UGLIFYJS $TEMP_DIR/createjob.js -o "$STATIC_DIR/octohaven.createjob.min.js" -c -m
 
 echo "[INFO] Clean up target folder for JS"
 rm -r "$TEMP_DIR"

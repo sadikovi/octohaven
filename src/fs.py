@@ -21,9 +21,14 @@ from types import FileType, IntType
 
 # FileManager is responsible for processing requests and serving files.
 # It also checks every step of fetching a list of directories.
+# "path" is a root path (home) for file manager
+# "alias" is an alias for home directory (see above)
 # "extensions" is a list of allowed extensions to keep, directories are always kept
+# "showOneNode" flag to show Linux-like "." hard link
+# "showTwoNode" flag to show Linux-like ".." hard link
+#
 class FileManager(object):
-    def __init__(self, path, alias="/home", extensions=[]):
+    def __init__(self, path, alias="/home", extensions=[], showOneNode=True, showTwoNode=True):
         path = os.path.realpath(str(path).strip())
         if not os.path.isabs(path):
             raise StandardError("Path '%s' is not absolute" % path)
@@ -35,6 +40,8 @@ class FileManager(object):
         self.home = path
         self.alias = alias
         self.extensions = extensions
+        self.showOneNode = showOneNode
+        self.showTwoNode = showTwoNode
 
     # Check whether path is sub-path of "self.home"
     def issubpath(self, path):
@@ -52,23 +59,24 @@ class FileManager(object):
                 raise StandardError("Empty part in %s" % parts)
         # building tree to traverse back and forth as breadcrumbs
         aggpath = self.home
-        tree = [{"type": "dir", "isdir": True, "name": "home", "url": self.alias}]
+        tree = [{"type": "dir", "isdir": True, "name": "home", "url": self.alias,
+            "realpath": self.home}]
         for part in parts:
             aggpath = os.path.realpath(os.path.join(aggpath, part))
             if not os.path.isdir(aggpath):
                 raise StandardError("Directory '%s' is not valid" % aggpath)
             if not self.issubpath(aggpath):
-                raise StandardError("403, Forbidden")
+                raise StandardError("403, Forbidden %s" % aggpath)
             relpath = os.path.relpath(aggpath, self.home)
             tree.append({"type": "dir", "isdir": True, "name": part,
-                "url": os.path.join(self.alias, relpath)})
+                "url": os.path.join(self.alias, relpath), "realpath": aggpath})
         lstree = []
         # append special links such as ".." and ".", if any exists
-        if len(tree) >= 1:
+        if self.showOneNode and len(tree) >= 1:
             obj = copy.copy(tree[-1])
             obj["name"] = "."
             lstree.append(obj)
-        if len(tree) >= 2:
+        if self.showTwoNode and len(tree) >= 2:
             obj = copy.copy(tree[-2])
             obj["name"] = ".."
             lstree.append(obj)
@@ -76,13 +84,13 @@ class FileManager(object):
         for name in os.listdir(aggpath):
             currentpath = os.path.join(aggpath, name)
             if not self.issubpath(currentpath):
-                raise StandardError("403, Forbidden")
+                raise StandardError("403, Forbidden %s" % currentpath)
             tp = "dir" if os.path.isdir(currentpath) else os.path.splitext(name)[1]
             # filter out extensions, keep directories and any extensions specified
             if not self.extensions or tp == "dir" or tp in self.extensions:
                 relpath = os.path.relpath(currentpath, self.home)
                 lstree.append({"type": tp, "isdir": tp == "dir", "name": name,
-                    "url": os.path.join(self.alias, relpath)})
+                    "url": os.path.join(self.alias, relpath), "realpath": currentpath})
         # sort list: directories first, then files in lexicographical order by name
         def lscmp(x, y):
             if x["type"] == y["type"] == "dir" or x["type"] != "dir" and y["type"] != "dir":

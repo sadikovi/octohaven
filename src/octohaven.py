@@ -95,9 +95,9 @@ def create(entity):
     entity = str(entity).lower()
     if entity == "job":
         # redirect to the page of creating a job
-        return render_page("create_job.html", default_job_name="", default_main_class="",
-            default_driver_memory="4g", default_executor_memory="4g", default_spark_options="",
-            default_job_options="")
+        return render_page("create_job.html")
+    elif entity == "timetable":
+        return abort(404)
     else:
         return abort(404)
 
@@ -118,21 +118,19 @@ def base_exception(error):
     app_log.logger.exception("Exception occuried: %s", error.message)
     return make_response(jsonify({"code": 500, "msg": "%s" % error.message}), 500)
 
+# API: Spark status
 @app.route("/api/v1/spark/status", methods=["GET"])
 def spark_status():
     status = sparkContext.clusterStatus()
     return success({"status": status})
 
-def _finder_home(parts):
-    manager = FileManager(app.config["JAR_FOLDER"], alias="/api/v1/finder/home")
+# API: finder (ls tree)
+@app.route("/api/v1/finder/home", methods=["GET"])
+@app.route("/api/v1/finder/home/<path:rel_path>", methods=["GET"])
+def finder_home_path(rel_path=None):
+    # in case of root request "home" we return empty list
+    parts = rel_path.split("/") if rel_path else []
+    manager = FileManager(app.config["JAR_FOLDER"], alias="/api/v1/finder/home",
+        extensions=[".jar"], showOneNode=False)
     tree, lstree = manager.ls(*parts)
     return success({"path": tree, "ls": lstree})
-
-@app.route("/api/v1/finder/home", methods=["GET"])
-def finder_home():
-    return _finder_home([])
-
-@app.route("/api/v1/finder/home/<path:rel_path>", methods=["GET"])
-def finder_home_path(rel_path):
-    parts = rel_path.split("/")
-    return _finder_home(parts)

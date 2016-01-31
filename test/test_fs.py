@@ -36,36 +36,79 @@ class FileManagerTestSuite(unittest.TestCase):
     def test_ls(self):
         manager = FileManager(self.resources, alias="/home", extensions=[".jar"])
         a, b = manager.ls()
-        self.assertEqual(a, [{"type": "dir", "isdir": True, "name": "home", "url": "/home"}])
+        self.assertEqual(a, [{"type": "dir", "isdir": True, "name": "home", "url": "/home",
+            "realpath": self.resources}])
         self.assertEqual(b, [
-            {"type": "dir", "isdir": True, "name": ".", "url": "/home"},
-            {"type": "dir", "isdir": True, "name": "filelist", "url": "/home/filelist"},
-            {"type": ".jar", "isdir": False, "name": "dummy.jar", "url": "/home/dummy.jar"}
+            {"type": "dir", "isdir": True, "name": ".", "url": "/home", "realpath": self.resources},
+            {"type": "dir", "isdir": True, "name": "filelist", "url": "/home/filelist",
+                "realpath": os.path.join(self.resources, "filelist")},
+            {"type": ".jar", "isdir": False, "name": "dummy.jar", "url": "/home/dummy.jar",
+                "realpath": os.path.join(self.resources, "dummy.jar")}
         ])
         # testing different extensions
         manager = FileManager(self.resources, alias="/home", extensions=[".txt"])
         a, b = manager.ls()
-        self.assertEqual(a, [{"type": "dir", "isdir": True, "name": "home", "url": "/home"}])
+        self.assertEqual(a, [{"type": "dir", "isdir": True, "name": "home", "url": "/home",
+            "realpath": self.resources}])
         self.assertEqual(b, [
-            {"type": "dir", "isdir": True, "name": ".", "url": "/home"},
-            {"type": "dir", "isdir": True, "name": "filelist", "url": "/home/filelist"},
-            {"type": ".txt", "isdir": False, "name": "empty.txt", "url": "/home/empty.txt"},
-            {"type": ".txt", "isdir": False, "name": "scheduler.txt", "url": "/home/scheduler.txt"}
+            {"type": "dir", "isdir": True, "name": ".", "url": "/home", "realpath": self.resources},
+            {"type": "dir", "isdir": True, "name": "filelist", "url": "/home/filelist",
+                "realpath": os.path.join(self.resources, "filelist")},
+            {"type": ".txt", "isdir": False, "name": "empty.txt", "url": "/home/empty.txt",
+                "realpath": os.path.join(self.resources, "empty.txt")},
+            {"type": ".txt", "isdir": False, "name": "scheduler.txt", "url": "/home/scheduler.txt",
+                "realpath": os.path.join(self.resources, "scheduler.txt")}
         ])
 
     def test_ls_traverse(self):
         manager = FileManager(self.resources, alias="/home", extensions=[".jar"])
         a, b = manager.ls("filelist", "dev")
         self.assertEqual(a, [
-            {"type": "dir", "isdir": True, "name": "home", "url": "/home"},
-            {"type": "dir", "isdir": True, "name": "filelist", "url": "/home/filelist"},
-            {"type": "dir", "isdir": True, "name": "dev", "url": "/home/filelist/dev"}
+            {"type": "dir", "isdir": True, "name": "home", "url": "/home",
+                "realpath": self.resources},
+            {"type": "dir", "isdir": True, "name": "filelist", "url": "/home/filelist",
+                "realpath": os.path.join(self.resources, "filelist")},
+            {"type": "dir", "isdir": True, "name": "dev", "url": "/home/filelist/dev",
+                "realpath": os.path.join(self.resources, "filelist", "dev")}
         ])
         self.assertEqual(b, [
-            {"type": "dir", "isdir": True, "name": ".", "url": "/home/filelist/dev"},
-            {"type": "dir", "isdir": True, "name": "..", "url": "/home/filelist"},
+            {"type": "dir", "isdir": True, "name": ".", "url": "/home/filelist/dev",
+                "realpath": os.path.join(self.resources, "filelist", "dev")},
+            {"type": "dir", "isdir": True, "name": "..", "url": "/home/filelist",
+                "realpath": os.path.join(self.resources, "filelist")},
             {"type": ".jar", "isdir": False, "name": "dev-jar.jar",
-                "url": "/home/filelist/dev/dev-jar.jar"}
+                "url": "/home/filelist/dev/dev-jar.jar", "realpath": os.path.join(self.resources,
+                    "filelist", "dev", "dev-jar.jar")}
+        ])
+
+    def test_ls_traverse_without_nodes(self):
+        # only ".." is included
+        manager = FileManager(self.resources, alias="/home", extensions=[".jar"], showOneNode=False)
+        a, b = manager.ls("filelist", "dev")
+        self.assertEqual(a, [
+            {"type": "dir", "isdir": True, "name": "home", "url": "/home",
+                "realpath": self.resources},
+            {"type": "dir", "isdir": True, "name": "filelist", "url": "/home/filelist",
+                "realpath": os.path.join(self.resources, "filelist")},
+            {"type": "dir", "isdir": True, "name": "dev", "url": "/home/filelist/dev",
+                "realpath": os.path.join(self.resources, "filelist", "dev")}
+        ])
+        self.assertEqual(b, [
+            {"type": "dir", "isdir": True, "name": "..", "url": "/home/filelist",
+                "realpath": os.path.join(self.resources, "filelist")},
+            {"type": ".jar", "isdir": False, "name": "dev-jar.jar",
+                "url": "/home/filelist/dev/dev-jar.jar", "realpath": os.path.join(self.resources,
+                    "filelist", "dev", "dev-jar.jar")}
+        ])
+
+        # none of "." and ".." are included
+        manager = FileManager(self.resources, alias="/home", extensions=[".jar"],
+            showOneNode=False, showTwoNode=False)
+        a, b = manager.ls("filelist", "dev")
+        self.assertEqual(b, [
+            {"type": ".jar", "isdir": False, "name": "dev-jar.jar",
+                "url": "/home/filelist/dev/dev-jar.jar", "realpath": os.path.join(self.resources,
+                    "filelist", "dev", "dev-jar.jar")}
         ])
 
     # File reading API

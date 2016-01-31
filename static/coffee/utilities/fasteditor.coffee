@@ -111,4 +111,5 @@ class Panel
         main
 
 FastEditor._util = @util
-@FastEditor ?= FastEditor
+@fasteditor = (elem, onDidFinishEdit, oktext="Save", canceltext="Cancel", placeholder="", displayvalue=true) ->
+    new FastEditor(elem, onDidFinishEdit, oktext, canceltext, placeholder, displayvalue)
