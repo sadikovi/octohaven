@@ -2,17 +2,18 @@ _loader = @loader
 _mapper = @mapper
 _util = @util
 _fasteditor = @fasteditor
+_namer = @namer
 FILE_API = @FILE_API
 
 # Current template to store data
 template =
-    jobname: "Another job"
+    jobname: "#{namer.generate()}"
     mainclass: ""
     drivermemory: "4g"
     executormemory: "4g"
     sparkoptions: ""
     joboptions: ""
-    delay: "600"
+    delay: "0"
     jar: null
 
 # Options for template / job
@@ -65,7 +66,7 @@ breadcrumbs = document.getElementById("opt_finder_breadcrumbs")
 ls = document.getElementById("opt_finder_ls")
 selected = document.getElementById("opt_finder_selected")
 
-throw new Error("Insufficient structure of finder") unless finder and breadcrumbs and ls
+throw new Error("Insufficient structure of finder") unless finder and breadcrumbs and ls and selected
 finder.selected = null
 
 updateSelected = (jarpath) -> selected.innerHTML = "Selected: #{jarpath}"
@@ -92,15 +93,16 @@ tree = (url) ->
             # construct breadcrumbs
             paths = []
             for p, i in path
-                cls = if i == path.length-1 then "section active" else "section"
-                tpe = if i == path.length-1 then "div" else "a"
+                cls = "section"
+                tpe = "a"
+                if i == path.length - 1
+                    cls = "#{cls} active"
+                    tpe = "div"
                 elem = mapper.parseMapForParent(type: tpe, cls: "#{cls}", title: "#{p["name"]}")
                 elem.url = "#{p["url"]}"
                 if i < path.length - 1
                     _util.addEventListener elem, "click", (e) ->
-                        tree(@url) if @url
-                        e.preventDefault()
-                        e.stopPropagation()
+                        tree(@url) if @url; e.preventDefault(); e.stopPropagation()
                 paths.push elem
                 paths.push type: "div", cls: "separator", title: "/"
             mapper.parseMapForParent paths, breadcrumbs
@@ -160,6 +162,5 @@ loadTemplate = (template) ->
     else
         # if nothing was selected, choose minimum delay
         template.delay = selecttimer(delay_0sec)
-    console.log template
 
 loadTemplate(template)
