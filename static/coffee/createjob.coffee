@@ -4,6 +4,24 @@ _util = @util
 _fasteditor = @fasteditor
 _namer = @namer
 FILE_API = @FILE_API
+TEMPLATE_API = @TEMPLATE_API
+
+# main content placeholder and status for requests
+CONTENT = document.getElementById("content")
+STATUS = document.getElementById("status")
+throw new Error("Content is undefined") unless CONTENT and STATUS
+
+hideStatus = -> _util.addClass STATUS, "hidden"
+
+updateStatus = (ok, msg) ->
+    _util.removeClass STATUS, "hidden"
+    _util.removeClass STATUS, "error-box"
+    _util.removeClass STATUS, "success-box"
+    STATUS.innerHTML = "#{msg}"
+    if ok
+        _util.addClass STATUS, "success-box"
+    else
+        _util.addClass STATUS, "error-box"
 
 # Current template to store data
 template =
@@ -133,14 +151,12 @@ tree = (url) ->
         else
             slate = mapper.parseMapForParent(
                 type: "div"
-                cls: "blankslate"
+                cls: "error-box"
                 children: [
-                    {type: "h1", cls: "text-thin", title: "Something happened"},
                     {type: "p", title: "#{if json then json["msg"] else "Really bad..."}"},
                     {type: "a", href: "#", title: "Reload", onclick: (e) ->
                         defaultTree(); e.preventDefault(); e.stopPropagation()}
-                ],
-                ls)
+                ], ls)
     , url)
 
 defaultTree = -> tree("/api/v1/finder/home")
@@ -164,3 +180,32 @@ loadTemplate = (template) ->
         template.delay = selecttimer(delay_0sec)
 
 loadTemplate(template)
+
+# submit job button and create new template button
+btnNewJob = document.getElementById("btn_job_new")
+btnNewTemplate = document.getElementById("btn_template_new")
+
+unless btnNewJob and btnNewTemplate
+    throw new Error("Cannot locate action buttons")
+
+# add editor on template, so you can type name for it
+_fasteditor(btnNewTemplate, (ok, value) ->
+    return false unless ok
+    unless value
+        updateStatus(false, "Template name is empty")
+        return false
+    # assign action on template button
+    _util.addEventListener(btnNewTemplate, "click", (e) ->
+        TEMPLATE_API.newTemplate(value, template
+        , ->
+            _util.addClass CONTENT, "loading"
+            hideStatus()
+        , (ok, json) ->
+            _util.removeClass CONTENT, "loading"
+            if ok
+                updateStatus(ok,  json["payload"]["msg"])
+            else
+                updateStatus(ok,  if json then "Error: #{json["msg"]}" else "Unrecoverable error")
+        )
+    )
+, oktext="Save", canceltext="Cancel", placeholder="", displayvalue=false)

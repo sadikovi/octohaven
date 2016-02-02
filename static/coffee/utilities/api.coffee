@@ -39,3 +39,10 @@ class FileApi extends AbstractApi
     ls: (before, after, url="/api/v1/finder/home") -> @doGet(before, after, url, null)
 
 @FILE_API ?= new FileApi
+
+class TemplateApi extends AbstractApi
+    newTemplate: (name, template, before, after) ->
+        data = name: "#{name}", content: template
+        @doPost(before, after, "/api/v1/template/new", data)
+
+@TEMPLATE_API ?= new TemplateApi

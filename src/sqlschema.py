@@ -94,17 +94,22 @@ TABLES = [TABLE_TEMPLATES, TABLE_SPARKJOBS, TABLES_JOBS, TABLES_TIMETABLES, TABL
 # Load tables using SQLContext.
 # if "drop_existing" is True, every time function runs, it will delete existing tables, otherwise
 # it will ignore table creation.
-def loadSchema(sqlContext, drop_existing=False):
+# option "suppress_log" will suppress output even if logging level is debug.
+def loadSchema(sqlContext, drop_existing=False, suppress_log=False):
     if drop_existing:
         schema_log.logger.info("Drop existing tables")
         for name, ddl in reversed(TABLES):
-            schema_log.logger.debug("- Dropping table '%s'", name)
+            if not suppress_log:
+                schema_log.logger.debug("- Dropping table '%s'", name)
             sqlContext.dropTable(name)
-            schema_log.logger.debug("- Table '%s' dropped", name)
+            if not suppress_log:
+                schema_log.logger.debug("- Table '%s' dropped", name)
     schema_log.logger.info("Check/create schema")
     for name, ddl in TABLES:
         status = sqlContext.createTable(ddl)
         if status:
-            schema_log.logger.debug("- Created table '%s'", name)
+            if not suppress_log:
+                schema_log.logger.debug("- Created table '%s'", name)
         else:
-            schema_log.logger.debug("- Table '%s' already exists", name)
+            if not suppress_log:
+                schema_log.logger.debug("- Table '%s' already exists", name)

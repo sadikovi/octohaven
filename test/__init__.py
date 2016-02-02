@@ -23,7 +23,8 @@ RUN_TESTS = {
     "utils": True,
     "sqlmodule": True,
     "sparkmodule": True,
-    "fs": True
+    "fs": True,
+    "template": True
 }
 
 # default empty test suite
@@ -50,6 +51,7 @@ def collectSystemTests(suites):
     addTests2("sqlmodule")
     addTests2("sparkmodule")
     addTests2("fs")
+    addTests2("template")
 
 def main(args=[]):
     print ""

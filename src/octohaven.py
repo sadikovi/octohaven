@@ -16,7 +16,7 @@
 # limitations under the License.
 #
 
-from flask import Flask, redirect, render_template, make_response, jsonify, abort, url_for
+from flask import Flask, redirect, render_template, make_response, json, jsonify, abort, request
 from config import VERSION
 from extlogging import Loggable
 from sparkmodule import SparkContext
@@ -134,3 +134,12 @@ def finder_home_path(rel_path=None):
         extensions=[".jar"], showOneNode=False)
     tree, lstree = manager.ls(*parts)
     return success({"path": tree, "ls": lstree})
+
+# API: create template
+@app.route("/api/v1/template/new", methods=["POST"])
+def template_new():
+    app_log.logger.debug(request.data)
+    obj = json.loads(request.data)
+    app_log.logger.debug(obj)
+    app_log.logger.debug(type(obj))
+    return success({"msg": "All good"})
