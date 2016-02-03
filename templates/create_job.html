@@ -8,20 +8,7 @@
 {% endblock %}
 {% block menu %}
     <h4>Templates</h4>
-    <ul class="filter-list small">
-        <li>
-            {{ template_option("my first template") }}
-        </li>
-        <li>
-            {{ template_option("fire job") }}
-        </li>
-        <li>
-            {{ template_option("sample") }}
-        </li>
-        <li>
-            {{ template_option("testing performance for") }}
-        </li>
-    </ul>
+    <ul class="filter-list small" id="template_list"></ul>
 {% endblock %}
 {% block header %} Create new Spark job {% endblock %}
 {% block subheader %} Use templates to quickly preload data {% endblock %}

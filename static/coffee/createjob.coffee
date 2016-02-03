@@ -24,7 +24,7 @@ updateStatus = (ok, msg) ->
         _util.addClass STATUS, "error-box"
 
 # Current template to store data
-template =
+CURRENT_TEMPLATE =
     jobname: "#{namer.generate()}"
     mainclass: ""
     drivermemory: "4g"
@@ -42,17 +42,17 @@ initopt = (opt, onUpdate) ->
     opt
 
 jobNameOption = initopt(document.getElementById("opt_job_name"), (value) ->
-    template.jobname = "#{value}")
+    CURRENT_TEMPLATE.jobname = "#{value}")
 mainClassOption = initopt(document.getElementById("opt_main_class"), (value) ->
-    template.mainclass = "#{value}")
+    CURRENT_TEMPLATE.mainclass = "#{value}")
 driverMemoryOption = initopt(document.getElementById("opt_driver_memory"), (value) ->
-    template.drivermemory = "#{value}")
+    CURRENT_TEMPLATE.drivermemory = "#{value}")
 executorMemoryOption = initopt(document.getElementById("opt_executor_memory"), (value) ->
-    template.executormemory = "#{value}")
+    CURRENT_TEMPLATE.executormemory = "#{value}")
 sparkOptionsOption = initopt(document.getElementById("opt_spark_options"), (value) ->
-    template.sparkoptions = "#{value}")
+    CURRENT_TEMPLATE.sparkoptions = "#{value}")
 jobOptionsOption = initopt(document.getElementById("opt_job_options"), (value) ->
-    template.joboptions = "#{value}")
+    CURRENT_TEMPLATE.joboptions = "#{value}")
 
 # Initialize timer
 selecttimer = (delay) ->
@@ -65,7 +65,7 @@ selecttimer = (delay) ->
 
 inittimer = (delay) ->
     _util.addEventListener delay, "click", (e) ->
-        template.delay = selecttimer(@)
+        CURRENT_TEMPLATE.delay = selecttimer(@)
         e.preventDefault()
         e.stopPropagation()
     delay
@@ -87,14 +87,14 @@ selected = document.getElementById("opt_finder_selected")
 throw new Error("Insufficient structure of finder") unless finder and breadcrumbs and ls and selected
 finder.selected = null
 
-updateSelected = (jarpath) -> selected.innerHTML = "Selected: #{jarpath}"
+updateSelected = (jarpath) -> selected.innerHTML = if jarpath then "Selected: #{jarpath}" else ""
 
 selectFile = (elem) ->
     if finder.selected
         _util.removeClass finder.selected, "selected"
     finder.selected = elem
-    template.jar = elem.realpath
-    updateSelected(template.jar)
+    CURRENT_TEMPLATE.jar = elem.realpath
+    updateSelected(CURRENT_TEMPLATE.jar)
     _util.addClass elem, "selected"
 
 tree = (url) ->
@@ -144,7 +144,7 @@ tree = (url) ->
                 else
                     _util.addEventListener elem, "click", (e) ->
                         selectFile(@); e.preventDefault(); e.stopPropagation()
-                    if template.jar and elem.realpath == template.jar
+                    if CURRENT_TEMPLATE.jar and elem.realpath == CURRENT_TEMPLATE.jar
                         selectFile(elem)
                 files.push elem
             mapper.parseMapForParent files, ls
@@ -169,7 +169,7 @@ loadTemplate = (template) ->
     executorMemoryOption.texter.innerHTML = "#{template.executormemory}"
     sparkOptionsOption.texter.innerHTML = "#{template.sparkoptions}"
     jobOptionsOption.texter.innerHTML = "#{template.joboptions}"
-    updateSelected(template.jar) if template.jar
+    updateSelected(template.jar)
     # Initialize tree
     defaultTree()
     # load delay
@@ -179,7 +179,15 @@ loadTemplate = (template) ->
         # if nothing was selected, choose minimum delay
         template.delay = selecttimer(delay_0sec)
 
-loadTemplate(template)
+updateTemplate = (template) ->
+    CURRENT_TEMPLATE.jobname = "#{template.jobname}"
+    CURRENT_TEMPLATE.mainclass = "#{template.mainclass}"
+    CURRENT_TEMPLATE.drivermemory = "#{template.drivermemory}"
+    CURRENT_TEMPLATE.executormemory = "#{template.executormemory}"
+    CURRENT_TEMPLATE.sparkoptions = "#{template.sparkoptions}"
+    CURRENT_TEMPLATE.joboptions = "#{template.joboptions}"
+    CURRENT_TEMPLATE.jar = template.jar
+    CURRENT_TEMPLATE.delay = "#{template.delay}"
 
 # submit job button and create new template button
 btnNewJob = document.getElementById("btn_job_new")
@@ -194,18 +202,61 @@ _fasteditor(btnNewTemplate, (ok, value) ->
     unless value
         updateStatus(false, "Template name is empty")
         return false
-    # assign action on template button
-    _util.addEventListener(btnNewTemplate, "click", (e) ->
-        TEMPLATE_API.newTemplate(value, template
-        , ->
-            _util.addClass CONTENT, "loading"
-            hideStatus()
-        , (ok, json) ->
-            _util.removeClass CONTENT, "loading"
-            if ok
-                updateStatus(ok,  json["payload"]["msg"])
-            else
-                updateStatus(ok,  if json then "Error: #{json["msg"]}" else "Unrecoverable error")
-        )
+
+    TEMPLATE_API.newTemplate(value, CURRENT_TEMPLATE
+    , ->
+        _util.addClass CONTENT, "loading"
+        hideStatus()
+    , (ok, json) ->
+        _util.removeClass CONTENT, "loading"
+        if ok
+            updateStatus(ok,  json["payload"]["msg"])
+            updateTemplateList()
+        else
+            updateStatus(ok,  if json then "Error: #{json["msg"]}" else "Unrecoverable error")
     )
 , oktext="Save", canceltext="Cancel", placeholder="", displayvalue=false)
+
+templateList = document.getElementById("template_list")
+throw new Error("Template list is not found") unless templateList
+
+updateTemplateList = () ->
+    TEMPLATE_API.list( ->
+        templateList.innerHTML = ""
+    , (ok, json) ->
+        if ok
+            templates = json["payload"]
+            for tm in templates
+                name = tm["name"]
+                uid = tm["uid"]
+                content = tm["content"]
+                # build delete link and assign action on it
+                deleteLink = _mapper.parseMapForParent(
+                    type: "span", cls: "count tooltipped tooltipped-w")
+                deleteLink.innerHTML = "&times;"
+                deleteLink.uid = "#{uid}"
+                deleteLink.setAttribute("aria-label", "Delete")
+                _util.addEventListener(deleteLink, "click", (e) ->
+                    TEMPLATE_API.delete(@uid, null, (ok, json) -> updateTemplateList() if ok)
+                    e.preventDefault(); e.stopPropagation())
+
+                # add loading template from clicking on filter item
+                loadElem = _mapper.parseMapForParent(
+                    {type: "a", href: "#", cls: "filter-item", title: "#{name}", children: deleteLink})
+                loadElem.uid = "#{uid}"
+                loadElem.content = content
+
+                _util.addEventListener(loadElem, "click", (e) ->
+                    updateTemplate(@content)
+                    loadTemplate(CURRENT_TEMPLATE)
+                    e.preventDefault(); e.stopPropagation())
+
+                # draw elements in template list element
+                _mapper.parseMapForParent(type: "li", children: loadElem, templateList)
+
+        else
+            updateStatus(ok, if json then "Error: #{json["msg"]}" else "Unrecoverable error")
+    )
+
+loadTemplate(CURRENT_TEMPLATE)
+updateTemplateList()

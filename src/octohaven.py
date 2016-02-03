@@ -23,6 +23,7 @@ from sparkmodule import SparkContext
 from sqlmodule import MySQLContext
 from sqlschema import loadSchema
 from fs import FileManager
+from template import TemplateManager
 
 ################################################################
 # Application setup
@@ -138,8 +139,27 @@ def finder_home_path(rel_path=None):
 # API: create template
 @app.route("/api/v1/template/new", methods=["POST"])
 def template_new():
-    app_log.logger.debug(request.data)
     obj = json.loads(request.data)
-    app_log.logger.debug(obj)
-    app_log.logger.debug(type(obj))
-    return success({"msg": "All good"})
+    manager = TemplateManager(sqlContext)
+    obj["name"] = "" if "name" not in obj else obj["name"]
+    if "content" not in obj:
+        raise StandardError("Expected content for template %s" % obj["name"])
+    template = manager.createTemplate(obj["name"], obj["content"])
+    return success({"msg": "Template is created", "template": template.json()})
+
+# API: list templates
+@app.route("/api/v1/template/list", methods=["GET"])
+def template_list():
+    manager = TemplateManager(sqlContext)
+    lst = [x.json() for x in manager.templates() if x]
+    return success(lst)
+
+# API: delete template
+@app.route("/api/v1/template/delete", methods=["GET"])
+def template_delete():
+    uid = request.args.get("uid", None)
+    if not uid:
+        raise StandardError("UID is not specified")
+    manager = TemplateManager(sqlContext)
+    manager.deleteTemplate(uid)
+    return success({"msg": "Template is deleted"})

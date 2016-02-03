@@ -2,7 +2,6 @@
 
 import json, utils
 from types import DictType, NoneType, BooleanType, IntType, LongType, FloatType
-from octohaven import sqlContext
 from extlogging import Loggable
 
 TEMPLATE_DEFAULT_NAME = "Unknown"
@@ -69,8 +68,11 @@ class Template(object):
 # Template manager for creating, updating, and removing templates. Uses sql context to interact with
 # storage. Note that sql context is one for entire application
 class TemplateManager(Loggable, object):
-    def __init__(self):
+    def __init__(self, sqlContext):
+        if not sqlContext:
+            raise StandardError("Expected SQLContext")
         super(TemplateManager, self).__init__()
+        self.sqlContext = sqlContext
 
     # Return newly created Template object that is already stored
     def createTemplate(self, name, content):
@@ -84,7 +86,7 @@ class TemplateManager(Loggable, object):
             "Content is wrong and cannot be parsed: %s" % type(content))
         # insert into templates table
         rowid = None
-        with sqlContext.cursor(with_transaction=True) as cr:
+        with self.sqlContext.cursor(with_transaction=True) as cr:
             dml = ("INSERT INTO templates(name, createtime, content) "
                     "VALUES(%(name)s, %(createtime)s, %(content)s)")
             cr.execute(dml, {"name": name, "createtime": createtime,
@@ -95,7 +97,7 @@ class TemplateManager(Loggable, object):
     # Retrieve template for a specific uid. Return Template object, if found, otherwise None
     def templateForUid(self, uid):
         row = None
-        with sqlContext.cursor(with_transaction=False) as cr:
+        with self.sqlContext.cursor(with_transaction=False) as cr:
             sql = "SELECT uid, name, createtime, content FROM templates WHERE uid = %(uid)s"
             cr.execute(sql, {"uid": uid})
             row = cr.fetchone()
@@ -107,7 +109,7 @@ class TemplateManager(Loggable, object):
     def templates(self):
         # rows is a list of templates
         rows = None
-        with sqlContext.cursor(with_transaction=False) as cr:
+        with self.sqlContext.cursor(with_transaction=False) as cr:
             sql = "SELECT uid, name, createtime, content FROM templates ORDER BY name ASC"
             cr.execute(sql)
             rows = cr.fetchall()
@@ -116,6 +118,6 @@ class TemplateManager(Loggable, object):
 
     # Delete template for a specific uid
     def deleteTemplate(self, uid):
-        with sqlContext.cursor(with_transaction=True) as cr:
+        with self.sqlContext.cursor(with_transaction=True) as cr:
             dml = "DELETE FROM templates WHERE uid = %(uid)s"
             cr.execute(dml, {"uid": uid})

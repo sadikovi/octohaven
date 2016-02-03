@@ -45,4 +45,8 @@ class TemplateApi extends AbstractApi
         data = name: "#{name}", content: template
         @doPost(before, after, "/api/v1/template/new", data)
 
+    list: (before, after) -> @doGet(before, after, "/api/v1/template/list", null)
+
+    delete: (uid, before, after) -> @doGet(before, after, "/api/v1/template/delete", {"uid": uid})
+
 @TEMPLATE_API ?= new TemplateApi

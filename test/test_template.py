@@ -56,7 +56,7 @@ class TemplateManagerTestSuite(unittest.TestCase):
         pass
 
     def test_createTemplate(self):
-        templateManager = TemplateManager()
+        templateManager = TemplateManager(sqlContext)
         name = "test-template"
         content = {"a": True}
         template = templateManager.createTemplate(name, content)
@@ -64,7 +64,7 @@ class TemplateManagerTestSuite(unittest.TestCase):
         self.assertEqual(template.content, {"a": True})
 
     def test_saveTemplate(self):
-        templateManager = TemplateManager()
+        templateManager = TemplateManager(sqlContext)
         template = templateManager.createTemplate("test-template", {})
         self.assertEqual(len(templateManager.templates()), 1)
         self.assertEqual(templateManager.templateForUid(template.uid).dict(), template.dict())
@@ -72,20 +72,20 @@ class TemplateManagerTestSuite(unittest.TestCase):
             templateManager.saveTemplate(None)
 
     def test_templateForUid(self):
-        templateManager = TemplateManager()
+        templateManager = TemplateManager(sqlContext)
         self.assertEqual(templateManager.templateForUid(None), None)
         template = templateManager.createTemplate("test-template", {})
         self.assertEqual(templateManager.templateForUid(template.uid).dict(), template.dict())
 
     def test_templates(self):
-        templateManager = TemplateManager()
+        templateManager = TemplateManager(sqlContext)
         template1 = templateManager.createTemplate("1-test-template", {})
         template2 = templateManager.createTemplate("2-test-template", {})
         arr = templateManager.templates()
         self.assertEqual([x.name for x in arr], ["1-test-template", "2-test-template"])
 
     def test_deleteTemplate(self):
-        templateManager = TemplateManager()
+        templateManager = TemplateManager(sqlContext)
         template = templateManager.createTemplate("test-template", {})
         self.assertEqual(len(templateManager.templates()), 1)
         templateManager.deleteTemplate(template.uid)
