@@ -87,7 +87,7 @@ class StartOctohaven(Command):
             print "[ERROR] Jar folder must be valid directory, got '%s'" % self.jar_folder
             sys.exit(1)
         if not os.access(self.jar_folder, os.R_OK):
-            print "[ERROR] Permission denied (READ_ONLY) for %s" % self.jar_folder
+            print "[ERROR] Permission READ_ONLY denied for %s" % self.jar_folder
             sys.exit(1)
         # MYSQL_HOST, MYSQL_PORT, MYSQL_DATABASE, MYSQL_USER, MYSQL_PASSWORD
         if not self.connection:
