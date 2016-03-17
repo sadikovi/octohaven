@@ -1,4 +1,4 @@
-.PHONY: build clean start test docker
+.PHONY: build clean start test docker-start docker-stop
 
 CMD=bin/python setup.py start_octohaven --host=localhost --port=33900 \
 	--spark-master=spark://sandbox:7077 \
@@ -18,5 +18,8 @@ start:
 test:
 	$(CMD) --test
 
-docker:
-	bin/docker.sh default octohaven-mysql-container
+docker-start:
+	bin/docker.sh start default octohaven-mysql-container
+
+docker-stop:
+	bin/docker.sh stop default octohaven-mysql-container
