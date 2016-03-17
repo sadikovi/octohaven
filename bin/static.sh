@@ -33,8 +33,8 @@ $WHICH_SASS "$STATIC_DIR/scss/internal.scss" "$STATIC_DIR/octohaven.min.css" --s
 # compile coffee -> js
 # we compile javascript into temp directory and then compress them in particular order and put it
 # back into "static"
-echo "[INFO] Create 'temp' folder if does not exist"
-TEMP_DIR="$ROOT_DIR/temp/target/js"
+echo "[INFO] Create 'target' folder if does not exist"
+TEMP_DIR="$ROOT_DIR/target/js"
 mkdir -p "$TEMP_DIR"
 
 echo "[INFO] .coffee >>> .js"

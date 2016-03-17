@@ -78,3 +78,9 @@ MANIFEST
 # ignore artifacts in "static" folder
 static/*.css
 static/*.js
+
+# ignore npm artifacts
+node_modules/
+
+# ignore bower artifacts
+bower_components/

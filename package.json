@@ -1,0 +1,19 @@
+{
+    "name": "octohaven",
+    "version": "0.2.0",
+    "description": "Apache Spark job server",
+    "main": "index.js",
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "author": "Ivan Sadikov",
+    "license": "Apache License 2.0",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/sadikovi/octohaven.git"
+    },
+    "dependencies": {
+        "bower": ">=1.7.6"
+    },
+    "devDependencies": { }
+}
