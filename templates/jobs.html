@@ -22,6 +22,9 @@
 {% block content %}
     <div class="blankslate">
         <h1 class="text-thin">No jobs found</h1>
-        <p>Try <a href="/create/job">creating a new one</a></p>
+        <p><a href="/create/job">Create a new job</a></p>
     </div>
+{% endblock %}
+{% block scripts %}
+<script type="text/javascript" src="/static/external/react/react.min.js"></script>
 {% endblock %}

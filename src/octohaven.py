@@ -16,7 +16,7 @@
 # limitations under the License.
 #
 
-from flask import Flask, redirect, render_template, make_response, json, jsonify, abort, request
+from flask import Flask, redirect, render_template, make_response, json, jsonify, abort, request, send_from_directory
 from config import VERSION
 from extlogging import Loggable
 from sparkmodule import SparkContext
@@ -74,6 +74,11 @@ def render_page(page, **params):
         spark_master=app.config["SPARK_MASTER_ADDRESS"],
         cluster_status=sparkContext.clusterStatus(),
         **params)
+
+# Additional static folder with external dependencies
+@app.route("/static/external/<path:filepath>")
+def static_external(filepath):
+    return send_from_directory("bower_components", filepath)
 
 @app.route("/")
 def index():

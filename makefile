@@ -9,12 +9,12 @@ CMD=bin/python setup.py start_octohaven --host=localhost --port=33900 \
 clean:
 	bin/cleanup.sh
 
-build: clean
+build:
 	bin/static.sh
 	npm install
-	./node_modules/bower/bin/bower install
+	./node_modules/bower/bin/bower install --production
 
-start:
+start: docker-start
 	$(CMD)
 
 test:
