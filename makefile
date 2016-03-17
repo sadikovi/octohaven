@@ -8,8 +8,6 @@ CMD=bin/python setup.py start_octohaven --host=localhost --port=33900 \
 
 clean:
 	bin/cleanup.sh
-	rm -rf bower_components
-	rm -rf node_modules
 
 build: clean
 	bin/static.sh
