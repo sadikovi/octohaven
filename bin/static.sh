@@ -41,3 +41,13 @@ cat \
   $STATIC_DIR/coffee/base.coffee \
   $STATIC_DIR/coffee/jobs.coffee | \
   coffee --bare --no-header --compile --stdio | uglifyjs - -o "$STATIC_DIR/octohaven.jobs.min.js" -c -m
+
+echo "Compile 'create-job' scripts"
+cat \
+  $STATIC_DIR/coffee/utilities/namer.coffee \
+  $STATIC_DIR/coffee/utilities/util.coffee \
+  $STATIC_DIR/coffee/utilities/loader.coffee \
+  $STATIC_DIR/coffee/utilities/api.coffee \
+  $STATIC_DIR/coffee/base.coffee \
+  $STATIC_DIR/coffee/create_job.coffee | \
+  coffee --bare --no-header --compile --stdio | uglifyjs - -o "$STATIC_DIR/octohaven.createjob.min.js" -c -m

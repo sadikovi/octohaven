@@ -12,6 +12,8 @@ JOB_DATA_ARRIVED = "job-data-arrived"
 JOB_CLOSED = "job-closed"
 JOB_CLOSED_ARRIVED = "job-closed-arrived"
 
+OPTION_CHANGED = "option-changed"
+
 # React base class for CoffeeScript
 class Reactable extends React.Component
   constructor: (props) ->
@@ -25,9 +27,15 @@ class Reactable extends React.Component
 
   h1: (opts...) -> React.DOM.h1(opts...)
 
+  h2: (opts...) -> React.DOM.h2(opts...)
+
+  input: (opts...) -> React.DOM.input(opts...)
+
   li: (opts...) -> React.DOM.li(opts...)
 
   p: (opts...) -> React.DOM.p(opts...)
+
+  small: (opts...) -> React.DOM.small(opts...)
 
   span: (opts...) -> React.DOM.span(opts...)
 

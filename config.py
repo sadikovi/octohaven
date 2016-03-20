@@ -23,7 +23,7 @@ import os
 ################################################################
 
 # Application version
-VERSION = "0.2.0.dev1"
+VERSION = "1.0.0"
 
 # Root directory of the project
 ROOT_PATH = os.path.dirname(os.path.realpath(__file__))

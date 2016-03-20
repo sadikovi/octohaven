@@ -92,6 +92,11 @@ def index():
 def jobs_for_status():
     return render_page("jobs.html")
 
+@app.route("/create/job")
+def create_job():
+    return render_page("create_job.html")
+
+
 ################################################################
 # REST API
 ################################################################

@@ -39,8 +39,8 @@ class JobBox extends Reactable
       @setState(okay: okay, data: rows, pending: false)
 
   componentWillUnmount: ->
-    emitter.off(JOB_DATA_REQUESTED)
-    emitter.off(JOB_DATA_ARRIVED)
+    emitter.off JOB_DATA_REQUESTED
+    emitter.off JOB_DATA_ARRIVED
 
   render: ->
     if @state.pending

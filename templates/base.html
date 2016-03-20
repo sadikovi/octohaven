@@ -16,6 +16,10 @@
         <link rel="icon" type="image/x-icon" href="/static/img/favicon.ico">
         <link rel="stylesheet" href="/static/octohaven.min.css">
         <script type="text/javascript" src="/static/octohaven.preload.min.js"></script>
+        <script type="text/javascript" src="/static/external/react/react.js"></script>
+        <script type="text/javascript" src="/static/external/react/react-dom.js"></script>
+        <script type="text/javascript" src="/static/external/eventEmitter/EventEmitter.min.js"></script>
+        <script type="text/javascript" src="/static/external/flux/dist/Flux.js"></script>
         {% block head_scripts %}{% endblock %}
     </head>
     <body>
@@ -25,13 +29,13 @@
                     <nav class="menu">
                         <div class="menu-heading">Octohaven {{ version }}</div>
                         <div class="menu-item" id="octohaven-spark-server-status">
-                            <span class="text-mute">Status:</span>
+                            <span class="text-mute">Spark cluster:</span>
                             {% if cluster_status == 0 %}
-                            <span class="text-green">Spark cluster is free</span>
+                            <span class="text-green">ready</span>
                             {% elif cluster_status == -1 %}
-                            <span class="text-yellow">Spark cluster is busy</span>
+                            <span class="text-yellow">busy</span>
                             {% else %}
-                            <span class="text-red">Spark cluster is down</span>
+                            <span class="text-red">not available</span>
                             {% endif %}
                         </div>
                         {% block nav %}{% endblock %}
@@ -39,7 +43,7 @@
                     {% block menu %}{% endblock %}
                     <div class="divider"></div>
                     <div class="breadcrumbs">
-                        <a class="section" href="#">API</a>
+                        <a class="section" href="/api">API</a>
                         <span class="separator">&nbsp;</span>
                         <a class="section" href="https://github.com/sadikovi/octohaven">GitHub</a>
                     </div>

@@ -1,6 +1,4 @@
 {% extends "base.html" %}
-{% from "macros.html" import job_option, template_option %}
-
 {% block title %} Create job {% endblock %}
 {% block nav %}
     <div class="menu-heading">Actions</div>
@@ -8,62 +6,11 @@
 {% endblock %}
 {% block menu %}
     <h4>Templates</h4>
-    <ul class="filter-list small" id="template_list"></ul>
+    <ul class="small filter-list" id="template-list"></ul>
 {% endblock %}
 {% block header %} Create new Spark job {% endblock %}
 {% block subheader %} Use templates to quickly preload data {% endblock %}
-{% block content %}
-    <div class="segments">
-        {{ job_option("opt_job_name", "Job name", "Friendly job name", default_job_name, True) }}
-        {{ job_option("opt_main_class", "Main class", "Entrypoint for the job", default_main_class, True) }}
-        {{ job_option("opt_driver_memory", "Driver memory", "Memory for the driver program, e.g. 4g", default_driver_memory, True) }}
-        {{ job_option("opt_executor_memory", "Executor memory", "Memory for Spark executors, e.g. 4g", default_executor_memory, True) }}
-        {{ job_option("opt_spark_options", "Spark options", "Settings, e.g. JVM, networking, shuffle...", default_spark_options, True) }}
-        {{ job_option("opt_job_options", "Job options", "Job options to pass to entrypoint", default_job_options, True) }}
-        <div id="opt_finder" class="segment">
-            <h3 class="text-thin">Finder</h3>
-            <div id="opt_finder_selected" class="text-emphasized"></div>
-            <div id="opt_finder_breadcrumbs" class="breadcrumb"></div>
-            <div id="opt_finder_ls" class="menu"></div>
-        </div>
-        <div id="opt_timer" class="segment">
-            <h3 class="text-thin">Timer</h3>
-            <ul class="filter-list small">
-                <li>
-                    <a id="delay_0sec" href="#" class="filter-item selected" default="0">Right away</a>
-                </li>
-                <li>
-                    <a id="delay_10min" href="#" class="filter-item" default="600">In 10 minutes</a>
-                </li>
-                <li>
-                    <a id="delay_30min" href="#" class="filter-item" default="1800">In 30 minutes</a>
-                </li>
-                <li>
-                    <a id="delay_1hrs" href="#" class="filter-item" default="3600">In 1 hour</a>
-                </li>
-                <li>
-                    <a id="delay_3hrs" href="#" class="filter-item" default="10800">In 3 hours</a>
-                </li>
-                <li>
-                    <a id="delay_24hrs" href="#" class="filter-item" default="86400">Next day</a>
-                </li>
-            </ul>
-        </div>
-        <div class="segment">
-            <div id="status" class="hidden">ERROR</div>
-            <div class="breadcrumb">
-                <div class="section">
-                    <div id="btn_job_new" class="btn btn-success">Submit job</div>
-                </div>
-                <div class="separator">|</div>
-                <div id="btn_template_new" class="section" data-attr="fast-editor">
-                    <div class="btn" data-attr="fast-editor-trigger">Save as template</div>
-                    <span data-attr="fast-editor-texter"></span>
-                </div>
-            </div>
-        </div>
-    </div>
-{% endblock %}
+{% block content %}{% endblock %}
 {% block scripts %}
     <script type="text/javascript" src="/static/octohaven.createjob.min.js"></script>
 {% endblock %}
