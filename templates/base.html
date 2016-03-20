@@ -16,6 +16,7 @@
         <link rel="icon" type="image/x-icon" href="/static/img/favicon.ico">
         <link rel="stylesheet" href="/static/octohaven.min.css">
         <script type="text/javascript" src="/static/octohaven.preload.min.js"></script>
+        {% block head_scripts %}{% endblock %}
     </head>
     <body>
         <div class="page container">
@@ -23,7 +24,7 @@
                 <div class="one-fourth column">
                     <nav class="menu">
                         <div class="menu-heading">Octohaven {{ version }}</div>
-                        <div class="menu-item" id="octohaven-spark-server">
+                        <div class="menu-item" id="octohaven-spark-server-status">
                             <span class="text-mute">Status:</span>
                             {% if cluster_status == 0 %}
                             <span class="text-green">Spark cluster is free</span>
@@ -40,7 +41,7 @@
                     <div class="breadcrumbs">
                         <a class="section" href="#">API</a>
                         <span class="separator">&nbsp;</span>
-                        <a class="section" href="https://github.com/sadikovi/octohaven">Github</a>
+                        <a class="section" href="https://github.com/sadikovi/octohaven">GitHub</a>
                     </div>
                 </div>
                 <div class="three-fourths column">
@@ -66,7 +67,6 @@
                 </div>
             </div>
         </div>
-        <script type="text/javascript" src="/static/octohaven.util.min.js"></script>
         {% block scripts %}{% endblock %}
     </body>
 </html>

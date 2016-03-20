@@ -1,10 +1,11 @@
-$container-padding: 20px;
+$container-vertical-padding: 10px;
+$container-horizontal-padding: 0px;
 
 .container {
     width: auto;
     max-width: $container-width;
-    padding-left: $container-padding;
-    padding-right: $container-padding;
+    padding-left: $container-horizontal-padding;
+    padding-right: $container-horizontal-padding;
     margin-right: auto;
     margin-left: auto;
     @include clearfix;
@@ -12,7 +13,7 @@ $container-padding: 20px;
     &.fixed { width: $container-width; }
 
     &.page {
-        padding: $container-padding;
+        padding: $container-vertical-padding $container-horizontal-padding;
     }
 }
 

@@ -80,39 +80,24 @@ def render_page(page, **params):
 def static_external(filepath):
     return send_from_directory("bower_components", filepath)
 
+@app.route("/static/node/<path:filepath>")
+def static_node(filepath):
+    return send_from_directory("node_modules", filepath)
+
 @app.route("/")
 def index():
-    return redirect("/jobs/all")
+    return redirect("/jobs")
 
 @app.route("/jobs")
-def jobs():
-    return redirect("/jobs/all")
-
-@app.route("/jobs/<status>")
-def jobs_for_status(status):
-    status = str(status).upper()
-    statuses = ["ALL", "READY", "DELAYED", "RUNNING", "FINISHED", "CLOSED"]
-    if status not in statuses:
-        status = "ALL"
-    return render_page("jobs.html", status=status, statuses=statuses)
-
-@app.route("/create/<entity>")
-def create(entity):
-    entity = str(entity).lower()
-    if entity == "job":
-        # redirect to the page of creating a job
-        return render_page("create_job.html")
-    elif entity == "timetable":
-        return abort(404)
-    else:
-        return abort(404)
+def jobs_for_status():
+    return render_page("jobs.html")
 
 ################################################################
 # REST API
 ################################################################
 # successful response helper
 def success(payload):
-    return make_response(jsonify({"code": 200, "payload": payload}), 200)
+    return make_response(jsonify(payload), 200)
 
 @app.errorhandler(StandardError)
 def standard_error(error):
@@ -141,30 +126,57 @@ def finder_home_path(rel_path=None):
     tree, lstree = manager.ls(*parts)
     return success({"path": tree, "ls": lstree})
 
-# API: create template
-@app.route("/api/v1/template/new", methods=["POST"])
-def template_new():
-    obj = json.loads(request.data)
-    manager = TemplateManager(sqlContext)
-    obj["name"] = "" if "name" not in obj else obj["name"]
-    if "content" not in obj:
-        raise StandardError("Expected content for template %s" % obj["name"])
-    template = manager.createTemplate(obj["name"], obj["content"])
-    return success({"msg": "Template is created", "template": template.json()})
+# API: fetch jobs
+@app.route("/api/v1/job/list", methods=["GET"])
+def job_list():
+    status = request.args.get("status")
+    data = [
+        {
+            "uid": 100,
+            "name": "First job",
+            "status": "READY",
+            "createtime": 1458202528769L,
+            "url": "http://localhost:33900/job/100",
+            "close": "http://localhost:33900/api/v1/job/close/100"
+        },
+        {
+            "uid": 101,
+            "name": "Second job",
+            "status": "CLOSED",
+            "createtime": 1458288680346L,
+            "url": "http://localhost:33900/job/101",
+            "close": None
+        },
+        {
+            "uid": 102,
+            "name": "Third job",
+            "status": "DELAYED",
+            "createtime": 1458202468769L,
+            "url": "http://localhost:33900/job/102",
+            "close": "http://localhost:33900/api/v1/job/close/102"
+        },
+        {
+            "uid": 103,
+            "name": "Fourth job",
+            "status": "RUNNING",
+            "createtime": 1458202488769L,
+            "url": "http://localhost:33900/job/103",
+            "close": None
+        },
+        {
+            "uid": 104,
+            "name": "Fifth job that has a very-very-very long name and should be truncated for obvious reasons",
+            "status": "FINISHED",
+            "createtime": 1458201468769L,
+            "url": "http://localhost:33900/job/104",
+            "close": None
+        }
+    ]
 
-# API: list templates
-@app.route("/api/v1/template/list", methods=["GET"])
-def template_list():
-    manager = TemplateManager(sqlContext)
-    lst = [x.json() for x in manager.templates() if x]
-    return success(lst)
+    resolvedStatus = status.upper() if status and status.upper() != "ALL" else None
+    arr = data if not resolvedStatus else [x for x in data if x["status"] == resolvedStatus]
+    return success({"rows": arr})
 
-# API: delete template
-@app.route("/api/v1/template/delete", methods=["GET"])
-def template_delete():
-    uid = request.args.get("uid", None)
-    if not uid:
-        raise StandardError("UID is not specified")
-    manager = TemplateManager(sqlContext)
-    manager.deleteTemplate(uid)
-    return success({"msg": "Template is deleted"})
+@app.route("/api/v1/job/close/<uid>", methods=["GET"])
+def job_close(uid):
+    return success({"uid": uid, "closed": True})
