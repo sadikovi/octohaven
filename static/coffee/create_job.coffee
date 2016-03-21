@@ -8,6 +8,17 @@ class JobContainer extends Reactable
       dmemory: "4g"
       ememory: "4g"
       delay: 0
+      jar: null
+      finder_url: "/api/v1/finder/home"
+      finder_ls: []
+      finder_path: []
+
+  finder: (url) ->
+    Api.doGet url, null, null, (ok, json) =>
+      if ok
+        @setState(finder_url: url, finder_ls: json.ls, finder_path: json.path)
+      else
+        console.error "ERROR failed to parse finder object", ok, json
 
   componentWillMount: ->
     emitter.on OPTION_CHANGED, (id, value) =>
@@ -16,9 +27,18 @@ class JobContainer extends Reactable
       @setState(dmemory: "#{value}") if id == 3
       @setState(ememory: "#{value}") if id == 4
       @setState(delay: value) if id == 100
+    emitter.on FINDER_ELEM_CLICKED, (url) =>
+      @finder(url)
+    emitter.on FINDER_JAR_SELECTED, (realpath) =>
+      @setState(jar: realpath)
+
+  componentDidMount: ->
+    @finder(@state.finder_url)
 
   componentWillUnmount: ->
     emitter.off OPTION_CHANGED
+    emitter.off FINDER_ELEM_CLICKED
+    emitter.off FINDER_JAR_SELECTED
 
   render: ->
     console.debug "Current state", @state
@@ -31,8 +51,8 @@ class JobContainer extends Reactable
         , default: "#{@state.dmemory}"),
       Option.new(id: 4, key: "4", name: "Executor memory", desc: "Memory per Spark executor, e.g. 4g"
         , default: "#{@state.ememory}"),
-      FinderOption.new(),
-      TimerOption.new()
+      FinderOption.new(ls: @state.finder_ls, path: @state.finder_path, jar: @state.jar),
+      TimerOption.new(delay: @state.delay)
     )
 
 # Each option requires id (for events), name, description. Default value is optional, and is empty
@@ -62,26 +82,69 @@ class FinderOption extends Reactable
     @div({className: "segment"},
       @h2({className: "text-thin"},
         "Finder",
-        @small({}, " (select jar file to use with main class provided)")
-      )
+        @small({}, " (jar file to use with provided main class)")
+      ),
+      FinderPath.new(path: @props.path),
+      FinderLs.new(ls: @props.ls, jar: @props.jar)
     )
+
+class FinderPath extends Reactable
+  render: ->
+    elems = []
+    n = @props.path.length
+    for elem, i in @props.path
+      if i < (n - 1)
+        elems.push FinderPathElem.new(key: "#{elem.realpath}", active: true, elem: elem)
+        elems.push @div({key: "#{elem.realpath}-separator", className: "separator"}, "/")
+      else
+        elems.push FinderPathElem.new(key: "#{elem.realpath}", active: false, elem: elem)
+    @div({className: "breadcrumb"}, elems)
+
+class FinderPathElem extends Reactable
+  handleClick: (event, url) ->
+    event.preventDefault()
+    emitter.emit FINDER_ELEM_CLICKED, url
+    console.debug "Emitted event", FINDER_ELEM_CLICKED, url, Date.now()
+
+  render: ->
+    if @props.active
+      @a({className: "section", href: "#", onClick: (event) => @handleClick(event, @props.elem.url)}
+        , "#{@props.elem.name}")
+    else
+      @div({className: "active section"}, "#{@props.elem.name}")
+
+class FinderLs extends Reactable
+  select: (elem) ->
+    !elem.isdir and elem.realpath == @props.jar
+
+  render: ->
+    elems = (FinderLsElem.new(key: "#{elem.realpath}", elem: elem, selected: @select(elem)) for elem in @props.ls)
+    @div({className: "menu"}, elems)
+
+class FinderLsElem extends Reactable
+  handleClick: (event, elem) ->
+    event.preventDefault()
+    if elem.isdir
+      emitter.emit FINDER_ELEM_CLICKED, elem.url
+      console.debug "Emitted event", FINDER_ELEM_CLICKED, elem.url, Date.now()
+    else
+      emitter.emit FINDER_JAR_SELECTED, elem.realpath
+      console.debug "Emitted event", FINDER_JAR_SELECTED, elem.realpath, Date.now()
+
+  render: ->
+    tn = @props.elem.name
+    elemName = if @props.elem.isdir and tn != ".." and tn != "." then "#{tn}/" else "#{tn}"
+    @a({className: "menu-item #{if @props.selected then "selected" else ""}", href: "#"
+      , onClick: (event) => @handleClick(event, @props.elem)}, elemName)
 
 # Timer option as list of delay choices for the job
 class TimerOption extends Reactable
-  constructor: ->
-    @state =
-      selected: 0
-
-  componentDidMount: ->
-    @handleClick(@state.selected)
-
   handleClick: (seconds) ->
-    @setState(selected: seconds)
     emitter.emit OPTION_CHANGED, 100, seconds
     console.debug "Emitted event", 100, seconds, Date.now()
 
   timer: (seconds, name) ->
-    tag = if @state.selected == seconds then "selected" else ""
+    tag = if @props.delay == seconds then "selected" else ""
     @li({id: seconds, className: "filter-item #{tag}", onClick: => @handleClick(seconds)}, "#{name}")
 
   render: ->
