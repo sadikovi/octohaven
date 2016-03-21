@@ -63,7 +63,8 @@ class JobContainer extends Reactable
       Option.new(id: 6, key: "6", name: "Job options", desc: "Job options to pass to main class"
         , default: "#{@state.jobOptions}", textarea: true),
       FinderOption.new(ls: @state.finder_ls, path: @state.finder_path, jar: @state.jar),
-      TimerOption.new(delay: @state.delay)
+      TimerOption.new(delay: @state.delay),
+      ControlPanel.new()
     )
 
 # Each option requires id (for events), name, description. Default value is optional, and is empty
@@ -178,6 +179,21 @@ class TimerOption extends Reactable
         @timer(3600, "In 1 hour"),
         @timer(10800, "In 3 hours"),
         @timer(86400, "Next day")
+      )
+    )
+
+# Controls to submit a job and save as template
+class ControlPanel extends Reactable
+  render: ->
+    @div({className: "segment"},
+      @div({className: "breadcrumb"},
+        @div({className: "section"},
+          @div({className: "btn btn-success"}, "Submit")
+        ),
+        @div({className: "separator"}, " | "),
+        @div({className: "section"},
+          @div({className: "btn btn-primary"}, "Save as template")
+        )
       )
     )
 
