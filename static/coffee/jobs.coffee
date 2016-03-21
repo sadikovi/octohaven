@@ -9,8 +9,17 @@ class FilterList extends Reactable
     @state =
       selected: ALL
 
+  componentWillMount: ->
+    emitter.on JOB_CLOSED_ARRIVED, (url, okay) =>
+      console.debug "Attempt to close the job", url, okay, Date.now()
+      console.debug "Refresh UI, since job was closed"
+      @handleClick(@state.selected)
+
   componentDidMount: ->
     @handleClick @state.selected
+
+  componentWillUnmount: ->
+    emitter.off JOB_CLOSED_ARRIVED
 
   handleClick: (status) ->
     @setState(selected: status)
@@ -94,10 +103,6 @@ class Action extends Reactable
       clicked: false
       txt: "Close"
 
-  componentWillMount: ->
-    emitter.on JOB_CLOSED_ARRIVED, (url, okay) =>
-      @setState(clicked: true, txt: if okay then "Closed" else "Error") if url == @props.action
-
   handleClick: ->
     @setState(clicked: true)
     dispatcher.dispatch type: JOB_CLOSED, data: @props.action
@@ -106,7 +111,7 @@ class Action extends Reactable
     @div({className: "#{@props.className}"},
       if @props.action
         isOff = if @state.clicked then "btn-disabled" else ""
-        @div({className: "btn btn-compact #{isOff}", onClick: (=> @handleClick())}, "#{@state.txt}")
+        @div({className: "btn btn-compact #{isOff}", onClick: => @handleClick()}, "Close")
       else
         null
     )
