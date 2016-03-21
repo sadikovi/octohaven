@@ -42,6 +42,8 @@ class Reactable extends React.Component
 
   span: (opts...) -> React.DOM.span(opts...)
 
+  textarea: (opts...) -> React.DOM.textarea(opts...)
+
   ul: (opts...) -> React.DOM.ul(opts...)
 
   @new: (props) ->

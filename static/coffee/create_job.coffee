@@ -8,6 +8,8 @@ class JobContainer extends Reactable
       klass: "com.test.Main"
       dmemory: "4g"
       ememory: "4g"
+      sparkOptions: ""
+      jobOptions: ""
       delay: 0
       jar: null
       finder_url: "/api/v1/finder/home"
@@ -29,6 +31,8 @@ class JobContainer extends Reactable
       @setState(klass: "#{value}") if id == 2
       @setState(dmemory: "#{value}") if id == 3
       @setState(ememory: "#{value}") if id == 4
+      @setState(sparkOptions: "#{value}") if id == 5
+      @setState(jobOptions: "#{value}") if id == 6
       @setState(delay: value) if id == 100
     emitter.on FINDER_ELEM_CLICKED, (url) =>
       @finder(url)
@@ -54,6 +58,10 @@ class JobContainer extends Reactable
         , default: "#{@state.dmemory}"),
       Option.new(id: 4, key: "4", name: "Executor memory", desc: "Memory per Spark executor, e.g. 4g"
         , default: "#{@state.ememory}"),
+      Option.new(id: 5, key: "5", name: "Spark options", desc: "Spark settings for the job, e.g. JVM, networking..."
+        , default: "#{@state.sparkOptions}", textarea: true),
+      Option.new(id: 6, key: "6", name: "Job options", desc: "Job options to pass to main class"
+        , default: "#{@state.jobOptions}", textarea: true),
       FinderOption.new(ls: @state.finder_ls, path: @state.finder_path, jar: @state.jar),
       TimerOption.new(delay: @state.delay)
     )
@@ -73,8 +81,11 @@ class Option extends Reactable
             "#{@props.name}")
         ),
         @div({className: "three-fourths column"},
-          @input({type: "text", className: "input-monospace input-contrast input-block"
-            , defaultValue: "#{@props.default}", onChange: (event) => @handleInput(event)})
+          if @props.textarea
+            @textarea({className: "input-monospace input-block", onChange: (event) => @handleInput(event)})
+          else
+            @input({type: "text", className: "input-monospace input-contrast input-block"
+              , defaultValue: "#{@props.default}", onChange: (event) => @handleInput(event)})
         )
       )
     )
