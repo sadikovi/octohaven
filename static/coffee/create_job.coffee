@@ -1,7 +1,8 @@
 # `JobContainer` class that resembles Spark job to create, with all options
 class JobContainer extends Reactable
   constructor: ->
-    # State includes: name, (main) klass, driver memory, executor memory
+    # State includes: name, (main) klass, driver memory, executor memory, delay, jar
+    # Also features finder state (ls array, path array and current url accessed)
     @state =
       name: "#{Namer.generate()}"
       klass: "com.test.Main"
@@ -13,11 +14,13 @@ class JobContainer extends Reactable
       finder_ls: []
       finder_path: []
 
+  # Fetch finder data using url provided
   finder: (url) ->
     Api.doGet url, null, null, (ok, json) =>
       if ok
         @setState(finder_url: url, finder_ls: json.ls, finder_path: json.path)
       else
+        # Here we just fail silently, UI will not be updated
         console.error "ERROR failed to parse finder object", ok, json
 
   componentWillMount: ->
@@ -88,6 +91,7 @@ class FinderOption extends Reactable
       FinderLs.new(ls: @props.ls, jar: @props.jar)
     )
 
+# Sub-option of the finder, represents breadcrumbs of path being currently accessed
 class FinderPath extends Reactable
   render: ->
     elems = []
@@ -100,6 +104,7 @@ class FinderPath extends Reactable
         elems.push FinderPathElem.new(key: "#{elem.realpath}", active: false, elem: elem)
     @div({className: "breadcrumb"}, elems)
 
+# Element of finder path sub-option
 class FinderPathElem extends Reactable
   handleClick: (event, url) ->
     event.preventDefault()
@@ -113,6 +118,7 @@ class FinderPathElem extends Reactable
     else
       @div({className: "active section"}, "#{@props.elem.name}")
 
+# Sub-option of finder, represents list of files/folders for the path accessed
 class FinderLs extends Reactable
   select: (elem) ->
     !elem.isdir and elem.realpath == @props.jar
@@ -121,6 +127,7 @@ class FinderLs extends Reactable
     elems = (FinderLsElem.new(key: "#{elem.realpath}", elem: elem, selected: @select(elem)) for elem in @props.ls)
     @div({className: "menu"}, elems)
 
+# Element of finder ls sub-option
 class FinderLsElem extends Reactable
   handleClick: (event, elem) ->
     event.preventDefault()
