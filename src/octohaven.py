@@ -191,3 +191,34 @@ def job_submit():
     print request.get_json()
     # return standard_error(StandardError("Test"))
     return success({"uid": 123})
+
+@app.route("/api/v1/template/list", methods=["GET"])
+def template_list():
+    data = [
+        {
+            "uid": 1,
+            "name": "Awesome template",
+            "delete_and_refresh_url": "/api/v1/template/list",
+            "delete_url": "/api/v1/template/delete?uid=1",
+            "content": {
+                "name": "Awesome template job",
+                "klass": "awesome.template.Job"
+            }
+        },
+        {
+            "uid": 2,
+            "name": "Template from completely different dimension",
+            "delete_and_refresh_url": "/api/v1/template/list",
+            "delete_url": "/api/v1/template/delete?uid=2",
+            "content": {
+                "name": "Template different dimension job",
+                "klass": "different.dimension.Job"
+            }
+        }
+    ]
+    return success({"templates": data})
+
+@app.route("/api/v1/template/create", methods=["POST"])
+def template_submit():
+    print request.get_json()
+    return success({"uid": 123, "name": "Amazing template"})

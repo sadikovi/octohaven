@@ -19,6 +19,7 @@ class JobContainer extends Reactable
       note_message: ""
       submit_url: "/api/v1/job/create"
       submit_enable: true
+      save_template_url: "/api/v1/template/create"
 
   # Fetch finder data using url provided
   finder: (url) ->
@@ -29,7 +30,7 @@ class JobContainer extends Reactable
         # Here we just fail silently, UI will not be updated
         console.error "ERROR failed to parse finder object", ok, json
 
-  submit: () ->
+  submit: ->
     Api.doPost @state.submit_url, {"Content-Type": "application/json"}, @state, =>
       @setState(note_state: "loading", note_message: "", submit_enable: false)
       console.debug "Submitting the job for state", @state
@@ -39,9 +40,25 @@ class JobContainer extends Reactable
         @setState(note_state: "success", note_message: "#{txt}", submit_enable: false)
         console.info "Created new job", ok, json
       else
-        txt = "Failed to create job, reason: #{if json.msg then json.msg else "unknown"}"
+        txt = "Failed to create job, reason: #{if json?.msg then json.msg else "unknown"}"
         @setState(note_state: "error", note_message: "#{txt}", submit_enable: false)
         console.error "Failed to create job", ok, json
+
+  saveTemplate: ->
+    Api.doPost @state.save_template_url, {"Content-Type": "application/json"}, @state, =>
+      @setState(note_state: "loading", note_message: "")
+      console.debug "Saving template", @state
+    , (ok, json) =>
+      if ok
+        txt = "Template #{json.name} with uid #{json.uid} created successfully"
+        @setState(note_state: "success", note_message: "#{txt}")
+        console.info "Created new template", ok, json
+        emitter.emit TEMPLATE_SAVED
+        console.debug "Emitted event", TEMPLATE_SAVED, Date.now()
+      else
+        txt = "Failed to create template, reason: #{if json?.msg then json.msg else "unknown"}"
+        @setState(note_state: "error", note_message: "#{txt}")
+        console.error "Failed to create template", ok, json
 
   componentWillMount: ->
     emitter.on OPTION_CHANGED, (id, value) =>
@@ -58,8 +75,11 @@ class JobContainer extends Reactable
       @setState(jar: realpath)
     emitter.on JOB_SUBMIT_REQUESTED, =>
       @submit()
-    emitter.on JOB_SUBMIT_ARRIVED, =>
-      console.debug "processing job submit result"
+    emitter.on TEMPLATE_LOADING, (content) =>
+      console.log "Reloading job..."
+      @setState(content)
+    emitter.on TEMPLATE_SAVING, =>
+      @saveTemplate()
 
   componentDidMount: ->
     @finder(@state.finder_url)
@@ -69,7 +89,8 @@ class JobContainer extends Reactable
     emitter.off FINDER_ELEM_CLICKED
     emitter.off FINDER_JAR_SELECTED
     emitter.off JOB_SUBMIT_REQUESTED
-    emitter.off JOB_SUBMIT_ARRIVED
+    emitter.off TEMPLATE_LOADING
+    emitter.off TEMPLATE_SAVING
 
   render: ->
     console.debug "Current state", @state
@@ -108,10 +129,11 @@ class Option extends Reactable
         ),
         @div({className: "three-fourths column"},
           if @props.textarea
-            @textarea({className: "input-monospace input-block", onChange: (event) => @handleInput(event)})
+            @textarea({className: "input-monospace input-block", value: "#{@props.default}"
+              , onChange: (event) => @handleInput(event)})
           else
             @input({type: "text", className: "input-monospace input-block"
-              , defaultValue: "#{@props.default}", onChange: (event) => @handleInput(event)})
+              , value: @props.default, onChange: (event) => @handleInput(event)})
         )
       )
     )
@@ -242,6 +264,10 @@ class ControlPanel extends Reactable
     emitter.emit JOB_SUBMIT_REQUESTED
     console.debug "Emitted event", JOB_SUBMIT_REQUESTED, Date.now()
 
+  saveTemplateClick: () ->
+    emitter.emit TEMPLATE_SAVING
+    console.debug "Emitted event", TEMPLATE_SAVING, Date.now()
+
   render: ->
     @div({className: "segment"},
       @div({className: "breadcrumb"},
@@ -251,9 +277,74 @@ class ControlPanel extends Reactable
         ),
         @div({className: "separator"}, " | "),
         @div({className: "section"},
-          @div({className: "btn btn-primary"}, "Save as template")
+          @div({className: "btn btn-primary", onClick: => @saveTemplateClick()}, "Save as template")
         )
       )
     )
 
+# Class to handle template rendering
+class TemplatesContainer extends Reactable
+  constructor: ->
+    @state =
+      loading: false
+      data: []
+      url: "/api/v1/template/list"
+
+  reloadTemplates: (url) ->
+    Api.doGet url, null, null, =>
+      @setState(loading: true, data: [])
+    , (ok, json) =>
+      if ok
+        console.info "Successfully loaded templates", ok, json
+        @setState(loading: false, data: json.templates)
+      else
+        console.error "Failed to load templates", ok, json
+        @setState(loading: false, data: [])
+
+  componentWillMount: ->
+    emitter.on TEMPLATE_DELETED, (url) =>
+      @reloadTemplates(url)
+    emitter.on TEMPLATE_SAVED, =>
+      @reloadTemplates(@state.url)
+
+  componentDidMount: ->
+    @reloadTemplates(@state.url)
+
+  componentWillUnmount: ->
+    emitter.off TEMPLATE_DELETED
+    emitter.off TEMPLATE_SAVED
+
+  render: ->
+    Templates.new(templates: @state.data)
+
+class Templates extends Reactable
+  render: ->
+    @nav({className: "menu"},
+      @div({className: "menu-heading"}, "Templates"),
+      (Template.new(key: x.uid, name: x.name, url: x.delete_and_refresh_url, content: x.content) for x in @props.templates)
+    )
+
+class Template extends Reactable
+  deleteAndRefresh: (event, url) ->
+    emitter.emit TEMPLATE_DELETED, url
+    console.debug "Emitted event", TEMPLATE_DELETED, Date.now()
+    event.preventDefault()
+    event.stopPropagation()
+
+  load: (event, content) ->
+    emitter.emit TEMPLATE_LOADING, content
+    console.debug "Emitted event", TEMPLATE_LOADING, content, Date.now()
+    event.preventDefault()
+    event.stopPropagation()
+
+  render: ->
+    @div({className: "menu-item"},
+      @p({},
+        @a({href: "#", onClick: (event) => @load(event, @props.content)}, "#{@props.name}")
+      ),
+      @a({className: "link-muted", href: "#"
+        , onClick: (event) => @deleteAndRefresh(event, @props.url)}, "Delete")
+    )
+
 ReactDOM.render JobContainer.new(), document.getElementById("content")
+ReactDOM.render TemplatesContainer.new(), document.getElementById("templates")

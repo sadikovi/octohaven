@@ -18,7 +18,11 @@ FINDER_ELEM_CLICKED = "finder-elem-clicked"
 FINDER_JAR_SELECTED = "finder-jar-selected"
 
 JOB_SUBMIT_REQUESTED = "job-submit-requested"
-JOB_SUBMIT_ARRIVED = "job-submit-arrived"
+
+TEMPLATE_DELETED = "template-deleted"
+TEMPLATE_LOADING = "template-loading"
+TEMPLATE_SAVING = "template-saving"
+TEMPLATE_SAVED = "template-saved"
 
 # React base class for CoffeeScript
 class Reactable extends React.Component
@@ -38,6 +42,8 @@ class Reactable extends React.Component
   input: (opts...) -> React.DOM.input(opts...)
 
   li: (opts...) -> React.DOM.li(opts...)
+
+  nav: (opts...) -> React.DOM.nav(opts...)
 
   p: (opts...) -> React.DOM.p(opts...)
 
