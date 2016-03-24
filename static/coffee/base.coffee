@@ -17,6 +17,9 @@ OPTION_CHANGED = "option-changed"
 FINDER_ELEM_CLICKED = "finder-elem-clicked"
 FINDER_JAR_SELECTED = "finder-jar-selected"
 
+JOB_SUBMIT_REQUESTED = "job-submit-requested"
+JOB_SUBMIT_ARRIVED = "job-submit-arrived"
+
 # React base class for CoffeeScript
 class Reactable extends React.Component
   constructor: (props) ->

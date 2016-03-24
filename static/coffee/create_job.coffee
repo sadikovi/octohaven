@@ -15,15 +15,33 @@ class JobContainer extends Reactable
       finder_url: "/api/v1/finder/home"
       finder_ls: []
       finder_path: []
+      note_state: "hidden"
+      note_message: ""
+      submit_url: "/api/v1/job/create"
+      submit_enable: true
 
   # Fetch finder data using url provided
   finder: (url) ->
-    Api.doGet url, null, null, (ok, json) =>
+    Api.doGet url, null, null, null, (ok, json) =>
       if ok
         @setState(finder_url: url, finder_ls: json.ls, finder_path: json.path)
       else
         # Here we just fail silently, UI will not be updated
         console.error "ERROR failed to parse finder object", ok, json
+
+  submit: () ->
+    Api.doPost @state.submit_url, {"Content-Type": "application/json"}, @state, =>
+      @setState(note_state: "loading", note_message: "", submit_enable: false)
+      console.debug "Submitting the job for state", @state
+    , (ok, json) =>
+      if ok
+        txt = "Job created successfully. You cannot resubmit the job, please refresh the web-page"
+        @setState(note_state: "success", note_message: "#{txt}", submit_enable: false)
+        console.info "Created new job", ok, json
+      else
+        txt = "Failed to create job, reason: #{if json.msg then json.msg else "unknown"}"
+        @setState(note_state: "error", note_message: "#{txt}", submit_enable: false)
+        console.error "Failed to create job", ok, json
 
   componentWillMount: ->
     emitter.on OPTION_CHANGED, (id, value) =>
@@ -38,6 +56,10 @@ class JobContainer extends Reactable
       @finder(url)
     emitter.on FINDER_JAR_SELECTED, (realpath) =>
       @setState(jar: realpath)
+    emitter.on JOB_SUBMIT_REQUESTED, =>
+      @submit()
+    emitter.on JOB_SUBMIT_ARRIVED, =>
+      console.debug "processing job submit result"
 
   componentDidMount: ->
     @finder(@state.finder_url)
@@ -46,6 +68,8 @@ class JobContainer extends Reactable
     emitter.off OPTION_CHANGED
     emitter.off FINDER_ELEM_CLICKED
     emitter.off FINDER_JAR_SELECTED
+    emitter.off JOB_SUBMIT_REQUESTED
+    emitter.off JOB_SUBMIT_ARRIVED
 
   render: ->
     console.debug "Current state", @state
@@ -64,7 +88,8 @@ class JobContainer extends Reactable
         , default: "#{@state.jobOptions}", textarea: true),
       FinderOption.new(ls: @state.finder_ls, path: @state.finder_path, jar: @state.jar),
       TimerOption.new(delay: @state.delay),
-      ControlPanel.new()
+      MessageBoard.new(message: @state.note_message, state: @state.note_state),
+      ControlPanel.new(submit: @state.submit_enable)
     )
 
 # Each option requires id (for events), name, description. Default value is optional, and is empty
@@ -85,7 +110,7 @@ class Option extends Reactable
           if @props.textarea
             @textarea({className: "input-monospace input-block", onChange: (event) => @handleInput(event)})
           else
-            @input({type: "text", className: "input-monospace input-contrast input-block"
+            @input({type: "text", className: "input-monospace input-block"
               , defaultValue: "#{@props.default}", onChange: (event) => @handleInput(event)})
         )
       )
@@ -182,13 +207,47 @@ class TimerOption extends Reactable
       )
     )
 
+# Notification board, displays success messages or errors during requests
+class MessageBoard extends Reactable
+  HIDDEN = "hidden"
+  LOADING = "loading"
+  ERROR = "error"
+  SUCCESS = "success"
+
+  render: ->
+    [segmentClass, boxClass] = ["", ""]
+
+    if @props.state == HIDDEN
+      segmentClass = "hidden"
+      boxClass = ""
+    else if @props.state == LOADING
+      segmentClass = "loading"
+      boxClass = "hidden"
+    else if @props.state == ERROR
+      segmentClass = ""
+      boxClass = "error-box"
+    else if @props.state = SUCCESS
+      segmentClass = ""
+      boxClass = "success-box"
+
+    @div({className: "#{segmentClass} segment"},
+      @div({className: "#{boxClass}"},
+        @p({}, @props.message)
+      )
+    )
+
 # Controls to submit a job and save as template
 class ControlPanel extends Reactable
+  submitClick: () ->
+    emitter.emit JOB_SUBMIT_REQUESTED
+    console.debug "Emitted event", JOB_SUBMIT_REQUESTED, Date.now()
+
   render: ->
     @div({className: "segment"},
       @div({className: "breadcrumb"},
         @div({className: "section"},
-          @div({className: "btn btn-success"}, "Submit")
+          @div({className: "btn btn-success #{if @props.submit then "" else "btn-disabled"}"
+            , onClick: => @submitClick()}, "Submit")
         ),
         @div({className: "separator"}, " | "),
         @div({className: "section"},

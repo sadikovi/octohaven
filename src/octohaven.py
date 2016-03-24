@@ -185,3 +185,9 @@ def job_list():
 @app.route("/api/v1/job/close/<uid>", methods=["GET"])
 def job_close(uid):
     return success({"uid": uid, "closed": True})
+
+@app.route("/api/v1/job/create", methods=["POST"])
+def job_submit():
+    print request.get_json()
+    # return standard_error(StandardError("Test"))
+    return success({"uid": 123})

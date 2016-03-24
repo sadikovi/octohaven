@@ -127,7 +127,7 @@ class ModelStore
       @xhr?.abort()
       status = payload.data
       url = "/api/v1/job/list"
-      @xhr = Api.doGet(url, {status: status}, ->
+      @xhr = Api.doGet(url, null, {status: status}, ->
         emitter.emit JOB_DATA_REQUESTED, status
         console.debug "Emitted event", JOB_DATA_REQUESTED, status, Date.now()
       , (okay, data) =>
@@ -137,7 +137,7 @@ class ModelStore
       )
     else if payload.type == JOB_CLOSED
       url = payload.data
-      Api.doGet(url, null, null, (okay, data) =>
+      Api.doGet(url, null, null, null, (okay, data) =>
         console.error "ERROR", data unless okay
         emitter.emit JOB_CLOSED_ARRIVED, url, okay
         console.debug "Emitted event", JOB_CLOSED_ARRIVED, url, okay, Date.now()
