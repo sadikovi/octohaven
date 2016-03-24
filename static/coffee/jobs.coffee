@@ -1,37 +1,47 @@
 # Building filters
 class Filter extends Reactable
+  handleClick: (event, status) ->
+    emitter.emit JOB_FILTER_SELECTED, status
+    console.debug "Emitted event", JOB_FILTER_SELECTED, status, Date.now()
+    event.preventDefault()
+    event.stopPropagation()
+
   render: ->
     tag = if @props.selected then "selected" else ""
-    @li({className: "filter-item #{tag}", onClick: @props.onClick}, "#{@props.label}")
+    @a({href: "/api", className: "menu-item #{tag}"
+      , onClick: (event) => @handleClick(event, @props.status)}, "#{@props.status}")
 
 class FilterList extends Reactable
   constructor: ->
     @state =
       selected: ALL
 
-  componentWillMount: ->
-    emitter.on JOB_CLOSED_ARRIVED, (url, okay) =>
-      console.debug "Attempt to close the job", url, okay, Date.now()
-      console.debug "Refresh UI, since job was closed"
-      @handleClick(@state.selected)
-
-  componentDidMount: ->
-    @handleClick @state.selected
-
-  componentWillUnmount: ->
-    emitter.off JOB_CLOSED_ARRIVED
-
-  handleClick: (status) ->
+  refreshForStatus: (status) ->
     @setState(selected: status)
     dispatcher.dispatch type: JOB_FILTER_SELECTED, data: status
     console.debug "Dispatched event: #{JOB_FILTER_SELECTED}", status, Date.now()
 
+  componentWillMount: ->
+    emitter.on JOB_CLOSED_ARRIVED, (url, okay) =>
+      console.debug "Attempt to close the job", url, okay, Date.now()
+      console.debug "Refresh UI, since job was closed"
+      @refreshForStatus @state.selected
+    emitter.on JOB_FILTER_SELECTED, (status) =>
+      @refreshForStatus status
+    # Fire initial refresh before component is mounted to render once only
+    @refreshForStatus @state.selected
+
+  componentWillUnmount: ->
+    emitter.off JOB_CLOSED_ARRIVED
+
   filter: (status) ->
-    func = => @handleClick(status)
-    Filter.new(key: "#{status}", onClick: func, label: status, selected: status == @state.selected)
+    Filter.new(key: "#{status}", status: status, selected: status == @state.selected)
 
   render: ->
-    @ul({className: "filter-list"}, (@filter(status) for status in STATUS_LIST))
+    @nav({className: "menu"},
+      @div({className: "menu-heading"}, "Filters"),
+      (@filter(status) for status in STATUS_LIST)
+    )
 
 # Building job list
 class JobBox extends Reactable
@@ -148,4 +158,4 @@ class ModelStore
 # We render filter list after main table since after filter list is mounted we trigger request to
 # populate table
 ReactDOM.render JobBox.new(), document.getElementById("content")
-ReactDOM.render FilterList.new(), document.getElementById("status-filter")
+ReactDOM.render FilterList.new(), document.getElementById("filters")
