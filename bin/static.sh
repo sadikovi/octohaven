@@ -32,7 +32,7 @@ echo "Compile preload scripts"
 cat $STATIC_DIR/coffee/preload/*.coffee | \
   coffee --no-header --compile --stdio | uglifyjs - -o "$STATIC_DIR/octohaven.preload.min.js" -c -m
 
-echo "Compile 'job' scripts"
+echo "Compile 'jobs' scripts"
 cat \
   $STATIC_DIR/coffee/utilities/namer.coffee \
   $STATIC_DIR/coffee/utilities/util.coffee \
@@ -51,3 +51,13 @@ cat \
   $STATIC_DIR/coffee/base.coffee \
   $STATIC_DIR/coffee/create_job.coffee | \
   coffee --bare --no-header --compile --stdio | uglifyjs - -o "$STATIC_DIR/octohaven.createjob.min.js" -c -m
+
+echo "Compile 'job' scripts"
+cat \
+  $STATIC_DIR/coffee/utilities/namer.coffee \
+  $STATIC_DIR/coffee/utilities/util.coffee \
+  $STATIC_DIR/coffee/utilities/loader.coffee \
+  $STATIC_DIR/coffee/utilities/api.coffee \
+  $STATIC_DIR/coffee/base.coffee \
+  $STATIC_DIR/coffee/job.coffee | \
+  coffee --bare --no-header --compile --stdio | uglifyjs - -o "$STATIC_DIR/octohaven.job.min.js" -c -m

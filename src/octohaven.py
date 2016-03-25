@@ -246,7 +246,8 @@ class Job(db.Model):
             "options": json.loads(self.options),
             "jobconf": json.loads(self.jobconf),
             "url": "/job/%s" % self.uid,
-            "close": None if not self.canClose() else "/api/v1/job/close/%s" % self.uid
+            "get_url": "/api/v1/job/get/%s" % self.uid,
+            "close_url": None if not self.canClose() else "/api/v1/job/close/%s" % self.uid
         }
 
 ################################################################
@@ -298,7 +299,9 @@ def create_job():
 
 @app.route("/job/<int:uid>")
 def job_for_uid(uid):
-    return render_page("job.html", job=Job.get(uid))
+    job = Job.get(uid)
+    dump = json.dumps(job.json()) if job else ""
+    return render_page("job.html", job=dump)
 
 ################################################################
 # REST API

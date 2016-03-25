@@ -59,6 +59,8 @@ a.link-muted {
 
 .text-mute { color: #777; }
 
+.text-blur { color: #ccc; }
+
 .text-emphasized {
     font-weight: bold;
     color: #333;
@@ -103,4 +105,12 @@ a.link-muted {
     &.medium { margin-bottom: 20px; }
 
     &.large { margin-bottom: 50px; }
+}
+
+.margin-right {
+    &.small { margin-right: 10px; }
+
+    &.medium { margin-right: 20px; }
+
+    &.large { margin-right: 50px; }
 }

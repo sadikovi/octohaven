@@ -1,5 +1,4 @@
 {% extends "base.html" %}
-{% from "macros.html" import job_option %}
 
 {% block title %} Job details {% endblock %}
 {% block nav %}
@@ -9,18 +8,8 @@
 {% endblock %}
 {% block header %} Job details {% endblock %}
 {% block content %}
-    {% if not job %}
-    <div class="blankslate">
-        <h1 class="text-thin">No job found</h1>
-        <p>Try creating job <a href="/create/job">here</a></p>
-    </div>
-    {% else %}
-    <div class="segments">
-        {{ job_option("Job name", job.name) }}
-        {{ job_option("Main class", job.entrypoint) }}
-        {{ job_option("Jar", job.jar) }}
-        {{ job_option("Status", job.status) }}
-        {{ job_option("Spark app id", job.sparkappid) }}
-    </div>
-    {% endif %}
+    <div id="content-json" class="hidden">{{ job }}</div>
+{% endblock %}
+{% block scripts %}
+    <script type="text/javascript" src="/static/octohaven.job.min.js"></script>
 {% endblock %}

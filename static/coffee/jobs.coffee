@@ -81,10 +81,10 @@ class Row extends Reactable
   render: ->
     @div({className: "segment"},
       @div({className: "columns"},
-        Status.new(className: "one-sixth column", label: "#{@props.r.status}", close: @props.r.close),
+        Status.new(className: "one-sixth column", label: "#{@props.r.status}", close: @props.r.close_url),
         Link.new(className: "one-third column", url: "#{@props.r.url}", label: "#{@props.r.name}"),
         Created.new(className: "one-third column", label: "#{diff(@props.r.createtime)}"),
-        Action.new(className: "one-sixth column", action: @props.r.close)
+        Action.new(className: "one-sixth column", action: @props.r.close_url)
       )
     )
 

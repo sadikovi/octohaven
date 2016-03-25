@@ -174,7 +174,10 @@ class FinderPath extends Reactable
         elems.push @div({key: "#{elem.realpath}-separator", className: "separator"}, "/")
       else
         elems.push FinderPathElem.new(key: "#{elem.realpath}", active: false, elem: elem)
-    @div({className: "breadcrumb"}, elems)
+    @div({className: "breadcrumb"},
+      @div({className: "text-mono separator"}, "$ ls "),
+      elems
+    )
 
 # Element of finder path sub-option
 class FinderPathElem extends Reactable
@@ -197,7 +200,11 @@ class FinderLs extends Reactable
 
   render: ->
     elems = (FinderLsElem.new(key: "#{elem.realpath}", elem: elem, selected: @select(elem)) for elem in @props.ls)
-    @div({className: "menu"}, elems)
+    @div({},
+      @div({className: "menu"}, elems),
+      @div({className: "text-blur #{if !@props.jar then "hidden" else ""}"}, "> #{@props.jar}")
+    )
+
 
 # Element of finder ls sub-option
 class FinderLsElem extends Reactable
