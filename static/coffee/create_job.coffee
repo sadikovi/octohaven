@@ -21,6 +21,19 @@ class JobContainer extends Reactable
       submit_enable: true
       save_template_url: "/api/v1/template/create"
 
+  # Select parameters and return payload
+  getPayload: ->
+    payload =
+      name: @state.name
+      klass: @state.klass
+      dmemory: @state.dmemory
+      ememory: @state.ememory
+      sparkOptions: @state.sparkOptions
+      jobOptions: @state.jobOptions
+      delay: @state.delay
+      jar: @state.jar
+    payload
+
   # Fetch finder data using url provided
   finder: (url) ->
     Api.doGet url, null, null, null, (ok, json) =>
@@ -31,7 +44,7 @@ class JobContainer extends Reactable
         console.error "ERROR failed to parse finder object", ok, json
 
   submit: ->
-    Api.doPost @state.submit_url, {"Content-Type": "application/json"}, @state, =>
+    Api.doPost @state.submit_url, {"Content-Type": "application/json"}, @getPayload(), =>
       @setState(note_state: "loading", note_message: "", submit_enable: false)
       console.debug "Submitting the job for state", @state
     , (ok, json) =>
@@ -41,16 +54,16 @@ class JobContainer extends Reactable
         console.info "Created new job", ok, json
       else
         txt = "Failed to create job, reason: #{if json?.msg then json.msg else "unknown"}"
-        @setState(note_state: "error", note_message: "#{txt}", submit_enable: false)
+        @setState(note_state: "error", note_message: "#{txt}", submit_enable: true)
         console.error "Failed to create job", ok, json
 
   saveTemplate: ->
-    Api.doPost @state.save_template_url, {"Content-Type": "application/json"}, @state, =>
+    Api.doPost @state.save_template_url, {"Content-Type": "application/json"}, @getPayload(), =>
       @setState(note_state: "loading", note_message: "")
       console.debug "Saving template", @state
     , (ok, json) =>
       if ok
-        txt = "Template #{json.name} with uid #{json.uid} created successfully"
+        txt = "Template '#{json.name}' created successfully"
         @setState(note_state: "success", note_message: "#{txt}")
         console.info "Created new template", ok, json
         emitter.emit TEMPLATE_SAVED
@@ -321,7 +334,7 @@ class Templates extends Reactable
   render: ->
     @nav({className: "menu"},
       @div({className: "menu-heading"}, "Templates"),
-      (Template.new(key: x.uid, name: x.name, url: x.delete_and_refresh_url, content: x.content) for x in @props.templates)
+      (Template.new(key: x.uid, name: x.name, url: x.delete_and_list_url, content: x.content) for x in @props.templates)
     )
 
 class Template extends Reactable

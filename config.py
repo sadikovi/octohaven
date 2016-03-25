@@ -51,13 +51,6 @@ class Options(object):
     # MySQL schema reset (if True then drops and recreates table every time service is launched)
     MYSQL_SCHEMA_RESET = False
 
-# Configuration with testing mode on
-class TestConfig(Options):
-    DEBUG = True
-    TESTING = True
-    MYSQL_SCHEMA_RESET = True
-
-# Configuration for production
-class ProductionConfig(Options):
+    # Turn options off for distribution
     DEBUG = False
-    TESTING = False
+    TESTING = True

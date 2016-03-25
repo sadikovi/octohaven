@@ -18,6 +18,7 @@
 
 import os, re, json, time
 from datetime import datetime
+from random import choice
 from types import UnicodeType, StringType, DictType, ListType
 
 # private decorator
@@ -32,6 +33,15 @@ def override(f):
         return f(*args, **kw)
     return wrapper
 
+# SQL decorator
+def sql(f):
+    def wrapper(*args, **kw):
+        return f(*args, **kw)
+    return wrapper
+
+################################################################
+# Safe conversions
+################################################################
 # getOrElse method for json
 # raw is a string in json format, value is an alternative in case json fails
 # we also convert all the string values from 'unicode' to 'str'
@@ -76,14 +86,6 @@ def boolOrElse(raw, value):
     except (ValueError, TypeError):
         return value
 
-# return current time in milliseconds
-def currentTimeMillis():
-    return long(time.time() * 1000.0)
-
-# date to timestamp (in milliseconds) conversion
-def dateToTimestamp(date):
-    return (date - datetime(1970, 1, 1)).total_seconds() * 1000L
-
 ################################################################
 # Assertions
 ################################################################
@@ -102,7 +104,7 @@ def assertInstance(passed, expectedType, msg=None):
     return True
 
 ################################################################
-# Checks for urls, statuses, etc.
+# Validations/checks for urls, statuses, etc.
 ################################################################
 # Try parsing regular expression, raise Error, if parsing fails.
 # Return groups of parsed data
@@ -148,9 +150,11 @@ def validateEntrypoint(entrypoint):
 
 def validateJarPath(jar):
     # do not validate on existence, only on path structure
+    if not jar:
+        raise StandardError("Jar file is empty, please select/specify valid jar file")
     ok = os.path.isabs(jar) and jar.lower().endswith(".jar")
     if not ok:
-        raise StandardError("Path %s is not valid" % jar)
+        raise StandardError("Path %s for Jar file is not valid" % jar)
     return jar
 
 # Validate connection string for MySQL
@@ -165,3 +169,60 @@ def validateMySQLJDBC(connection):
         "user": groups.group(4),
         "password": groups.group(5)
     }
+
+################################################################
+# Miscellaneous methods
+################################################################
+# return current time in milliseconds
+def currentTimeMillis():
+    return long(time.time() * 1000.0)
+
+# date to timestamp (in milliseconds) conversion
+def dateToTimestamp(date):
+    return (date - datetime(1970, 1, 1)).total_seconds() * 1000L
+
+# Heroku name generator
+def heroku(hex=False):
+    # example output:
+    # 'golden-horizon-2076'
+    adjs = ['afternoon', 'aged', 'ancient', 'autumn', 'billowing',
+            'bitter', 'black', 'blue', 'bold', 'broken',
+            'calm', 'caring', 'cold', 'cool', 'crimson',
+            'damp', 'dark', 'dawn', 'delicate', 'divine',
+            'dry', 'empty', 'ephemeral', 'evening', 'falling',
+            'fathomless', 'floral', 'fragrant', 'frosty', 'golden',
+            'green', 'hidden', 'holy', 'icy', 'imperfect',
+            'impermanent', 'late', 'lingering', 'little', 'lively',
+            'long', 'majestic', 'mindful', 'misty', 'morning',
+            'muddy', 'nameless', 'noble', 'old', 'patient',
+            'polished', 'proud', 'purple', 'quiet', 'red',
+            'restless', 'rough', 'shy', 'silent', 'silvery',
+            'slender', 'small', 'smooth', 'snowy', 'solitary',
+            'sparkling', 'spring', 'stately', 'still', 'strong',
+            'summer', 'timeless', 'twilight', 'unknowable', 'unmovable',
+            'upright', 'wandering', 'weathered', 'white', 'wild',
+            'winter', 'wispy', 'withered', 'young',
+            ]
+    nouns = ['bird', 'breeze', 'brook', 'brook', 'bush',
+             'butterfly', 'chamber', 'chasm', 'cherry', 'cliff',
+             'cloud', 'darkness', 'dawn', 'dew', 'dream',
+             'dust', 'eye', 'feather', 'field', 'fire',
+             'firefly', 'flower', 'foam', 'fog', 'forest',
+             'frog', 'frost', 'glade', 'glitter', 'grass',
+             'hand', 'haze', 'hill', 'horizon', 'lake',
+             'leaf', 'lily', 'meadow', 'mist', 'moon',
+             'morning', 'mountain', 'night', 'paper', 'pebble',
+             'pine', 'planet', 'plateau', 'pond', 'rain',
+             'resonance', 'ridge', 'ring', 'river', 'sea',
+             'shadow', 'shape', 'silence', 'sky', 'smoke',
+             'snow', 'snowflake', 'sound', 'star', 'stream',
+             'sun', 'sun', 'sunset', 'surf', 'thunder',
+             'tome', 'tree', 'violet', 'voice', 'water',
+             'waterfall', 'wave', 'wave', 'wildflower', 'wind',
+             'wood',
+             ]
+    if hex:
+        suffix = '0123456789abcdef'
+    else:
+        suffix = '0123456789'
+    return ('-'.join([choice(adjs), choice(nouns), ''.join(choice(suffix) for x in xrange(4))]))

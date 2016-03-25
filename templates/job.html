@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% from "macros.html" import job_option %}
+
+{% block title %} Job details {% endblock %}
+{% block nav %}
+    <div class="menu-heading">Actions</div>
+    <a class="menu-item" href="/create/job">Create new job</a>
+    <a class="menu-item" href="/jobs">View jobs</a>
+{% endblock %}
+{% block header %} Job details {% endblock %}
+{% block content %}
+    {% if not job %}
+    <div class="blankslate">
+        <h1 class="text-thin">No job found</h1>
+        <p>Try creating job <a href="/create/job">here</a></p>
+    </div>
+    {% else %}
+    <div class="segments">
+        {{ job_option("Job name", job.name) }}
+        {{ job_option("Main class", job.entrypoint) }}
+        {{ job_option("Jar", job.jar) }}
+        {{ job_option("Status", job.status) }}
+        {{ job_option("Spark app id", job.sparkappid) }}
+    </div>
+    {% endif %}
+{% endblock %}
