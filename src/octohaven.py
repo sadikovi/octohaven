@@ -227,6 +227,8 @@ class Job(db.Model):
     @classmethod
     @utils.sql
     def close(cls, db, job):
+        if job.status == cls.CLOSED:
+            raise StandardError("Cannot close already closed job")
         job.status = cls.CLOSED
         db.session.commit()
 
@@ -247,7 +249,8 @@ class Job(db.Model):
             "jobconf": json.loads(self.jobconf),
             "url": "/job/%s" % self.uid,
             "get_url": "/api/v1/job/get/%s" % self.uid,
-            "close_url": None if not self.canClose() else "/api/v1/job/close/%s" % self.uid
+            "close_url": None if not self.canClose() else "/api/v1/job/close/%s" % self.uid,
+            "create_timetable_url": "/create/timetable/job/%s" % self.uid
         }
 
 ################################################################
@@ -302,6 +305,16 @@ def job_for_uid(uid):
     job = Job.get(uid)
     dump = json.dumps(job.json()) if job else ""
     return render_page("job.html", job=dump)
+
+@app.route("/timetables")
+def timetables_for_status():
+    return render_page("timetables.html")
+
+@app.route("/create/timetable/job/<int:uid>")
+def create_timetable(uid):
+    job = Job.get(uid)
+    dump = json.dumps(job.json()) if job else ""
+    return render_page("create_timetable.html", job=dump)
 
 ################################################################
 # REST API
@@ -410,3 +423,27 @@ def template_submit():
     # construct template
     template = Template.add(db, name=name, createtime=utils.currentTimeMillis(), content=content)
     return success(template.json())
+
+@app.route("/api/v1/timetable/list", methods=["GET"])
+def timetable_list():
+    status = request.args.get("status")
+    resolvedStatus = status.upper() if status and status.upper() != "ALL" else None
+    data = [
+        {"uid": 1, "status": "ACTIVE", "name": "Timetable 1", "url": "/timetable/1",
+            "active_url": None, "pause_url": "/api/v1/timetable/pause/1",
+            "stats": {"jobs": 10, "lasttime": 1458979111944L, "lastuid": 1, "last_url": "/job/1"}},
+        {"uid": 2, "status": "PAUSED", "name": "Timetable 2", "url": "/timetable/2",
+            "active_url": "/api/v1/timetable/active/2", "pause_url": None,
+            "stats": {"jobs": 11, "lasttime": 1458979111944L, "lastuid": 2, "last_url": "/job/2"}},
+        {"uid": 3, "status": "CANCELLED", "name": "Timetable 3", "url": "/timetable/3",
+            "active_url": None, "pause_url": None,
+            "stats": {"jobs": 54, "lasttime": 1458979111944L, "lastuid": 3, "last_url": "/job/3"}},
+        {"uid": 4, "status": "ACTIVE", "name": "Timetable 4 with very-very-very long name",
+            "url": "/timetable/4", "active_url": None, "pause_url": "/api/v1/timetable/pause/4",
+            "stats": {"jobs": 130, "lasttime": 1458979111944L, "lastuid": 4, "last_url": "/job/4"}},
+        {"uid": 5, "status": "PAUSED", "name": "Timetable 5 without any jobs scheduled",
+            "url": "/timetable/5", "active_url": "/api/v1/timetable/active/5", "pause_url": None,
+            "stats": {"jobs": 0, "lasttime": None, "lastuid": None, "last_url": None}}
+    ]
+    filteredData = data if not resolvedStatus else [x for x in data if x["status"] == resolvedStatus]
+    return success({"rows": filteredData})

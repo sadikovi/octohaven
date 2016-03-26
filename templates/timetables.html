@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+
+{% block title %} Timetables {% endblock %}
+{% block nav %}
+    <div class="menu-heading">Actions</div>
+    <a class="menu-item" href="/create/timetable">Create new timetable</a>
+    <a class="menu-item" href="/jobs">View jobs</a>
+{% endblock %}
+{% block menu %}
+    <div id="filters"></div>
+{% endblock %}
+{% block header %} Timetables {% endblock %}
+{% block subheader %} You can pause or cancel timetables at any time {% endblock %}
+{% block scripts %}
+    <script type="text/javascript" src="/static/octohaven.timetables.min.js"></script>
+{% endblock %}

@@ -7,6 +7,8 @@ class JobController extends Reactable
   componentWillMount: ->
     data = Util.jsonOrElse(document.getElementById("content-json")?.innerHTML)
     @setState(job: data)
+    # emit parsed job data to the job actions menu
+    emitter.emit JOB_DATA_ARRIVED, data
     emitter.on JOB_CLOSED, (ok, json) =>
       @setState(job: json) if ok
 
@@ -92,4 +94,24 @@ class StatusOption extends Reactable
       )
     )
 
+class JobActions extends Reactable
+  constructor: ->
+    @state =
+      create_timetable_url: "#"
+
+  componentWillMount: ->
+    emitter.on JOB_DATA_ARRIVED, (job) =>
+      @setState(create_timetable_url: "#{job.create_timetable_url}")
+
+  componentWillUnmount: ->
+    emitter.off JOB_DATA_ARRIVED
+
+  render: ->
+    @nav({className: "menu"},
+      @div({className: "menu-heading"}, "Job actions"),
+      @a({className: "menu-item", href: "#{@state.create_timetable_url}"},
+        "Create timetable")
+    )
+
+ReactDOM.render JobActions.new(), document.getElementById("job-actions")
 ReactDOM.render JobController.new(), document.getElementById("content")

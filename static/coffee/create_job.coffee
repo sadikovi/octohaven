@@ -51,7 +51,7 @@ class JobContainer extends Reactable
       if ok
         txt = "Job created successfully. You cannot resubmit the job, please refresh the web-page"
         @setState(note_state: "success", note_message: "#{txt}", submit_enable: false)
-        console.info "Created new job", ok, json
+        console.debug "Created new job", ok, json
       else
         txt = "Failed to create job, reason: #{if json?.msg then json.msg else "unknown"}"
         @setState(note_state: "error", note_message: "#{txt}", submit_enable: true)

@@ -6,6 +6,9 @@
     <a class="menu-item" href="/create/job">Create new job</a>
     <a class="menu-item" href="/jobs">View jobs</a>
 {% endblock %}
+{% block menu %}
+    <div id="job-actions"></div>
+{% endblock %}
 {% block header %} Job details {% endblock %}
 {% block content %}
     <div id="content-json" class="hidden">{{ job }}</div>

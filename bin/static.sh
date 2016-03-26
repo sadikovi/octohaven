@@ -61,3 +61,23 @@ cat \
   $STATIC_DIR/coffee/base.coffee \
   $STATIC_DIR/coffee/job.coffee | \
   coffee --bare --no-header --compile --stdio | uglifyjs - -o "$STATIC_DIR/octohaven.job.min.js" -c -m
+
+echo "Compile 'timetables' scripts"
+cat \
+  $STATIC_DIR/coffee/utilities/namer.coffee \
+  $STATIC_DIR/coffee/utilities/util.coffee \
+  $STATIC_DIR/coffee/utilities/loader.coffee \
+  $STATIC_DIR/coffee/utilities/api.coffee \
+  $STATIC_DIR/coffee/base.coffee \
+  $STATIC_DIR/coffee/timetables.coffee | \
+  coffee --bare --no-header --compile --stdio | uglifyjs - -o "$STATIC_DIR/octohaven.timetables.min.js" -c -m
+
+echo "Compile 'create-timetable' scripts"
+cat \
+  $STATIC_DIR/coffee/utilities/namer.coffee \
+  $STATIC_DIR/coffee/utilities/util.coffee \
+  $STATIC_DIR/coffee/utilities/loader.coffee \
+  $STATIC_DIR/coffee/utilities/api.coffee \
+  $STATIC_DIR/coffee/base.coffee \
+  $STATIC_DIR/coffee/create_timetable.coffee | \
+  coffee --bare --no-header --compile --stdio | uglifyjs - -o "$STATIC_DIR/octohaven.createtimetable.min.js" -c -m
