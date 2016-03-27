@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+
+{% block title %} Timetable details {% endblock %}
+{% block nav %}
+    <div class="menu-heading">Actions</div>
+    <a class="menu-item" href="/timetables">View timetables</a>
+    <a class="menu-item" href="/jobs">View jobs</a>
+{% endblock %}
+{% block menu %}
+    <div id="timetable-actions"></div>
+{% endblock %}
+{% block header %} Timetable details {% endblock %}
+{% block content %}
+    <div id="content-json" class="hidden">{{ timetable }}</div>
+{% endblock %}
+{% block scripts %}
+    <script type="text/javascript" src="/static/octohaven.timetable.min.js"></script>
+{% endblock %}

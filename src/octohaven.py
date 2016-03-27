@@ -24,6 +24,8 @@ from sparkmodule import SparkContext
 from sqlmodule import MySQLContext
 from fs import FileManager
 from types import ListType, DictType, LongType
+from cron import CronExpression
+from encoders import CustomJSONEncoder
 import utils, shlex
 
 ################################################################
@@ -31,6 +33,7 @@ import utils, shlex
 ################################################################
 app = Flask("octohaven")
 app.config.from_object("config.Options")
+app.json_encoder = CustomJSONEncoder
 # prepare logger for application
 app_log = Loggable("octohaven")
 
@@ -253,6 +256,151 @@ class Job(db.Model):
             "create_timetable_url": "/create/timetable/job/%s" % self.uid
         }
 
+class Timetable(db.Model):
+    uid = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    name = db.Column(db.String(255), nullable=False)
+    status = db.Column(db.String(30), nullable=False)
+    createtime = db.Column(db.BigInteger, nullable=False)
+    canceltime = db.Column(db.BigInteger)
+    cron = db.Column(db.String(255), nullable=False)
+    job_id = db.Column(db.Integer, db.ForeignKey("job.uid"))
+    # Backref property for timetable
+    job = db.relationship("Job", backref=db.backref("timetable", lazy="joined"), uselist=False)
+    # Backref property for timetable statistics
+    stats = db.relationship("TimetableStats", backref=db.backref("timetable", lazy="joined"), lazy="dynamic")
+    # List of statuses available
+    ACTIVE = "ACTIVE"
+    PAUSED = "PAUSED"
+    CANCELLED = "CANCELLED"
+    STATUSES = [ACTIVE, PAUSED, CANCELLED]
+
+    def __init__(self, name, status, createtime, canceltime, cron, job_id):
+        self.name = self.getCanonicalName(name)
+        if status not in self.STATUSES:
+            raise StandardError("Unrecognized status '%s'" % status)
+        self.status = status
+        self.createtime = createtime
+        self.canceltime = canceltime
+        self.cron = CronExpression.fromPattern(str(cron).strip()).pattern
+        self.job_id = job_id
+
+    def cronExpression(self):
+        return CronExpression.fromPattern(self.cron)
+
+    # Get canonical name for the job
+    @staticmethod
+    def getCanonicalName(name):
+        name = str(name).strip() if name else ""
+        return "Default timetable" if len(name) == 0 else name
+
+    def setCanceltime(self, canceltime):
+        self.canceltime = canceltime
+
+    def canPause(self):
+        return self.status == self.ACTIVE
+
+    def canResume(self):
+        return self.status == self.PAUSED
+
+    def canCancel(self):
+        return self.status != self.CANCELLED
+
+    @classmethod
+    @utils.sql
+    def add(cls, db, name, cron, job_id):
+        timetable = Timetable(name=name, status=cls.ACTIVE, createtime=utils.currentTimeMillis(),
+            canceltime=None, cron=cron, job_id=job_id)
+        db.session.add(timetable)
+        db.session.commit()
+        return timetable
+
+    @classmethod
+    @utils.sql
+    def get(cls, uid):
+        return cls.query.get(uid)
+
+    @classmethod
+    @utils.sql
+    def list(cls, status):
+        filtered = cls.query.filter_by(status = status) if status in cls.STATUSES else cls.query
+        return filtered.order_by(desc(cls.createtime)).all()
+
+    @classmethod
+    @utils.sql
+    def pause(cls, db, timetable):
+        if not timetable.canPause():
+            raise StandardError("Cannot pause timetable")
+        timetable.status = cls.PAUSED
+        db.session.commit()
+
+    @classmethod
+    @utils.sql
+    def resume(cls, db, timetable):
+        if not timetable.canResume():
+            raise StandardError("Cannot resume timetable")
+        timetable.status = cls.ACTIVE
+        db.session.commit()
+
+    @classmethod
+    @utils.sql
+    def cancel(cls, db, timetable):
+        if not timetable.canCancel():
+            raise StandardError("Cannot cancel timetable")
+        timetable.status = cls.CANCELLED
+        timetable.setCanceltime(utils.currentTimeMillis())
+        db.session.commit()
+
+    def json(self):
+        # construct statistics
+        numJobs = self.stats.count()
+        lastStats = self.stats.order_by(desc(TimetableStats.createtime)).first()
+
+        return {
+            "uid": self.uid,
+            "name": self.name,
+            "status": self.status,
+            "createtime": self.createtime,
+            "canceltime": self.canceltime,
+            "job": self.job.json() if self.job else None,
+            "cron": self.cronExpression().json(),
+            "stats": {
+                "jobs": numJobs,
+                "lasttime": lastStats.createtime if lastStats else None,
+                "lastuid": lastStats.job_id if lastStats else None,
+                "last_url": ("/job/%s" % lastStats.job_id) if lastStats else None
+            },
+            "url": "/timetable/%s" % self.uid,
+            "get_url": "/api/v1/timetable/get/%s" % self.uid,
+            "resume_url": ("/api/v1/timetable/resume/%s" % self.uid) if self.canResume() else None,
+            "pause_url": ("/api/v1/timetable/pause/%s" % self.uid) if self.canPause() else None,
+            "cancel_url": ("/api/v1/timetable/cancel/%s" % self.uid) if self.canCancel() else None
+        }
+
+class TimetableStats(db.Model):
+    index = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    timetable_id = db.Column(db.Integer, db.ForeignKey("timetable.uid"))
+    job_id = db.Column(db.Integer, db.ForeignKey("job.uid"))
+    createtime = db.Column(db.BigInteger, nullable=False)
+
+    def __init__(self, timetable_id, job_id):
+        self.timetable_id = timetable_id
+        self.job_id = job_id
+        self.createtime = utils.currentTimeMillis()
+
+    @classmethod
+    @utils.sql
+    def add(cls, db, timetable_id, job_id):
+        stats = TimetableStats(timetable_id=timetable_id, job_id=job_id)
+        db.session.add(stats)
+        db.session.commit()
+        return stats
+
+    def json(self):
+        return {
+            "job_id": self.job_id,
+            "createtime": self.createtime
+        }
+
 ################################################################
 # Database and service start
 ################################################################
@@ -310,11 +458,21 @@ def job_for_uid(uid):
 def timetables_for_status():
     return render_page("timetables.html")
 
+@app.route("/create/timetable")
+def create_timetable():
+    return render_page("create_timetable.html", job="")
+
 @app.route("/create/timetable/job/<int:uid>")
-def create_timetable(uid):
+def create_timetable_job(uid):
     job = Job.get(uid)
     dump = json.dumps(job.json()) if job else ""
     return render_page("create_timetable.html", job=dump)
+
+@app.route("/timetable/<int:uid>")
+def timetable_for_uid(uid):
+    timetable = Timetable.get(uid)
+    dump = json.dumps(timetable.json()) if timetable else ""
+    return render_page("timetable.html", timetable=dump)
 
 ################################################################
 # REST API
@@ -428,22 +586,44 @@ def template_submit():
 def timetable_list():
     status = request.args.get("status")
     resolvedStatus = status.upper() if status and status.upper() != "ALL" else None
-    data = [
-        {"uid": 1, "status": "ACTIVE", "name": "Timetable 1", "url": "/timetable/1",
-            "active_url": None, "pause_url": "/api/v1/timetable/pause/1",
-            "stats": {"jobs": 10, "lasttime": 1458979111944L, "lastuid": 1, "last_url": "/job/1"}},
-        {"uid": 2, "status": "PAUSED", "name": "Timetable 2", "url": "/timetable/2",
-            "active_url": "/api/v1/timetable/active/2", "pause_url": None,
-            "stats": {"jobs": 11, "lasttime": 1458979111944L, "lastuid": 2, "last_url": "/job/2"}},
-        {"uid": 3, "status": "CANCELLED", "name": "Timetable 3", "url": "/timetable/3",
-            "active_url": None, "pause_url": None,
-            "stats": {"jobs": 54, "lasttime": 1458979111944L, "lastuid": 3, "last_url": "/job/3"}},
-        {"uid": 4, "status": "ACTIVE", "name": "Timetable 4 with very-very-very long name",
-            "url": "/timetable/4", "active_url": None, "pause_url": "/api/v1/timetable/pause/4",
-            "stats": {"jobs": 130, "lasttime": 1458979111944L, "lastuid": 4, "last_url": "/job/4"}},
-        {"uid": 5, "status": "PAUSED", "name": "Timetable 5 without any jobs scheduled",
-            "url": "/timetable/5", "active_url": "/api/v1/timetable/active/5", "pause_url": None,
-            "stats": {"jobs": 0, "lasttime": None, "lastuid": None, "last_url": None}}
-    ]
-    filteredData = data if not resolvedStatus else [x for x in data if x["status"] == resolvedStatus]
-    return success({"rows": filteredData})
+    timetables = Timetable.list(resolvedStatus)
+    return success({"rows": [x.json() for x in timetables]})
+
+@app.route("/api/v1/timetable/get/<int:uid>", methods=["GET"])
+def timetable_get(uid):
+    timetable = Timetable.get(uid)
+    if not timetable:
+        raise StandardError("No timetable for id '%s'" % uid)
+    return success(timetable.json())
+
+@app.route("/api/v1/timetable/create", methods=["POST"])
+def timetable_submit():
+    opts = request.get_json()
+    content = json.dumps(opts)
+    # construct template
+    timetable = Timetable.add(db, name=opts["name"], cron=opts["cron"], job_id=opts["job_id"])
+    return success(timetable.json())
+
+@app.route("/api/v1/timetable/pause/<int:uid>", methods=["GET"])
+def timetable_pause(uid):
+    timetable = Timetable.get(uid)
+    if not timetable:
+        raise StandardError("No timetable for id '%s'" % uid)
+    Timetable.pause(db, timetable)
+    return success(timetable.json())
+
+@app.route("/api/v1/timetable/resume/<int:uid>", methods=["GET"])
+def timetable_resume(uid):
+    timetable = Timetable.get(uid)
+    if not timetable:
+        raise StandardError("No timetable for id '%s'" % uid)
+    Timetable.resume(db, timetable)
+    return success(timetable.json())
+
+@app.route("/api/v1/timetable/cancel/<int:uid>", methods=["GET"])
+def timetable_cancel(uid):
+    timetable = Timetable.get(uid)
+    if not timetable:
+        raise StandardError("No timetable for id '%s'" % uid)
+    Timetable.cancel(db, timetable)
+    return success(timetable.json())

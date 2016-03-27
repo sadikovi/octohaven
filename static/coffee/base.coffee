@@ -27,6 +27,7 @@ TIMETABLE_DATA_ARRIVED = "timetable-data-arrived"
 TIMETABLE_CREATE_NAME_CHANGED = "timetable-create-name-changed"
 TIMETABLE_CREATE_CRON_CHANGED = "timetable-create-cron-changed"
 TIMETABLE_CREATE_SUBMIT = "timetable-create-submit"
+TIMETABLE_CANCELLED = "timetable-cancelled"
 
 # React base class for CoffeeScript
 class Reactable extends React.Component

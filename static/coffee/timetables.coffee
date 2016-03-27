@@ -73,7 +73,7 @@ class TimetableView extends Reactable
   render: ->
     @div({className: "segments"},
       (TimetableRecord.new(key: row.uid, name: row.name, status: row.status, url: row.url
-        , active_url: row.active_url, pause_url: row.pause_url, stats: row.stats) for row in @props.data)
+        , resume_url: row.resume_url, pause_url: row.pause_url, stats: row.stats) for row in @props.data)
     )
 
 class TimetableRecord extends Reactable
@@ -89,17 +89,17 @@ class TimetableRecord extends Reactable
       emitter.emit TIMETABLE_ACTION_FIRED, url
       console.debug "Emitted event", TIMETABLE_ACTION_FIRED, url
 
-  resolveNameAndUrl: (active, pause) ->
-    if active
-      ["Resume", active]
+  resolveNameAndUrl: (resume, pause) ->
+    if resume
+      ["Resume", resume]
     else if pause
       ["Pause", pause]
     else
       [null, null]
 
   render: ->
-    # Name of active button and corresponding URL
-    [btnName, url] = @resolveNameAndUrl(@props.active_url, @props.pause_url)
+    # Name of action button and corresponding URL
+    [btnName, url] = @resolveNameAndUrl(@props.resume_url, @props.pause_url)
     if @state.btnName
       btnName = "#{@state.btnName}"
     # Whether or not active button is enabled

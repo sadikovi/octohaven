@@ -16,7 +16,7 @@ class CreateController extends Reactable
     payload =
       name: @state.name
       cron: @state.cron
-      jobid: @state.job?.uid
+      job_id: @state.job?.uid
     payload
 
   componentWillMount: ->
@@ -50,8 +50,9 @@ class CreateController extends Reactable
     else
       @div({className: "blankslate"},
         @h1({className: "text-thin"}, "Could not load specified job"),
-        @p({}, "Most likely specified job does not exist. Try selecting one from ",
-          @a({href: "/jobs"}, "list of jobs")
+        @p({}, "Most likely specified job does not exist.")
+        @p({}, "To create timetable, open 'Job details' page and click on 'Create timetable' " +
+          "link in job actions. Start by selecting one from ", @a({href: "/jobs"}, "list of jobs")
         )
       )
 
@@ -90,7 +91,7 @@ class TimetableName extends Reactable
         @span({className: "text-bold"}, "Timetable name")
       ),
       @div({className: "three-fourths column"},
-        @input({type: "text", className: "input-monospace", value: "#{@props.name}"
+        @input({type: "text", value: "#{@props.name}"
           , onChange: (event) => @handleInput(event)})
       )
     )
