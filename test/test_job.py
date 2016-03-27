@@ -1,0 +1,195 @@
+#!/usr/bin/env python
+
+import unittest, json
+import src.utils as utils
+from types import DictType
+from src.octohaven import db
+from src.job import Job
+from src.timetable import Timetable, TimetableStats
+
+class JobTestSuite(unittest.TestCase):
+    def setUp(self):
+        TimetableStats.query.delete()
+        Timetable.query.delete()
+        Job.query.delete()
+
+        self.opts = {
+            "name": "test-job",
+            "status": Job.READY,
+            "priority": 1L,
+            "createtime": 1L,
+            "submittime": 1L,
+            "entrypoint": "com.test.Main",
+            "jar": "/tmp/file.jar",
+            "dmemory": "4g",
+            "ememory": "4g",
+            "options": {
+                "spark.driver.memory": "8g",
+                "spark.executor.memory": "8g",
+                "spark.shuffle.spill": "true",
+                "spark.file.overwrite": "true"
+            },
+            "jobconf": ["a", "b", "c"]
+        }
+
+    def tearDown(self):
+        pass
+
+    def test_create(self):
+        job = Job(**self.opts)
+        self.assertEquals(job.name, self.opts["name"])
+        self.assertEquals(job.status, self.opts["status"])
+        self.assertEquals(job.createtime, self.opts["createtime"])
+        self.assertEquals(job.submittime, self.opts["submittime"])
+        self.assertEquals(job.entrypoint, self.opts["entrypoint"])
+        self.assertEquals(job.jar, self.opts["jar"])
+        self.opts["spark.driver.memory"] = self.opts["dmemory"]
+        self.opts["spark.executor.memory"] = self.opts["ememory"]
+        self.assertEquals(job.getSparkOptions(), self.opts["options"])
+        self.assertEquals(job.getJobConf(), self.opts["jobconf"])
+
+    def test_create1(self):
+        with self.assertRaises(StandardError):
+            del self.opts["createtime"]
+            Job(**self.opts)
+        with self.assertRaises(StandardError):
+            self.opts["createtime"] = 1L
+            del self.opts["submittime"]
+            Job(**self.opts)
+        with self.assertRaises(StandardError):
+            self.opts["createtime"] = -1L
+            self.opts["submittime"] = -1L
+            Job(**self.opts)
+
+    def test_create2(self):
+        with self.assertRaises(StandardError):
+            self.opts["priority"] = None
+            Job(**self.opts)
+
+    def test_create3(self):
+        with self.assertRaises(StandardError):
+            self.opts["entrypoint"] = ""
+            Job(**self.opts)
+        with self.assertRaises(StandardError):
+            del self.opts["entrypoint"]
+            Job(**self.opts)
+
+    def test_create4(self):
+        with self.assertRaises(StandardError):
+            self.opts["jar"] = ""
+            Job(**self.opts)
+        with self.assertRaises(StandardError):
+            self.opts["jar"] = "/tmp/file.txt"
+            Job(**self.opts)
+        with self.assertRaises(StandardError):
+            del self.opts["jar"]
+            Job(**self.opts)
+
+    def test_create5(self):
+        self.opts["options"] = {}
+        self.opts["jobconf"] = []
+        job = Job(**self.opts)
+        self.assertEquals(job.getSparkOptions(), {"spark.driver.memory": self.opts["dmemory"],
+            "spark.executor.memory": self.opts["ememory"]})
+        self.assertEquals(job.getJobConf(), [])
+
+    def test_getSparkOptions(self):
+        job = Job(**self.opts)
+        self.opts["spark.driver.memory"] = self.opts["dmemory"]
+        self.opts["spark.executor.memory"] = self.opts["ememory"]
+        self.assertEquals(job.getSparkOptions(), self.opts["options"])
+
+    def test_getJobConf(self):
+        job = Job(**self.opts)
+        self.assertEquals(job.getJobConf(), self.opts["jobconf"])
+
+    def test_canClose(self):
+        job = Job(**self.opts)
+        self.assertEquals(job.canClose(), True)
+        for status in [Job.CLOSED, Job.RUNNING, Job.FINISHED]:
+            job.status = status
+            self.assertEquals(job.canClose(), False)
+
+    def test_add(self):
+        job = Job.create(**self.opts)
+        arr = Job.list(None)
+        self.assertTrue(len(arr), 1)
+
+    def test_add1(self):
+        self.opts["delay"] = 2000
+        job = Job.create(**self.opts)
+        self.assertEquals(job.submittime, job.createtime + 2000 * 1000)
+        # negative delay equals to 0 seconds
+        self.opts["delay"] = -2000
+        job = Job.create(**self.opts)
+        self.assertEquals(job.submittime, job.createtime)
+
+    def test_get(self):
+        job = Job.create(**self.opts)
+        res = Job.get(job.uid)
+        self.assertEquals(res.json(), job.json())
+        # fetch job with non-existent job id
+        res = Job.get("")
+        self.assertEquals(res, None)
+
+    def test_list(self):
+        i = 0L
+        for x in range(10):
+            Job.create(**self.opts)
+        arr = Job.list(None)
+        self.assertEquals(len(arr), 10)
+        times = [x.createtime for x in arr]
+        self.assertEquals(times, sorted(times, reverse=True))
+        # test selecting status
+        arr = Job.list(Job.READY, limit=1)
+        self.assertEquals(len(arr), 1)
+        arr = Job.list(Job.READY, limit=0)
+        self.assertEquals(len(arr), 1)
+
+    def test_close(self):
+        job = Job.create(**self.opts)
+        self.assertEquals(job.status, Job.READY)
+        Job.close(job)
+        self.assertEquals(job.status, Job.CLOSED)
+        # try closing already closed job
+        with self.assertRaises(StandardError):
+            Job.close(job)
+        with self.assertRaises(StandardError):
+            job.status = Job.RUNNING
+            Job.close(job)
+        with self.assertRaises(StandardError):
+            job.status = Job.FINISHED
+            Job.close(job)
+
+    def test_json(self):
+        job = Job.create(**self.opts)
+        obj = job.json()
+        self.assertEquals(obj["name"], job.name)
+        self.assertEquals(obj["status"], job.status)
+        self.assertEquals(obj["createtime"], job.createtime)
+        self.assertEquals(obj["submittime"], job.submittime)
+        self.assertEquals(obj["entrypoint"], job.entrypoint)
+        self.assertEquals(obj["jar"], job.jar)
+        self.assertEquals(obj["options"], job.getSparkOptions())
+        self.assertEquals(obj["jobconf"], job.getJobConf())
+
+# Load test suites
+def _suites():
+    return [
+        JobTestSuite
+    ]
+
+# Load tests
+def loadSuites():
+    # global test suite for this module
+    gsuite = unittest.TestSuite()
+    for suite in _suites():
+        gsuite.addTest(unittest.TestLoader().loadTestsFromTestCase(suite))
+    return gsuite
+
+if __name__ == '__main__':
+    suite = loadSuites()
+    print ""
+    print "### Running tests ###"
+    print "-" * 70
+    unittest.TextTestRunner(verbosity=2).run(suite)

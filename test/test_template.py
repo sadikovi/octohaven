@@ -1,102 +1,94 @@
 #!/usr/bin/env python
 
 import unittest, json
-from src.octohaven import sqlContext
-from src.sqlschema import loadSchema
-from src.template import Template, TemplateManager
+import src.utils as utils
 from types import DictType
+from src.octohaven import db
+from src.template import Template
 
 class TemplateTestSuite(unittest.TestCase):
     def setUp(self):
-        pass
+        Template.query.delete()
+        self.opts = {"name": "test", "content": "{\"key\": \"value\"}"}
 
     def tearDown(self):
         pass
 
     def test_create(self):
-        template = Template("id123", "test", 1L, {})
-        self.assertEqual(template.uid, "id123")
-        self.assertEqual(template.name, "test")
-        self.assertEqual(template.content, {})
-        # try storing list
+        template = Template("name", 1L, "{\"key\": \"value\"}")
+        self.assertEquals(template.name, "name")
+        self.assertEquals(template.createtime, 1L)
+        self.assertEquals(template.content, "{\"key\": \"value\"}")
+        # test failures of createtime
         with self.assertRaises(StandardError):
-            Template("id123", "test", 1L, [])
-        # try storing complex object
-        template = Template("id123", "test", 1L, {"list": [{"a": True}]})
-        self.assertEqual(type(template.content), DictType)
-        self.assertEqual(template.content["list"], str([{"a": True}]))
+            Template("name", 0L, "{\"key\": \"value\"}")
+        with self.assertRaises(StandardError):
+            Template("name", None, "{\"key\": \"value\"}")
+        # test of empty name
+        template = Template("", 1L, "{\"key\": \"value\"}")
+        self.assertTrue(len(template.name) > 0)
+        template = Template(None, 1L, "{\"key\": \"value\"}")
+        self.assertTrue(len(template.name) > 0)
+
+    def test_add(self):
+        with self.assertRaises(StandardError):
+            Template.create({"content": ""})
+        with self.assertRaises(StandardError):
+            Template.create({"name": ""})
+        # test addition with default time
+        template = Template.create(**self.opts)
+        self.assertTrue(template.createtime > utils.currentTimeMillis() - 5000L)
+        # test addition with fixed time
+        opts = {"name": "test", "content": "{\"key\": \"value\"}"}
+        template = Template.create(**opts)
+        self.assertTrue(template.createtime > utils.currentTimeMillis() - 5000)
+        # make sure that there are 2 entries in the table now
+        arr = Template.list()
+        self.assertTrue(len(arr) == 2)
+
+    def test_list(self):
+        for x in range(1, 6):
+            self.opts["createtime"] = x
+            Template.create(**self.opts)
+        arr = Template.list()
+        self.assertEquals(len(arr), 5)
+        times = [x.createtime for x in arr]
+        self.assertEquals(times, sorted(times, reverse=True))
+
+    def test_get(self):
+        template = Template.create(**self.opts)
+        another = Template.get(template.uid)
+        self.assertEquals(another.name, template.name)
+        self.assertEquals(another.content, template.content)
+        self.assertEquals(another.createtime, template.createtime)
+        # should still fetch correct entry when searching by string
+        another = Template.get("%s" % template.uid)
+        self.assertEquals(another.json(), template.json())
+        # should return None
+        another = Template.get("abc")
+        self.assertEquals(another, None)
+
+    def test_delete(self):
+        template = Template.create(**self.opts)
+        res = Template.get(template.uid)
+        self.assertTrue(res is not None)
+        # after deleting template "get()" should return None
+        Template.delete(template)
+        res = Template.get(template.uid)
+        self.assertTrue(res is None)
 
     def test_json(self):
-        template = Template("id123", "test", 1L, {})
-        obj = template.json()
-        self.assertEqual(obj["uid"], "id123")
-        self.assertEqual(obj["name"], "test")
-        self.assertEqual(obj["createtime"], 1L)
-        self.assertEqual(obj["content"], {})
-
-    def test_dict(self):
-        template = Template("id123", "test", 1L, {"a": True, "b": 1})
-        obj = template.dict()
-        self.assertEqual(obj["uid"], "id123")
-        self.assertEqual(obj["name"], "test")
-        self.assertEqual(obj["createtime"], 1L)
-        self.assertEqual(obj["content"], json.dumps({"a": True, "b": 1}))
-
-    def test_fromDict(self):
-        template = Template("id123", "test", 1L, {})
-        obj = template.dict()
-        another = Template.fromDict(obj)
-        self.assertEqual(another.dict(), template.dict())
-
-class TemplateManagerTestSuite(unittest.TestCase):
-    def setUp(self):
-        loadSchema(sqlContext, True, True)
-
-    def tearDown(self):
-        pass
-
-    def test_createTemplate(self):
-        templateManager = TemplateManager(sqlContext)
-        name = "test-template"
-        content = {"a": True}
-        template = templateManager.createTemplate(name, content)
-        self.assertEqual(template.name, name)
-        self.assertEqual(template.content, {"a": True})
-
-    def test_saveTemplate(self):
-        templateManager = TemplateManager(sqlContext)
-        template = templateManager.createTemplate("test-template", {})
-        self.assertEqual(len(templateManager.templates()), 1)
-        self.assertEqual(templateManager.templateForUid(template.uid).dict(), template.dict())
-        with self.assertRaises(StandardError):
-            templateManager.saveTemplate(None)
-
-    def test_templateForUid(self):
-        templateManager = TemplateManager(sqlContext)
-        self.assertEqual(templateManager.templateForUid(None), None)
-        template = templateManager.createTemplate("test-template", {})
-        self.assertEqual(templateManager.templateForUid(template.uid).dict(), template.dict())
-
-    def test_templates(self):
-        templateManager = TemplateManager(sqlContext)
-        template1 = templateManager.createTemplate("1-test-template", {})
-        template2 = templateManager.createTemplate("2-test-template", {})
-        arr = templateManager.templates()
-        self.assertEqual([x.name for x in arr], ["1-test-template", "2-test-template"])
-
-    def test_deleteTemplate(self):
-        templateManager = TemplateManager(sqlContext)
-        template = templateManager.createTemplate("test-template", {})
-        self.assertEqual(len(templateManager.templates()), 1)
-        templateManager.deleteTemplate(template.uid)
-        self.assertEqual(len(templateManager.templates()), 0)
-        self.assertEqual(templateManager.templateForUid(template.uid), None)
+        template = Template.create(**self.opts)
+        another = Template.get(template.uid)
+        obj = another.json()
+        self.assertEquals(obj["uid"], another.uid)
+        self.assertEquals(obj["name"], another.name)
+        self.assertEquals(obj["createtime"], another.createtime)
 
 # Load test suites
 def _suites():
     return [
-        TemplateTestSuite,
-        TemplateManagerTestSuite
+        TemplateTestSuite
     ]
 
 # Load tests

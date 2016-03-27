@@ -21,10 +21,12 @@ import sys, unittest, importlib
 # select what tests to run
 RUN_TESTS = {
     "utils": True,
-    "sqlmodule": True,
     "sparkmodule": True,
     "fs": True,
-    "template": True
+    "cron": True,
+    "template": True,
+    "job": True,
+    "timetable": True
 }
 
 # default empty test suite
@@ -51,7 +53,10 @@ def collectSystemTests(suites):
     addTests2("sqlmodule")
     addTests2("sparkmodule")
     addTests2("fs")
+    addTests2("cron")
     addTests2("template")
+    addTests2("job")
+    addTests2("timetable")
 
 def main(args=[]):
     print ""

@@ -21,6 +21,9 @@ from datetime import datetime
 from random import choice
 from types import UnicodeType, StringType, DictType, ListType
 
+################################################################
+# Decorators
+################################################################
 # private decorator
 def private(f):
     def wrapper(*args, **kw):
@@ -226,3 +229,8 @@ def heroku(hex=False):
     else:
         suffix = '0123456789'
     return ('-'.join([choice(adjs), choice(nouns), ''.join(choice(suffix) for x in xrange(4))]))
+
+# Return canonicalized name, if name is empty then heroku name is generated
+def getCanonicalName(name):
+    prep = name.strip() if isinstance(name, StringType) else ""
+    return heroku() if len(prep) == 0 else prep

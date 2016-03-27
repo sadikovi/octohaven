@@ -24,6 +24,7 @@ import os
 
 # Application version
 VERSION = "1.0.0"
+API_VERSION = "v1"
 
 # Root directory of the project
 ROOT_PATH = os.path.dirname(os.path.realpath(__file__))

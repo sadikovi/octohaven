@@ -146,6 +146,14 @@ class UtilsTestSuite(unittest.TestCase):
         self.assertEqual(res["user"], "USER")
         self.assertEqual(res["password"], "PASSWORD")
 
+    def test_getCanonicalName(self):
+        self.assertEqual(utils.getCanonicalName("test"), "test")
+        self.assertEqual(utils.getCanonicalName("A-1-2"), "A-1-2")
+        self.assertEqual(utils.getCanonicalName(" TEST "), "TEST")
+        name = utils.getCanonicalName("")
+        self.assertTrue(len(name) > 0)
+        self.assertEqual(len(name.split("-")), 3)
+
 # Load test suites
 def _suites():
     return [
