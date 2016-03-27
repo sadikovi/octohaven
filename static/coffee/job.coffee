@@ -97,11 +97,11 @@ class StatusOption extends Reactable
 class JobActions extends Reactable
   constructor: ->
     @state =
-      create_timetable_url: "#"
+      create_timetable_html_url: "#"
 
   componentWillMount: ->
     emitter.on JOB_DATA_ARRIVED, (job) =>
-      @setState(create_timetable_url: "#{job.create_timetable_url}")
+      @setState(create_timetable_html_url: "#{job.create_timetable_html_url}")
 
   componentWillUnmount: ->
     emitter.off JOB_DATA_ARRIVED
@@ -109,7 +109,7 @@ class JobActions extends Reactable
   render: ->
     @nav({className: "menu"},
       @div({className: "menu-heading"}, "Job actions"),
-      @a({className: "menu-item", href: "#{@state.create_timetable_url}"},
+      @a({className: "menu-item", href: "#{@state.create_timetable_html_url}"},
         "Create timetable")
     )
 

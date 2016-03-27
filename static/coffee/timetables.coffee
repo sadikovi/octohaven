@@ -51,14 +51,11 @@ class TimetableController extends Reactable
       okay: true
 
   componentWillMount: ->
-    emitter.on TIMETABLE_DATA_REQUESTED, =>
-      @setState(data: [], okay: true)
     emitter.on TIMETABLE_DATA_ARRIVED, (ok, data) =>
       @setState(data: data, okay: ok)
 
   componentWillUnmount: ->
-    emitter.off TIMETABLE_DATA_REQUESTED
-    emitter.on TIMETABLE_DATA_ARRIVED
+    emitter.off TIMETABLE_DATA_ARRIVED
 
   render: ->
     if @state.okay
@@ -72,7 +69,7 @@ class TimetableController extends Reactable
 class TimetableView extends Reactable
   render: ->
     @div({className: "segments"},
-      (TimetableRecord.new(key: row.uid, name: row.name, status: row.status, url: row.url
+      (TimetableRecord.new(key: row.uid, name: row.name, status: row.status, url: row.html_url
         , resume_url: row.resume_url, pause_url: row.pause_url, stats: row.stats) for row in @props.data)
     )
 
@@ -80,28 +77,27 @@ class TimetableRecord extends Reactable
   constructor: ->
     @state =
       enabled: true
-      btnName: null
+
+  componentWillReceiveProps: ->
+    @setState(enabled: true)
 
   handleClick: (url) ->
-    @setState(enabled: false, btnName: "...")
+    @setState(enabled: false)
     Api.doGet url, null, null, null, (ok, json) =>
-      @setState(btnName: "Error") unless ok
       emitter.emit TIMETABLE_ACTION_FIRED, url
       console.debug "Emitted event", TIMETABLE_ACTION_FIRED, url
 
-  resolveNameAndUrl: (resume, pause) ->
-    if resume
-      ["Resume", resume]
-    else if pause
-      ["Pause", pause]
+  resolveNameAndUrl: (resume_url, pause_url) ->
+    if resume_url
+      ["Resume", resume_url]
+    else if pause_url
+      ["Pause", pause_url]
     else
       [null, null]
 
   render: ->
     # Name of action button and corresponding URL
     [btnName, url] = @resolveNameAndUrl(@props.resume_url, @props.pause_url)
-    if @state.btnName
-      btnName = "#{@state.btnName}"
     # Whether or not active button is enabled
     isEnabled = @state.enabled
 
@@ -116,8 +112,8 @@ class TimetableRecord extends Reactable
         @div({className: "one-third column"},
           @div({}, "Jobs so far: #{@props.stats.jobs}"),
           @div({}, "Last run: ",
-            if @props.stats.lasttime and @props.stats.last_url
-              @a({href: "#{@props.stats.last_url}"}, "#{Util.timestampToDate(@props.stats.lasttime)}")
+            if @props.stats.last_time and @props.stats.last_job_html_url
+              @a({href: "#{@props.stats.last_job_html_url}"}, "#{Util.timestampToDate(@props.stats.last_time)}")
             else
               @span({}, "hasn't happened yet")
           )
@@ -139,12 +135,9 @@ class ModelStore
       @xhr?.abort()
       status = payload.data
       url = "/api/v1/timetable/list"
-      @xhr = Api.doGet(url, null, {status: status}, ->
-        emitter.emit TIMETABLE_DATA_REQUESTED
-        console.debug "Emitted event", TIMETABLE_DATA_REQUESTED, Date.now()
-      , (okay, json) =>
+      @xhr = Api.doGet(url, null, {status: status}, null, (okay, json) =>
         console.error "ERROR", json unless okay
-        emitter.emit TIMETABLE_DATA_ARRIVED, okay, json?.rows
+        emitter.emit TIMETABLE_DATA_ARRIVED, okay, json?.data
         console.debug "Emitted event", TIMETABLE_DATA_ARRIVED, okay, Date.now()
       )
     else

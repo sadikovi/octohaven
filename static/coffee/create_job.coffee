@@ -1,15 +1,15 @@
 # `JobContainer` class that resembles Spark job to create, with all options
 class JobContainer extends Reactable
   constructor: ->
-    # State includes: name, (main) klass, driver memory, executor memory, delay, jar
+    # State includes: name, (main class) entrypoint, driver memory, executor memory, delay, jar
     # Also features finder state (ls array, path array and current url accessed)
     @state =
       name: "#{Namer.generate()}"
-      klass: "com.test.Main"
+      entrypoint: "com.test.Main"
       dmemory: "4g"
       ememory: "4g"
-      sparkOptions: ""
-      jobOptions: ""
+      options: ""
+      jobconf: ""
       delay: 0
       jar: null
       finder_url: "/api/v1/finder/home"
@@ -25,11 +25,11 @@ class JobContainer extends Reactable
   getPayload: ->
     payload =
       name: @state.name
-      klass: @state.klass
+      entrypoint: @state.entrypoint
       dmemory: @state.dmemory
       ememory: @state.ememory
-      sparkOptions: @state.sparkOptions
-      jobOptions: @state.jobOptions
+      options: @state.options
+      jobconf: @state.jobconf
       delay: @state.delay
       jar: @state.jar
     payload
@@ -49,7 +49,7 @@ class JobContainer extends Reactable
       console.debug "Submitting the job for state", @state
     , (ok, json) =>
       if ok
-        txt = "Job created successfully. You cannot resubmit the job, please refresh the web-page"
+        txt = "Job created successfully. To resubmit the job, please refresh the web-page"
         @setState(note_state: "success", note_message: "#{txt}", submit_enable: false)
         console.debug "Created new job", ok, json
       else
@@ -69,18 +69,18 @@ class JobContainer extends Reactable
         emitter.emit TEMPLATE_SAVED
         console.debug "Emitted event", TEMPLATE_SAVED, Date.now()
       else
-        txt = "Failed to create template, reason: #{if json?.msg then json.msg else "unknown"}"
+        txt = "Failed to create template, reason: #{json?.msg ? "unknown"}"
         @setState(note_state: "error", note_message: "#{txt}")
         console.error "Failed to create template", ok, json
 
   componentWillMount: ->
     emitter.on OPTION_CHANGED, (id, value) =>
       @setState(name: "#{value}") if id == 1
-      @setState(klass: "#{value}") if id == 2
+      @setState(entrypoint: "#{value}") if id == 2
       @setState(dmemory: "#{value}") if id == 3
       @setState(ememory: "#{value}") if id == 4
-      @setState(sparkOptions: "#{value}") if id == 5
-      @setState(jobOptions: "#{value}") if id == 6
+      @setState(options: "#{value}") if id == 5
+      @setState(jobconf: "#{value}") if id == 6
       @setState(delay: value) if id == 100
     emitter.on FINDER_ELEM_CLICKED, (url) =>
       @finder(url)
@@ -111,15 +111,15 @@ class JobContainer extends Reactable
       Option.new(id: 1, key: "1", name: "Job name", desc: "Friendly job name"
         , default: "#{@state.name}"),
       Option.new(id: 2, key: "2", name: "Main class", desc: "Entrypoint for the Spark job"
-        , default: "#{@state.klass}"),
+        , default: "#{@state.entrypoint}"),
       Option.new(id: 3, key: "3", name: "Driver memory", desc: "Memory for the driver program, e.g. 4g"
         , default: "#{@state.dmemory}"),
       Option.new(id: 4, key: "4", name: "Executor memory", desc: "Memory per Spark executor, e.g. 4g"
         , default: "#{@state.ememory}"),
       Option.new(id: 5, key: "5", name: "Spark options", desc: "Spark settings for the job, e.g. JVM, networking..."
-        , default: "#{@state.sparkOptions}", textarea: true),
+        , default: "#{@state.options}", textarea: true),
       Option.new(id: 6, key: "6", name: "Job options", desc: "Job options to pass to main class"
-        , default: "#{@state.jobOptions}", textarea: true),
+        , default: "#{@state.jobconf}", textarea: true),
       FinderOption.new(ls: @state.finder_ls, path: @state.finder_path, jar: @state.jar),
       TimerOption.new(delay: @state.delay),
       MessageBoard.new(message: @state.note_message, state: @state.note_state),
@@ -316,7 +316,7 @@ class TemplatesContainer extends Reactable
     , (ok, json) =>
       if ok
         console.info "Successfully loaded templates", ok, json
-        @setState(loading: false, data: json.templates)
+        @setState(loading: false, data: json?.data)
       else
         console.error "Failed to load templates", ok, json
         @setState(loading: false, data: [])

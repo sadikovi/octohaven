@@ -16,7 +16,7 @@ class CreateController extends Reactable
     payload =
       name: @state.name
       cron: @state.cron
-      job_id: @state.job?.uid
+      job_uid: @state.job?.uid
     payload
 
   componentWillMount: ->
@@ -32,11 +32,11 @@ class CreateController extends Reactable
         console.debug "Submitting timetable", @getPayload()
       , (ok, json) =>
         if ok
-          txt = "Timetable created. You cannot resubmit the timetable, please refresh web-page"
+          txt = "Timetable created. To resubmit the timetable, please refresh web-page"
           @setState(submitted: true, note_state: "success", note_message: "#{txt}")
           console.debug "Created new timetable", ok, json
         else
-          txt = "Failed to create timetable, reason: #{if json?.msg then json.msg else "unknown"}"
+          txt = "Failed to create timetable, reason: #{json?.msg ? "unknown"}"
           @setState(submitted: false, note_state: "error", note_message: "#{txt}")
           console.error "Failed to create job", ok, json
 
@@ -76,7 +76,7 @@ class JobLink extends Reactable
         @span({className: "text-bold"}, "Job to use as template")
       ),
       @div({className: "three-fourths column"},
-        @a({href: "#{@props.job.url}"}, "#{@props.job.name}")
+        @a({href: "#{@props.job.html_url}"}, "#{@props.job.name}")
       )
     )
 

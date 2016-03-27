@@ -8,7 +8,7 @@ class Filter extends Reactable
 
   render: ->
     tag = if @props.selected then "selected" else ""
-    @a({href: "/api", className: "menu-item #{tag}"
+    @a({href: "#", className: "menu-item #{tag}"
       , onClick: (event) => @handleClick(event, @props.status)}, "#{@props.status}")
 
 class FilterList extends Reactable
@@ -49,22 +49,15 @@ class JobBox extends Reactable
     @state =
       data: []
       okay: true
-      pending: false
 
   componentWillMount: ->
-    emitter.on JOB_DATA_REQUESTED, (status) =>
-      @setState(pending: true)
-    emitter.on JOB_DATA_ARRIVED, (okay, rows) =>
-      @setState(okay: okay, data: rows, pending: false)
+    emitter.on JOB_DATA_ARRIVED, (okay, data) =>
+      @setState(okay: okay, data: data, pending: false)
 
   componentWillUnmount: ->
-    emitter.off JOB_DATA_REQUESTED
     emitter.off JOB_DATA_ARRIVED
 
   render: ->
-    if @state.pending
-      @div({className: "loading segment"})
-    else
       if @state.okay
         @div({}, Table.new(rows: @state.data))
       else
@@ -81,8 +74,8 @@ class Row extends Reactable
   render: ->
     @div({className: "segment"},
       @div({className: "columns"},
-        Status.new(className: "one-sixth column", label: "#{@props.r.status}", close: @props.r.close_url),
-        Link.new(className: "one-third column", url: "#{@props.r.url}", label: "#{@props.r.name}"),
+        Status.new(className: "one-sixth column", label: "#{@props.r.status}"),
+        Link.new(className: "one-third column", url: "#{@props.r.html_url}", label: "#{@props.r.name}"),
         Created.new(className: "one-third column", label: "#{diff(@props.r.createtime)}"),
         Action.new(className: "one-sixth column", action: @props.r.close_url)
       )
@@ -117,6 +110,11 @@ class Action extends Reactable
     @setState(clicked: true)
     dispatcher.dispatch type: JOB_CLOSED, data: @props.action
 
+  componentWillReceiveProps: ->
+    # Make sure we reset flag that button has been clicked for every re-render, even when new
+    # state results in button to disappear
+    @setState(clicked: false)
+
   render: ->
     @div({className: "#{@props.className}"},
       if @props.action
@@ -137,20 +135,17 @@ class ModelStore
       @xhr?.abort()
       status = payload.data
       url = "/api/v1/job/list"
-      @xhr = Api.doGet(url, null, {status: status}, ->
-        emitter.emit JOB_DATA_REQUESTED, status
-        console.debug "Emitted event", JOB_DATA_REQUESTED, status, Date.now()
-      , (okay, data) =>
-        console.error "ERROR", data unless okay
-        emitter.emit JOB_DATA_ARRIVED, okay, data?.rows
-        console.debug "Emitted event", JOB_DATA_ARRIVED, okay, Date.now()
+      @xhr = Api.doGet(url, null, {status: status}, null, (ok, json) =>
+        console.error "ERROR", data unless ok
+        emitter.emit JOB_DATA_ARRIVED, ok, json?.data
+        console.debug "Emitted event", JOB_DATA_ARRIVED, ok, Date.now()
       )
     else if payload.type == JOB_CLOSED
       url = payload.data
-      Api.doGet(url, null, null, null, (okay, data) =>
-        console.error "ERROR", data unless okay
-        emitter.emit JOB_CLOSED_ARRIVED, url, okay
-        console.debug "Emitted event", JOB_CLOSED_ARRIVED, url, okay, Date.now()
+      Api.doGet(url, null, null, null, (ok, json) =>
+        console.error "ERROR", data unless ok
+        emitter.emit JOB_CLOSED_ARRIVED, url, ok
+        console.debug "Emitted event", JOB_CLOSED_ARRIVED, url, ok, Date.now()
       )
     else
       console.warn "Unrecognized dispatch object", payload

@@ -29,8 +29,15 @@ class TimetableView extends Reactable
         TOption.new(name: "Create time", value: "#{@convertTimestamp(timetable.createtime)}"),
         TOption.new(name: "Cancel time", value: "#{@convertTimestamp(timetable.canceltime)}"),
         TOption.new(name: "Template job", value: "#{timetable.job?.name}", type: "href"
-          , href: "#{timetable.job?.url}"),
-        TOption.new(name: "Schedule", value: "#{timetable.cron?.pattern}")
+          , href: "#{timetable.job?.html_url}"),
+        TOption.new(name: "Schedule", value: "#{timetable.cron?.pattern}"),
+        TOption.new(name: "Number of scheduled jobs", value: "#{timetable.stats?.jobs}"),
+        if timetable.stats?.last_time and timetable.stats?.last_job_html_url
+          TOption.new(name: "Latest scheduled job", value: "#{Util.timestampToDate(timetable.stats.last_time)}"
+            , type: "href", href: "#{timetable.stats.last_job_html_url}")
+        else
+          TOption.new(name: "Latest scheduled job", value: "hasn't happened yet")
+
       )
     else
       @div({className: "blankslate"},
