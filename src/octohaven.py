@@ -19,7 +19,7 @@
 from flask import Flask, redirect, render_template, make_response, json, jsonify, abort, request, send_from_directory
 from sqlalchemy import desc
 from config import VERSION, API_VERSION
-from extlogging import Loggable
+from loggable import Loggable
 from sparkmodule import SparkContext
 from sqlmodule import MySQLContext
 from fs import FileManager

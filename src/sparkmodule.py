@@ -19,7 +19,7 @@
 import urllib2, json, re, utils
 from types import ListType
 from webparser import Parser
-from extlogging import Loggable
+from loggable import Loggable
 
 SPARK_REST_ENDPOINT = "/api/v1"
 SPARK_REST_APPLICATIONS = "/applications"
