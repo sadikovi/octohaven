@@ -16,7 +16,6 @@
 # limitations under the License.
 #
 
-import utils, shlex
 from flask import Flask, redirect, render_template, make_response, json, jsonify, abort, request, send_from_directory
 from sqlalchemy import desc
 from config import VERSION, API_VERSION
@@ -24,8 +23,6 @@ from extlogging import Loggable
 from sparkmodule import SparkContext
 from sqlmodule import MySQLContext
 from fs import FileManager
-from types import ListType, DictType, LongType, StringType
-from cron import CronExpression
 from encoders import CustomJSONEncoder
 
 ################################################################

@@ -232,5 +232,5 @@ def heroku(hex=False):
 
 # Return canonicalized name, if name is empty then heroku name is generated
 def getCanonicalName(name):
-    prep = name.strip() if isinstance(name, StringType) else ""
+    prep = name.strip() if isinstance(name, StringType) or isinstance(name, UnicodeType) else ""
     return heroku() if len(prep) == 0 else prep

@@ -153,6 +153,9 @@ class UtilsTestSuite(unittest.TestCase):
         name = utils.getCanonicalName("")
         self.assertTrue(len(name) > 0)
         self.assertEqual(len(name.split("-")), 3)
+        # test for unicode string
+        name = utils.getCanonicalName(u" test-name ")
+        self.assertEqual(name, "test-name")
 
 # Load test suites
 def _suites():
