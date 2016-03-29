@@ -24,6 +24,7 @@ from sparkmodule import SparkContext
 from sqlmodule import MySQLContext
 from fs import FileManager
 from encoders import CustomJSONEncoder
+from pyee import EventEmitter
 
 ################################################################
 # Application setup
@@ -55,6 +56,8 @@ db = MySQLContext(application=app, host=app.config["MYSQL_HOST"],
     port=app.config["MYSQL_PORT"], database=app.config["MYSQL_DATABASE"],
     user=app.config["MYSQL_USER"], password=app.config["MYSQL_PASSWORD"],
     pool_size=5)
+# Global event emitter
+ee = EventEmitter()
 
 # Method to return API endpoint (prefix)
 def api(suffix):
@@ -74,7 +77,20 @@ if app.config["MYSQL_SCHEMA_RESET"]:
     db.drop_all()
 db.create_all()
 
+# Timetable scheduler initialization
+from timetablescheduler import TimetableScheduler
+ts = TimetableScheduler()
+
 def run():
+    @ee.on("timetable-created")
+    def addRunner(uid):
+        ts.addToPool(uid)
+
+    @ee.on("timetable-cancelled")
+    def removeRunner(uid):
+        ts.removeFromPool(uid)
+
+    ts.start()
     app.run(debug=app.debug, host=app.config["HOST"], port=app.config["PORT"])
 
 def test():
@@ -121,19 +137,19 @@ def create_timetable():
 
 @app.route("/create/timetable/job/<int:uid>")
 def create_timetable_job(uid):
-    job = Job.get(uid)
+    job = Job.get(db.session, uid)
     dump = json.dumps(job.json()) if job else ""
     return render_page("create_timetable.html", job=dump)
 
 @app.route("/job/<int:uid>")
 def job_for_uid(uid):
-    job = Job.get(uid)
+    job = Job.get(db.session, uid)
     dump = json.dumps(job.json()) if job else ""
     return render_page("job.html", job=dump)
 
 @app.route("/timetable/<int:uid>")
 def timetable_for_uid(uid):
-    timetable = Timetable.get(uid)
+    timetable = Timetable.get(db.session, uid)
     dump = json.dumps(timetable.json()) if timetable else ""
     return render_page("timetable.html", timetable=dump)
 
@@ -182,27 +198,27 @@ def finder_home_path(rel_path=None):
 def job_list():
     status = request.args.get("status")
     resolvedStatus = status.upper() if status and status.upper() != "ALL" else None
-    return success({"data": [x.json() for x in Job.list(status)]})
+    return success({"data": [x.json() for x in Job.list(db.session, status)]})
 
 @app.route(api("/job/create"), methods=["POST"])
 def job_create():
     obj = request.get_json()
-    job = Job.create(**obj)
+    job = Job.create(db.session, **obj)
     return success(job.json())
 
 @app.route(api("/job/get/<int:uid>"), methods=["GET"])
 def job_get(uid):
-    job = Job.get(uid)
+    job = Job.get(db.session, uid)
     if not job:
         raise StandardError("No job for id '%s'" % uid)
     return success(job.json())
 
 @app.route(api("/job/close/<int:uid>"), methods=["GET"])
 def job_close(uid):
-    job = Job.get(uid)
+    job = Job.get(db.session, uid)
     if not job:
         raise StandardError("No job for id '%s'" % uid)
-    Job.close(job)
+    Job.close(db.session, job)
     return success(job.json())
 
 ################################################################
@@ -242,34 +258,34 @@ def template_delete_and_list(uid):
 @app.route(api("/timetable/create"), methods=["POST"])
 def timetable_create():
     opts = request.get_json()
-    timetable = Timetable.create(**opts)
+    timetable = Timetable.create(db.session, **opts)
     return success(timetable.json())
 
 @app.route(api("/timetable/list"), methods=["GET"])
 def timetable_list():
     status = request.args.get("status")
     resolvedStatus = status.upper() if status and status.upper() != "ALL" else None
-    timetables = Timetable.list(resolvedStatus)
+    timetables = Timetable.list(db.session, resolvedStatus)
     return success({"data": [x.json() for x in timetables]})
 
 @app.route(api("/timetable/get/<int:uid>"), methods=["GET"])
 def timetable_get(uid):
-    timetable = Timetable.get(uid)
+    timetable = Timetable.get(db.session, uid)
     if not timetable:
         raise StandardError("No timetable for id '%s'" % uid)
     return success(timetable.json())
 
 @app.route(api("/timetable/<action>/<int:uid>"), methods=["GET"])
 def timetable_action(action, uid):
-    timetable = Timetable.get(uid)
+    timetable = Timetable.get(db.session, uid)
     if not timetable:
         raise StandardError("No timetable for id '%s'" % uid)
     if action == "pause":
-        Timetable.pause(timetable)
+        Timetable.pause(db.session, timetable)
     elif action == "resume":
-        Timetable.resume(timetable)
+        Timetable.resume(db.session, timetable)
     elif action == "cancel":
-        Timetable.cancel(timetable)
+        Timetable.cancel(db.session, timetable)
     else:
         raise StandardError("Invalid action '%s'" % action)
     return success(timetable.json())

@@ -50,7 +50,6 @@ def addTests(name, moduleName):
 # collect all the tests in the system
 def collectSystemTests(suites):
     addTests2("utils")
-    addTests2("sqlmodule")
     addTests2("sparkmodule")
     addTests2("fs")
     addTests2("cron")

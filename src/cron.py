@@ -16,10 +16,9 @@
 # limitations under the License.
 #
 
-import re
+import re, utils
 from datetime import datetime
 from types import IntType
-from utils import *
 
 # mapping of week day names to numbers
 WEEKDAYS = {"MON": 1, "TUE": 2, "WED": 3, "THU": 4, "FRI": 5, "SAT": 6, "SUN": 7}
@@ -50,7 +49,7 @@ class CronExpression(object):
         self.weekday = weekday
         self.year = year
 
-    # resolve each part, it can have three values: star, range, single value
+    # Resolve each part, it can have three values: star, range, single value
     @classmethod
     def resolve(cls, part, rng, alter=None):
         part = part.upper()
@@ -115,8 +114,8 @@ class CronExpression(object):
             raise StandardError("Pattern is invalid or may result in 0 matches")
         return res
 
-    # compare value with parsed expression for situations where it is a star, single value or range
-    @private
+    # Compare value with parsed expression for situations where it is a star, single value or range
+    @utils.private
     def compare(self, value, expression):
         if expression is None:
             return True
@@ -126,9 +125,9 @@ class CronExpression(object):
             return value in expression
         return False
 
-    # returns True, if timestamp matches pattern. Timestamp is in milliseconds
+    # Return True, if timestamp matches pattern. Timestamp is in milliseconds
     def ismatch(self, timestamp):
-        date = datetime.utcfromtimestamp(timestamp / 1000)
+        date = utils.timestampToDate(timestamp)
         # time parameters
         return self.compare(date.minute, self.minute) and self.compare(date.hour, self.hour) and \
             self.compare(date.day, self.day) and self.compare(date.month, self.month) and \

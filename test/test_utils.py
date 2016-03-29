@@ -157,6 +157,13 @@ class UtilsTestSuite(unittest.TestCase):
         name = utils.getCanonicalName(u" test-name ")
         self.assertEqual(name, "test-name")
 
+    def test_dateConversions(self):
+        now = utils.currentTimeMillis()
+        date = utils.timestampToDate(now)
+        maybeNow = utils.dateToTimestamp(date)
+        # comparison is in seconds, since one of the functions drops milliseconds
+        self.assertEqual(maybeNow / 1000, now / 1000)
+
 # Load test suites
 def _suites():
     return [

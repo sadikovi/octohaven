@@ -20,8 +20,9 @@ import utils
 from flask import json
 from sqlalchemy import desc
 from types import LongType
-from octohaven import db, api
+from octohaven import db, api, ee
 from cron import CronExpression
+from job import Job
 
 class Timetable(db.Model):
     uid = db.Column(db.Integer, primary_key=True, autoincrement=True)
@@ -73,7 +74,7 @@ class Timetable(db.Model):
 
     @classmethod
     @utils.sql
-    def create(cls, **opts):
+    def create(cls, session, **opts):
         if "name" not in opts:
             raise StandardError("Expected 'name' key in %s" % json.dumps(opts))
         if "cron" not in opts:
@@ -83,45 +84,81 @@ class Timetable(db.Model):
         timetable = Timetable(name=opts["name"], status=cls.ACTIVE,
             createtime=utils.currentTimeMillis(), canceltime=None, cron=opts["cron"],
             job_uid=opts["job_uid"])
-        db.session.add(timetable)
-        db.session.commit()
+        session.add(timetable)
+        session.commit()
+        ee.emit("timetable-created", timetable.uid)
         return timetable
 
     @classmethod
     @utils.sql
-    def get(cls, uid):
-        return cls.query.get(uid)
+    def get(cls, session, uid):
+        return session.query(cls).get(uid)
 
     @classmethod
     @utils.sql
-    def list(cls, status):
-        filtered = cls.query.filter_by(status = status) if status in cls.STATUSES else cls.query
-        return filtered.order_by(desc(cls.createtime)).all()
+    def list(cls, session, status=None):
+        query = session.query(cls)
+        if status in cls.STATUSES:
+            query = query.filter_by(status = status)
+        return query.order_by(desc(cls.createtime)).all()
+
+    # Method retrieves all non-cancelled timetables that we need to scheduling
+    @classmethod
+    @utils.sql
+    def listEnabled(cls, session):
+        filtered = session.query(cls).filter(cls.status != cls.CANCELLED)
+        return filtered.all()
 
     @classmethod
     @utils.sql
-    def pause(cls, timetable):
+    def pause(cls, session, timetable):
         if not timetable.canPause():
             raise StandardError("Cannot pause timetable")
         timetable.status = cls.PAUSED
-        db.session.commit()
+        session.commit()
 
     @classmethod
     @utils.sql
-    def resume(cls, timetable):
+    def resume(cls, session, timetable):
         if not timetable.canResume():
             raise StandardError("Cannot resume timetable")
         timetable.status = cls.ACTIVE
-        db.session.commit()
+        session.commit()
 
     @classmethod
     @utils.sql
-    def cancel(cls, timetable):
+    def cancel(cls, session, timetable):
         if not timetable.canCancel():
             raise StandardError("Cannot cancel timetable")
         timetable.status = cls.CANCELLED
         timetable.setCanceltime(utils.currentTimeMillis())
-        db.session.commit()
+        session.commit()
+        ee.emit("timetable-cancelled", timetable.uid)
+
+    # Method returns fresh copy of job with zero delay, because we are launching it using timetable
+    # Another note is that we are changing job name to reflect periodic nature and timetable launch
+    @classmethod
+    @utils.sql
+    def jobCopy(cls, timetable):
+        now = utils.currentTimeMillis()
+        # create dummy job, we overwrite some parameters later
+        deepCopy = timetable.job.jobCopy(name="%s-T-%s" % (timetable.name, now), status=Job.READY,
+            priority=now, createtime=now, submittime=now)
+        return deepCopy
+
+    @classmethod
+    @utils.sql
+    def registerNewJob(cls, session, timetable):
+        session.begin(subtransactions=True)
+        copiedJob = cls.jobCopy(timetable)
+        session.add(copiedJob)
+        session.commit()
+        # add statistics after saving job
+        session.begin(subtransactions=True)
+        stats = TimetableStats(timetable.uid, copiedJob.uid, copiedJob.createtime)
+        session.add(stats)
+        session.commit()
+        return copiedJob
 
     def json(self):
         # Construct statistics
@@ -155,24 +192,10 @@ class TimetableStats(db.Model):
     job_uid = db.Column(db.Integer, db.ForeignKey("job.uid"))
     createtime = db.Column(db.BigInteger, nullable=False)
 
-    def __init__(self, timetable_uid, job_uid, createtime):
+    def __init__(self, timetable_uid, job_uid, createtime=utils.currentTimeMillis()):
         self.timetable_uid = timetable_uid
         self.job_uid = job_uid
         self.createtime = createtime
-
-    @classmethod
-    @utils.sql
-    def create(cls, **opts):
-        if "timetable_uid" not in opts:
-            raise StandardError("Expected 'timetable_uid' key in %s" % json.dumps(opts))
-        if "job_uid" not in opts:
-            raise StandardError("Expected 'job_uid' key in %s" % json.dumps(opts))
-        # We always insert current timestamp, it cannot be overwritten
-        stats = TimetableStats(timetable_uid=opts["timetable_uid"], job_uid=opts["job_uid"],
-            createtime=utils.currentTimeMillis())
-        db.session.add(stats)
-        db.session.commit()
-        return stats
 
     def json(self):
         return {

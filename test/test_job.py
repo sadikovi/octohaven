@@ -111,58 +111,58 @@ class JobTestSuite(unittest.TestCase):
             self.assertEquals(job.canClose(), False)
 
     def test_add(self):
-        job = Job.create(**self.opts)
-        arr = Job.list(None)
+        job = Job.create(db.session, **self.opts)
+        arr = Job.list(db.session, None)
         self.assertTrue(len(arr), 1)
 
     def test_add1(self):
         self.opts["delay"] = 2000
-        job = Job.create(**self.opts)
+        job = Job.create(db.session, **self.opts)
         self.assertEquals(job.submittime, job.createtime + 2000 * 1000)
         # negative delay equals to 0 seconds
         self.opts["delay"] = -2000
-        job = Job.create(**self.opts)
+        job = Job.create(db.session, **self.opts)
         self.assertEquals(job.submittime, job.createtime)
 
     def test_get(self):
-        job = Job.create(**self.opts)
-        res = Job.get(job.uid)
+        job = Job.create(db.session, **self.opts)
+        res = Job.get(db.session, job.uid)
         self.assertEquals(res.json(), job.json())
         # fetch job with non-existent job id
-        res = Job.get("")
+        res = Job.get(db.session, "")
         self.assertEquals(res, None)
 
     def test_list(self):
         i = 0L
         for x in range(10):
-            Job.create(**self.opts)
-        arr = Job.list(None)
+            Job.create(db.session, **self.opts)
+        arr = Job.list(db.session, None)
         self.assertEquals(len(arr), 10)
         times = [x.createtime for x in arr]
         self.assertEquals(times, sorted(times, reverse=True))
         # test selecting status
-        arr = Job.list(Job.READY, limit=1)
+        arr = Job.list(db.session, Job.READY, limit=1)
         self.assertEquals(len(arr), 1)
-        arr = Job.list(Job.READY, limit=0)
+        arr = Job.list(db.session, Job.READY, limit=0)
         self.assertEquals(len(arr), 1)
 
     def test_close(self):
-        job = Job.create(**self.opts)
+        job = Job.create(db.session, **self.opts)
         self.assertEquals(job.status, Job.READY)
-        Job.close(job)
+        Job.close(db.session, job)
         self.assertEquals(job.status, Job.CLOSED)
         # try closing already closed job
         with self.assertRaises(StandardError):
-            Job.close(job)
+            Job.close(db.session, job)
         with self.assertRaises(StandardError):
             job.status = Job.RUNNING
-            Job.close(job)
+            Job.close(db.session, job)
         with self.assertRaises(StandardError):
             job.status = Job.FINISHED
-            Job.close(job)
+            Job.close(db.session, job)
 
     def test_json(self):
-        job = Job.create(**self.opts)
+        job = Job.create(db.session, **self.opts)
         obj = job.json()
         self.assertEquals(obj["name"], job.name)
         self.assertEquals(obj["status"], job.status)
@@ -172,6 +172,47 @@ class JobTestSuite(unittest.TestCase):
         self.assertEquals(obj["jar"], job.jar)
         self.assertEquals(obj["options"], job.getSparkOptions())
         self.assertEquals(obj["jobconf"], job.getJobConf())
+
+    def test_jobCopy(self):
+        job = Job.create(db.session, **self.opts)
+        copy = job.jobCopy(name="a", status=Job.READY, priority=1, createtime=2L, submittime=2L)
+        self.assertEquals(copy.uid, None)
+        self.assertEquals(copy.name, "a")
+        self.assertEquals(copy.status, Job.READY)
+        self.assertEquals(copy.priority, 1)
+        self.assertEquals(copy.createtime, 2L)
+        self.assertEquals(copy.submittime, 2L)
+        self.assertEquals(copy.sparkappid, None)
+        self.assertEquals(copy.starttime, None)
+        self.assertEquals(copy.finishtime, None)
+        # these properties should be the same
+        self.assertEquals(copy.options, job.options)
+        self.assertEquals(copy.jobconf, job.jobconf)
+        self.assertEquals(copy.entrypoint, job.entrypoint)
+        self.assertEquals(copy.jar, job.jar)
+
+    def test_jobCopy1(self):
+        self.opts["status"] = Job.DELAYED
+        self.opts["submittime"] = 100L
+        self.opts["sparkappid"] = "1-2-3"
+        self.opts["starttime"] = 101L
+        self.opts["finishtime"] = 110L
+        job = Job.create(db.session, **self.opts)
+        copy = job.jobCopy(name="a", status=Job.READY, priority=1, createtime=2L, submittime=2L)
+        self.assertEquals(copy.uid, None)
+        self.assertEquals(copy.name, "a")
+        self.assertEquals(copy.status, Job.READY)
+        self.assertEquals(copy.priority, 1)
+        self.assertEquals(copy.createtime, 2L)
+        self.assertEquals(copy.submittime, 2L)
+        self.assertEquals(copy.sparkappid, None)
+        self.assertEquals(copy.starttime, None)
+        self.assertEquals(copy.finishtime, None)
+        # these properties should be the same
+        self.assertEquals(copy.options, job.options)
+        self.assertEquals(copy.jobconf, job.jobconf)
+        self.assertEquals(copy.entrypoint, job.entrypoint)
+        self.assertEquals(copy.jar, job.jar)
 
 # Load test suites
 def _suites():

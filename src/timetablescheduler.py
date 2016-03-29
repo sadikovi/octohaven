@@ -4,10 +4,12 @@ import utils
 from loggable import Loggable
 from threading import Timer, Lock
 from timetable import Timetable
-from octohaven import ee, db
+from octohaven import db
+from flask.ext.sqlalchemy import SignallingSession
 
-# Minimal interval for timetable scheduling, it does not make sense keep it less than 1 minute
-MINIMAL_INTERVAL = 5.0
+# Minimal interval in seconds for timetable scheduling.
+# It does not make sense keep it less than 1 minute
+MINIMAL_INTERVAL = 60.0
 
 # Action lock for all runners
 lock = Lock()
@@ -19,33 +21,52 @@ def action(runner):
         raise RuntimeError("Runner is undefined")
     uid = runner.uid
     interval = runner.interval
-
+    # Beginning of the processing of runner, used to correct next interval, and check against
+    # cron expression, it is a beginning of the periodic operation
+    begin = utils.currentTimeMillis()
+    # Session per thread, have to close it at the end of the procedure
+    session = SignallingSession(db)
     try:
-        lock.acquire()
-        runner.logger.info("Inspecting runner '%s' with interval %s", uid, interval)
-        # timetable = Timetable.get(uid)
-        timetable = None
-        if timetable:
-            if timetable.status == Timetable.ACTIVE:
-                runner.logger.info("Runner: '%s' - timetable is active", uid)
-                runner.logger.info("json: %s", timetable.json())
-            elif timetable.status == Timetable.PAUSED:
-                runner.logger.info("Runner: '%s' - timetable is paused", uid)
-                runner.logger.info("json: %s", timetable.json())
+        runner.logger.info("Start inspecting runner '%s' with interval %s", uid, interval)
+        timetable = Timetable.get(session, uid)
+        # Check if timetable is active, if not we skip update, otherwise match date with cron
+        if timetable and timetable.status == Timetable.ACTIVE:
+            runner.logger.info("Runner '%s' - timetable is active", uid)
+            matched = timetable.cronExpression().ismatch(begin)
+            if matched:
+                # create new job as a copy of job used to create timetable, and also add to
+                # timetable statistics, note that we ignore delay, and update name of the job
+                runner.logger.debug("Runner '%s' preparing to launch new job", uid)
+                copy = Timetable.registerNewJob(session, timetable)
+                runner.logger.info("Runner '%s' launched new job '%s' (%s)", uid, copy.name,
+                    copy.uid)
+            else:
+                runner.logger.debug("Runner '%s' skipped update, cron match is False", uid)
+        elif timetable and timetable.status == Timetable.PAUSED:
+            runner.logger.info("Runner '%s' - timetable is paused", uid)
+        # commit all changes made
+        session.commit()
     except Exception as e:
         runner.logger.error("Runner '%s' failed to launch", uid)
         runner.logger.exception(e.message)
     finally:
-        lock.release()
+        # Close session after thread is complete
+        session.close()
         # Create timer for a subsequent lookup, if runner is still active
         if runner.enabled:
-            timer = Timer(MINIMAL_INTERVAL, action, [runner])
+            # compute left seconds for next launch
+            secondsElapsed = (begin / 1000) % MINIMAL_INTERVAL
+            correctedInterval = MINIMAL_INTERVAL - secondsElapsed
+            # Spawning another thread with updated interval
+            timer = Timer(correctedInterval, action, [runner])
             timer.daemon = True
             timer.start()
-            runner.logger.debug("Runner '%s' spawned another thread", runner.uid)
+            runner.logger.debug("Runner '%s' spawned another thread", uid)
+            runner.logger.debug("Runner '%s' uses updated interval '%.3f' <= (%.3f)",
+                uid, correctedInterval, secondsElapsed)
         else:
-            runner.logger.debug("Runner '%s' has been disabled", runner.uid)
-            runner.logger.debug("Runner '%s' requested clean up", runner.uid)
+            runner.logger.debug("Runner '%s' has been disabled", uid)
+            runner.logger.debug("Runner '%s' requested clean up", uid)
             runner = None
 
 class TimetableRunner(Loggable, object):
@@ -86,11 +107,13 @@ class TimetableScheduler(Loggable, object):
     def addToPool(self, uid):
         try:
             pool_lock.acquire()
-            if uid:
-                self.logger.info("Launching runner for timetable '%s'", uid)
+            if uid and uid not in self.pool:
                 self.pool[uid] = TimetableRunner(uid, MINIMAL_INTERVAL)
+                self.logger.info("Launched runner '%s'", uid)
+            elif uid and uid in self.pool:
+                self.logger.warn("Attempt to launch already added runner '%s', skipped", uid)
             else:
-                self.logger.error("Invalid uid %s, runner could not be launched" % uid)
+                self.logger.error("Invalid uid '%s', runner could not be launched" % uid)
         finally:
             pool_lock.release()
 
@@ -111,7 +134,10 @@ class TimetableScheduler(Loggable, object):
     # Generic start function, pulls all active / paused timetables and registers runners
     def start(self):
         # We pull all non-cancelled jobs from it to spawn new scheduling threads
-        self.launch(Timetable.listEnabled())
+        session = SignallingSession(db)
+        arr = Timetable.listEnabled(session)
+        session.close()
+        self.launch(arr)
 
     # Generic stop function, performs clean up of the pool
     def stop(self):

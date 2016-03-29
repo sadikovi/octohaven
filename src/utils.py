@@ -24,13 +24,13 @@ from types import UnicodeType, StringType, DictType, ListType
 ################################################################
 # Decorators
 ################################################################
-# private decorator
+# "private" decorator
 def private(f):
     def wrapper(*args, **kw):
         return f(*args, **kw)
     return wrapper
 
-# override decorator
+# "override" decorator
 def override(f):
     def wrapper(*args, **kw):
         return f(*args, **kw)
@@ -45,7 +45,7 @@ def sql(f):
 ################################################################
 # Safe conversions
 ################################################################
-# getOrElse method for json
+# "getOrElse" method for json
 # raw is a string in json format, value is an alternative in case json fails
 # we also convert all the string values from 'unicode' to 'str'
 def jsonOrElse(raw, value):
@@ -70,14 +70,14 @@ def jsonOrElse(raw, value):
     except ValueError:
         return value
 
-# getOrElse for integer, returns default, if cannot parse raw string, or object
+# "getOrElse" for integer, returns default, if cannot parse raw string, or object
 def intOrElse(raw, value):
     try:
         return int(raw)
     except (ValueError, TypeError):
         return value
 
-# getOrElse for boolean, returns default, if cannot parse raw string, or object
+# "getOrElse" for boolean, returns default, if cannot parse raw string, or object
 def boolOrElse(raw, value):
     try:
         pre = raw.lower()
@@ -128,7 +128,7 @@ def validatePriority(value):
         raise StandardError("Priority is incorrect: %s" % value)
     return value
 
-# if "as_uri_parts" is True, returns result as tuple (uri, host, port)
+# If "as_uri_parts" is True, returns result as tuple (uri, host, port)
 def validateMasterUrl(masterurl, as_uri_parts=False):
     groups = _parseRe(r"^spark://([\w\.-]+):(\d+)$", masterurl, "Spark Master URL is incorrect: %s")
     if as_uri_parts:
@@ -138,7 +138,7 @@ def validateMasterUrl(masterurl, as_uri_parts=False):
     else:
         return masterurl
 
-# if "as_uri_parts" is True, returns result as tuple (uri, host, port)
+# If "as_uri_parts" is True, returns result as tuple (uri, host, port)
 def validateUiUrl(uiurl, as_uri_parts=False):
     groups = _parseRe(r"^http(s)?://([\w\.-]+):(\d+)$", uiurl, "Spark UI URL is incorrect: %s")
     if as_uri_parts:
@@ -152,7 +152,7 @@ def validateEntrypoint(entrypoint):
     return _parseRe(r"^(\w+)(\.\w+)*$", entrypoint, "Entrypoint is incorrect: %s").group(0)
 
 def validateJarPath(jar):
-    # do not validate on existence, only on path structure
+    # Do not validate on existence, only on path structure
     if not jar:
         raise StandardError("Jar file is empty, please select/specify valid jar file")
     ok = os.path.isabs(jar) and jar.lower().endswith(".jar")
@@ -176,13 +176,18 @@ def validateMySQLJDBC(connection):
 ################################################################
 # Miscellaneous methods
 ################################################################
-# return current time in milliseconds
+# Return current time in milliseconds
 def currentTimeMillis():
     return long(time.time() * 1000.0)
 
-# date to timestamp (in milliseconds) conversion
+# Date to timestamp (in milliseconds) conversion, note that milliseconds are dropped during
+# conversion
 def dateToTimestamp(date):
-    return (date - datetime(1970, 1, 1)).total_seconds() * 1000L
+    return long(time.mktime(date.timetuple()) * 1000.0)
+
+# Timestamp (in milliseconds) to date conversion
+def timestampToDate(timestamp):
+    return datetime.fromtimestamp(timestamp / 1000)
 
 # Heroku name generator
 def heroku(hex=False):

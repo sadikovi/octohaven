@@ -47,10 +47,9 @@ class Job(db.Model):
 
     def __init__(self, name, status, priority, createtime, submittime, entrypoint, jar, dmemory,
         ememory, options, jobconf):
-        # canonicalize name
+        # Canonicalize name
         self.name = utils.getCanonicalName(name)
-
-        # make sure that timestamps are longs
+        # Make sure that timestamps are longs
         utils.assertInstance(createtime, LongType)
         if not createtime > 0:
             raise StandardError("Create time must be > 0, got %s" % createtime)
@@ -60,33 +59,52 @@ class Job(db.Model):
             raise StandardError("Create time must be > 0, got %s" % submittime)
         self.submittime = submittime
 
-        # check status
+        # Check status
         if status not in self.STATUSES:
             raise StandardError("Unrecognized status '%s'" % status)
         self.status = status
-        # validate priority for the job
+        # Validate priority for the job
         self.priority = utils.validatePriority(priority)
 
-        # parse Spark options into key-value pairs
+        # Parse Spark options into key-value pairs
         parsedOptions = options if isinstance(options, DictType) else {}
         if not parsedOptions:
             cli = filter(lambda x: len(x) == 2, [x.split("=", 1) for x in shlex.split(str(options))])
             for pre in cli:
                 parsedOptions[pre[0]] = pre[1]
-        # manually set driver or executor memory takes precedence over Spark options
+        # Manually set driver or executor memory takes precedence over Spark options
         parsedOptions["spark.driver.memory"] = utils.validateMemory(dmemory)
         parsedOptions["spark.executor.memory"] = utils.validateMemory(ememory)
-        # for storing in database options must be a string
+        # For storing in database options must be a string
         self.options = json.dumps(parsedOptions)
 
-        # parse job configuration/options into list of values
+        # Parse job configuration/options into list of values
         parsedJobConf = jobconf if isinstance(jobconf, ListType) else shlex.split(str(jobconf))
         self.jobconf = json.dumps(parsedJobConf)
 
-        # entrypoint for the Spark job
+        # Entrypoint for the Spark job
         self.entrypoint = utils.validateEntrypoint(entrypoint)
-        # jar file path
+        # Jar file path
         self.jar = utils.validateJarPath(jar)
+
+        # Properties with None default values (methods provided to set them)
+        self.sparkappid = None
+        self.starttime = None
+        self.finishtime = None
+
+    # Return deep copy of the job, note that this instance is not persistent in database
+    def jobCopy(self, name, status, priority, createtime, submittime):
+        # Create dummy job, we overwrite some parameters later, we also have to specify dummy
+        # memory for driver and executors to pass validation. Eventually we just reassign the
+        # same options from current job
+        deepCopy = Job(name=name, status=status, priority=priority, createtime=createtime,
+            submittime=submittime, entrypoint=self.entrypoint, jar=self.jar, dmemory="1g",
+            ememory="1g", options={}, jobconf=[])
+        # options below are completely overwritten
+        deepCopy.options = self.options
+        deepCopy.jobconf = self.jobconf
+        # Options such as sparkappid, starttime, and finishtime will be set to None automatically
+        return deepCopy
 
     def setAppId(self, appId):
         self.sparkappid = appId
@@ -112,7 +130,7 @@ class Job(db.Model):
 
     @classmethod
     @utils.sql
-    def create(cls, **opts):
+    def create(cls, session, **opts):
         # Resolve primary options
         createtime = utils.currentTimeMillis()
         # Resolve delay in seconds, if delay is negative it is reset to 0
@@ -134,29 +152,31 @@ class Job(db.Model):
             entrypoint=opts["entrypoint"], jar=opts["jar"],
             dmemory=opts["dmemory"], ememory=opts["ememory"],
             options=opts["options"], jobconf=opts["jobconf"])
-        db.session.add(job)
-        db.session.commit()
+        session.add(job)
+        session.commit()
         return job
 
     @classmethod
     @utils.sql
-    def get(cls, uid):
-        return cls.query.get(uid)
+    def get(cls, session, uid):
+        return session.query(cls).get(uid)
 
     @classmethod
     @utils.sql
-    def list(cls, status, limit=100):
-        filtered = cls.query.filter_by(status = status) if status in cls.STATUSES else cls.query
+    def list(cls, session, status, limit=100):
+        query = session.query(cls)
+        if status in cls.STATUSES:
+            query = query.filter_by(status = status)
         limit = limit if limit > 0 else 1
-        return filtered.order_by(desc(cls.createtime)).limit(limit).all()
+        return query.order_by(desc(cls.createtime)).limit(limit).all()
 
     @classmethod
     @utils.sql
-    def close(cls, job):
+    def close(cls, session, job):
         if not job.canClose():
             raise StandardError("Cannot close job")
         job.status = cls.CLOSED
-        db.session.commit()
+        session.commit()
 
     def json(self):
         return {
