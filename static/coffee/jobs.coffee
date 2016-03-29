@@ -90,7 +90,8 @@ class Status extends Reactable
 class Link extends Reactable
   render: ->
     @div({className: "#{@props.className}"},
-      @a({className: "css-truncate css-truncate-target", href: "#{@props.url}"}, "#{@props.label}")
+      @a({className: "css-truncate css-truncate-target", href: "#{@props.url}"
+        , title: "#{@props.label}"}, "#{@props.label}")
     )
 
 class Created extends Reactable

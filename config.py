@@ -54,4 +54,4 @@ class Options(object):
 
     # Turn options off for distribution
     DEBUG = False
-    TESTING = False
+    TESTING = True

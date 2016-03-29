@@ -107,7 +107,8 @@ class TimetableRecord extends Reactable
           @span({className: "#{timetableStatusLabel(@props.status)}"}, "#{@props.status}"),
         )
         @div({className: "one-third column"},
-          @a({className: "css-truncate css-truncate-target", href: "#{@props.url}"}, "#{@props.name}"),
+          @a({className: "css-truncate css-truncate-target", href: "#{@props.url}"
+            , title: "#{@props.name}"}, "#{@props.name}"),
         ),
         @div({className: "one-third column"},
           @div({}, "Jobs so far: #{@props.stats.jobs}"),
