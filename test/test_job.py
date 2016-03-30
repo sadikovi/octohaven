@@ -1,8 +1,25 @@
 #!/usr/bin/env python
 
+#
+# Copyright 2015 sadikovi
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
 import unittest, json
 import src.utils as utils
 from types import DictType
+from src.sparkmodule import SPARK_OCTOHAVEN_JOB_ID
 from src.octohaven import db, sparkContext
 from src.job import Job
 from src.timetable import Timetable, TimetableStats
@@ -217,19 +234,30 @@ class JobTestSuite(unittest.TestCase):
     def test_execCommand(self):
         job = Job.create(db.session, **self.opts)
         cmd = job.execCommand(sparkContext)
-        self.assertEqual(cmd, ["spark-submit", "--name", "test-job", "--master",
-            "spark://sandbox:7077", "--conf", "spark.executor.memory=4g", "--conf",
-            "spark.driver.memory=4g", "--conf", "spark.file.overwrite=true", "--conf",
-            "spark.shuffle.spill=true", "--class", "com.test.Main", "/tmp/file.jar", "a", "b", "c"])
+        self.assertEqual(sorted(cmd), sorted(["spark-submit", "--name", "test-job", "--master",
+            "spark://sandbox:7077", "--conf", "%s=%s" % (SPARK_OCTOHAVEN_JOB_ID, job.uid),
+            "--conf", "spark.executor.memory=4g", "--conf", "spark.driver.memory=4g",
+            "--conf", "spark.file.overwrite=true", "--conf", "spark.shuffle.spill=true",
+            "--class", "com.test.Main", "/tmp/file.jar", "a", "b", "c"]))
 
     def test_execCommandWithExtraOptions(self):
         job = Job.create(db.session, **self.opts)
         cmd = job.execCommand(sparkContext, ["foo=bar"], {"spark.sql.shuffle.partitions": 200})
-        self.assertEqual(cmd, ["spark-submit", "--name", "test-job", "--master",
-            "spark://sandbox:7077", "--conf", "spark.executor.memory=4g", "--conf",
-            "spark.driver.memory=4g", "--conf", "spark.file.overwrite=true", "--conf",
-            "spark.shuffle.spill=true", "--conf", "spark.sql.shuffle.partitions=200",
-            "--class", "com.test.Main", "/tmp/file.jar", "a", "b", "c", "foo=bar"])
+        self.assertEqual(sorted(cmd), sorted(["spark-submit", "--name", "test-job", "--master",
+            "spark://sandbox:7077", "--conf", "%s=%s" % (SPARK_OCTOHAVEN_JOB_ID, job.uid),
+            "--conf", "spark.executor.memory=4g", "--conf", "spark.driver.memory=4g",
+            "--conf", "spark.file.overwrite=true", "--conf", "spark.shuffle.spill=true",
+            "--conf", "spark.sql.shuffle.partitions=200", "--class", "com.test.Main",
+            "/tmp/file.jar", "a", "b", "c", "foo=bar"]))
+
+    def test_execCommandOrder(self):
+        job = Job.create(db.session, **self.opts)
+        cmd = job.execCommand(sparkContext, ["foo=bar"], {"spark.sql.shuffle.partitions": 200})
+        anon = [x for x in cmd if x.startswith("--") or x == "spark-submit" or x.endswith(".jar")]
+        self.assertEqual(anon, ["spark-submit", "--name", "--master", "--conf", "--conf", "--conf",
+            "--conf", "--conf", "--conf", "--class", "/tmp/file.jar"])
+        self.assertEqual(len(cmd), 24)
+        self.assertEqual(cmd[20:], ["a", "b", "c", "foo=bar"])
 
 # Load test suites
 def _suites():
