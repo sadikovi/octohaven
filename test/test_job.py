@@ -3,7 +3,7 @@
 import unittest, json
 import src.utils as utils
 from types import DictType
-from src.octohaven import db
+from src.octohaven import db, sparkContext
 from src.job import Job
 from src.timetable import Timetable, TimetableStats
 
@@ -213,6 +213,23 @@ class JobTestSuite(unittest.TestCase):
         self.assertEquals(copy.jobconf, job.jobconf)
         self.assertEquals(copy.entrypoint, job.entrypoint)
         self.assertEquals(copy.jar, job.jar)
+
+    def test_execCommand(self):
+        job = Job.create(db.session, **self.opts)
+        cmd = job.execCommand(sparkContext)
+        self.assertEqual(cmd, ["spark-submit", "--name", "test-job", "--master",
+            "spark://sandbox:7077", "--conf", "spark.executor.memory=4g", "--conf",
+            "spark.driver.memory=4g", "--conf", "spark.file.overwrite=true", "--conf",
+            "spark.shuffle.spill=true", "--class", "com.test.Main", "/tmp/file.jar", "a", "b", "c"])
+
+    def test_execCommandWithExtraOptions(self):
+        job = Job.create(db.session, **self.opts)
+        cmd = job.execCommand(sparkContext, ["foo=bar"], {"spark.sql.shuffle.partitions": 200})
+        self.assertEqual(cmd, ["spark-submit", "--name", "test-job", "--master",
+            "spark://sandbox:7077", "--conf", "spark.executor.memory=4g", "--conf",
+            "spark.driver.memory=4g", "--conf", "spark.file.overwrite=true", "--conf",
+            "spark.shuffle.spill=true", "--conf", "spark.sql.shuffle.partitions=200",
+            "--class", "com.test.Main", "/tmp/file.jar", "a", "b", "c", "foo=bar"])
 
 # Load test suites
 def _suites():

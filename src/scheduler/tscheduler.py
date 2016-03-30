@@ -1,21 +1,36 @@
 #!/usr/bin/env python
 
-import utils
-from loggable import Loggable
-from threading import Timer, Lock
-from timetable import Timetable
-from octohaven import db
+#
+# Copyright 2015 sadikovi
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
+import src.utils as utils
 from flask.ext.sqlalchemy import SignallingSession
+from threading import Timer, Lock
+from src.loggable import Loggable
+from src.timetable import Timetable
+from src.octohaven import db
 
 # Minimal interval in seconds for timetable scheduling.
 # It does not make sense keep it less than 1 minute
 MINIMAL_INTERVAL = 60.0
 
-# Action lock for all runners
-lock = Lock()
 # Pool lock for updates
 pool_lock = Lock()
 
+@utils.private
 def action(runner):
     if not runner:
         raise RuntimeError("Runner is undefined")
@@ -69,6 +84,7 @@ def action(runner):
             runner.logger.debug("Runner '%s' requested clean up", uid)
             runner = None
 
+# Unit of execution, assigned to a particular timetable
 class TimetableRunner(Loggable, object):
     def __init__(self, uid, interval):
         super(TimetableRunner, self).__init__()
@@ -92,58 +108,52 @@ class TimetableRunner(Loggable, object):
 # every one of them with 60 seconds interval. If timetable is paused thread is not killed and keeps
 # running, though it stops lauching jobs. Once timetable is cancelled it is updated and removed from
 # the pool. Once new timetable is created, it is registered in the scheduler pool.
-class TimetableScheduler(Loggable, object):
-    def __init__(self):
-        super(TimetableScheduler, self).__init__()
-        # Pool is a dictionary with key being timetable id and value being a thread
-        self.pool = {}
+scheduler = Loggable("timetable-scheduler")
+scheduler.pool = {}
 
-    # Generic sequence launcher
-    def launch(self, timetables):
-        for timetable in timetables:
-            self.addToPool(timetable.uid)
+# Add new timetable and register new runner for the pool
+@utils.private
+def addToPool(uid):
+    try:
+        pool_lock.acquire()
+        if uid and uid not in scheduler.pool:
+            scheduler.pool[uid] = TimetableRunner(uid, MINIMAL_INTERVAL)
+            scheduler.logger.info("Launched runner '%s'", uid)
+        elif uid and uid in scheduler.pool:
+            scheduler.logger.warn("Attempt to launch already added runner '%s', skipped", uid)
+        else:
+            scheduler.logger.error("Invalid uid '%s', runner could not be launched" % uid)
+    finally:
+        pool_lock.release()
 
-    # Add new timetable and register new runner for the pool
-    def addToPool(self, uid):
-        try:
-            pool_lock.acquire()
-            if uid and uid not in self.pool:
-                self.pool[uid] = TimetableRunner(uid, MINIMAL_INTERVAL)
-                self.logger.info("Launched runner '%s'", uid)
-            elif uid and uid in self.pool:
-                self.logger.warn("Attempt to launch already added runner '%s', skipped", uid)
-            else:
-                self.logger.error("Invalid uid '%s', runner could not be launched" % uid)
-        finally:
-            pool_lock.release()
+# Remove cancelled runner from the pool to clean it up
+@utils.private
+def removeFromPool(uid):
+    try:
+        pool_lock.acquire()
+        if uid not in scheduler.pool:
+            scheduler.logger.warn("Requested to remove non-existent runner '%s'", uid)
+        else:
+            scheduler.pool[uid].stop()
+            del scheduler.pool[uid]
+            scheduler.logger.info("Removed runner '%s' from the pool", uid)
+    finally:
+        pool_lock.release()
 
-    # Remove cancelled runner from the pool to clean it up
-    # use pool lock just to be safe
-    def removeFromPool(self, uid):
-        try:
-            pool_lock.acquire()
-            if uid not in self.pool:
-                self.logger.warn("Requested to remove non-existent runner '%s'", uid)
-            else:
-                self.pool[uid].stop()
-                del self.pool[uid]
-                self.logger.info("Removed runner '%s' from the pool", uid)
-        finally:
-            pool_lock.release()
+# Generic start function, pulls all active/paused timetables and registers runners
+def start():
+    # We pull all non-cancelled jobs from it to spawn new scheduling threads
+    session = SignallingSession(db)
+    timetables = Timetable.listEnabled(session)
+    session.close()
+    for timetable in timetables:
+        addToPool(timetable.uid)
+    scheduler.logger.info("Timetable scheduler is started")
 
-    # Generic start function, pulls all active / paused timetables and registers runners
-    def start(self):
-        # We pull all non-cancelled jobs from it to spawn new scheduling threads
-        session = SignallingSession(db)
-        arr = Timetable.listEnabled(session)
-        session.close()
-        self.launch(arr)
-
-    # Generic stop function, performs clean up of the pool
-    def stop(self):
-        for key, runner in self.pool.items():
-            runner.stop()
-            self.logger.debug("Stopped and removed runner '%s' from the pool", key)
-            runner = None
-        # Reset pool
-        self.pool = {}
+# Generic stop function, performs clean up of the pool
+def stop():
+    for uid in scheduler.pool.keys():
+        removeFromPool(key)
+    # Reset pool
+    scheduler.pool = {}
+    scheduler.logger.info("Timetable scheduler is stopped")

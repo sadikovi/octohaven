@@ -33,6 +33,9 @@ ROOT_PATH = os.path.dirname(os.path.realpath(__file__))
 CONF_PATH = os.path.join(ROOT_PATH, "conf")
 CONF_NAME = "log.conf"
 
+# Default application Spark logs directory
+DEFAULT_WORKING_DIR = os.path.join(ROOT_PATH, "work")
+
 # Global configuration that encapsulates all the main settings
 class Options(object):
     # Flask options
@@ -43,6 +46,8 @@ class Options(object):
     SPARK_MASTER_ADDRESS = None
     SPARK_UI_ADDRESS = None
     JAR_FOLDER = None
+    # Working directory for Spark logs, and etc
+    WORKING_DIR = None
     # MySQL settings
     MYSQL_HOST = None
     MYSQL_PORT = None

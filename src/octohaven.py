@@ -41,6 +41,7 @@ app_log.logger.info("Port - %s" % app.config["PORT"])
 app_log.logger.info("Spark Master - %s" % app.config["SPARK_MASTER_ADDRESS"])
 app_log.logger.info("Spark UI - %s" % app.config["SPARK_UI_ADDRESS"])
 app_log.logger.info("Jar folder - %s" % app.config["JAR_FOLDER"])
+app_log.logger.info("Working directory - %s" % app.config["WORKING_DIR"])
 app_log.logger.info("MySQL connection - host - %s" % app.config["MYSQL_HOST"])
 app_log.logger.info("MySQL connection - port - %s" % app.config["MYSQL_PORT"])
 app_log.logger.info("MySQL connection - database - %s" % app.config["MYSQL_DATABASE"])
@@ -58,6 +59,8 @@ db = MySQLContext(application=app, host=app.config["MYSQL_HOST"],
     pool_size=5)
 # Global event emitter
 ee = EventEmitter()
+# Working directory for application
+workingDirectory = app.config["WORKING_DIR"]
 
 # Method to return API endpoint (prefix)
 def api(suffix):
@@ -78,19 +81,18 @@ if app.config["MYSQL_SCHEMA_RESET"]:
 db.create_all()
 
 # Timetable scheduler initialization
-from timetablescheduler import TimetableScheduler
-ts = TimetableScheduler()
+from scheduler import tscheduler
 
 def run():
     @ee.on("timetable-created")
     def addRunner(uid):
-        ts.addToPool(uid)
+        tscheduler.addToPool(uid)
 
     @ee.on("timetable-cancelled")
     def removeRunner(uid):
-        ts.removeFromPool(uid)
+        tscheduler.removeFromPool(uid)
 
-    ts.start()
+    tscheduler.start()
     app.run(debug=app.debug, host=app.config["HOST"], port=app.config["PORT"])
 
 def test():

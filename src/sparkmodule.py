@@ -47,6 +47,10 @@ class SparkContext(Loggable, object):
         self.logger.debug("Created Spark context with master '%s', UI '%s'",
             masterAddress, uiAddress)
 
+    # Return current active master address
+    def getMasterAddress(self):
+        return self.masterAddress
+
     def clusterInfo(self):
         # Returns applications info from Spark.
         # Example of response that we get with /api/v1/applications

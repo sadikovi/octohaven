@@ -198,3 +198,28 @@ class Job(db.Model):
             "url": api("/job/get/%s" % self.uid),
             "close_url": api("/job/close/%s" % self.uid) if self.canClose() else None
         }
+
+    # Return shell command to execute as a list of arguments
+    # Method allows to pass extra Spark options and additional job arguments to command line. These
+    # options are transient, therefore are not saved for each job.
+    def execCommand(self, sparkContext, extraArguments=[], extraSparkOptions={}):
+        # `spark-submit --master sparkurl --conf "" --conf "" --class entrypoint jar`
+        sparkSubmit = ["spark-submit"]
+        # Note that name can be overwritten in Spark job itself, so when this job name will be
+        # shown in Octohaven UI, Spark UI might display different name
+        name = ["--name", "%s" % self.name]
+        master = ["--master", "%s" % sparkContext.getMasterAddress()]
+        # update options with `additionalOptions` argument
+        confOptions = self.getSparkOptions().copy()
+        confOptions.update(extraSparkOptions)
+        # create list of conf options, ready to be used in cmd, flatten conf
+        conf = [["--conf", "%s=%s" % (key, value)] for key, value in confOptions.items()]
+        conf = [num for elem in conf for num in elem]
+        entrypoint = ["--class", "%s" % self.entrypoint]
+        jar = ["%s" % self.jar]
+        # create list of job arguments, also append passed extra arguments
+        jobConf = self.getJobConf() + extraArguments
+        jobconf = ["%s" % elem for elem in jobConf]
+        # construct exec command for shell
+        cmd = sparkSubmit + name + master + conf + entrypoint + jar + jobconf
+        return cmd

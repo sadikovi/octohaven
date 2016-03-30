@@ -19,7 +19,7 @@
 import sys, os, src.utils as utils
 from distutils.core import setup
 from setuptools import Command
-from config import Options, VERSION
+from config import Options, VERSION, DEFAULT_WORKING_DIR
 
 # Only Python 2.7 is supported
 PYTHON_VERSION_MAJOR = 2
@@ -42,6 +42,7 @@ class StartOctohaven(Command):
         ("spark-master=", "s", "Spark Master address, e.g. spark://..."),
         ("spark-ui=", "u", "Spark UI address, e.g. http://..."),
         ("jar-folder=", "j", "Jar root folder, e.g. /tmp/jars"),
+        ("working-dir=", "w", "Working directory, default is ./work/"),
         ("connection=", "c", "MySQL connection string, e.g. " +
             "jdbc:mysql://HOST:PORT/DATABASE?user=USER&password=PASSWORD"),
         ("test", "t", "Test mode, runs unit-tests for the application")
@@ -54,8 +55,10 @@ class StartOctohaven(Command):
         self.spark_ui = None
         self.jar_folder = None
         self.connection = None
-        # misc
+        # Misc
         self.test = False
+        # Working directory
+        self.work_dir = None
 
     def finalize_options(self):
         # OCTOHAVEN_HOST
@@ -81,7 +84,7 @@ class StartOctohaven(Command):
         if not self.jar_folder:
             print "[ERROR] Jar root folder is required, use --jar-folder=? to specify"
             sys.exit(1)
-        # check that jar folder exists, absolute and open to read
+        # Check that jar folder exists, absolute and open to read
         self.jar_folder = os.path.realpath(os.path.abspath(str(self.jar_folder)))
         if not os.path.isdir(self.jar_folder):
             print "[ERROR] Jar folder must be valid directory, got '%s'" % self.jar_folder
@@ -89,27 +92,38 @@ class StartOctohaven(Command):
         if not os.access(self.jar_folder, os.R_OK):
             print "[ERROR] Permission READ_ONLY denied for %s" % self.jar_folder
             sys.exit(1)
+        # Working directory, if not specified then default working directory is used
+        self.work_dir = os.path.realpath(os.path.abspath(str(self.work_dir))) if self.work_dir \
+            else DEFAULT_WORKING_DIR
+        if not os.path.isdir(self.work_dir):
+            print "[ERROR] Working directory must be a valid directory, got '%s'" % self.work_dir
+            sys.exit(1)
+        if not os.access(self.work_dir, os.R_OK) or not os.access(self.work_dir, os.W_OK):
+            print "[ERROR] Insufficient permissions, READ_WRITE denied for %s" % self.work_dir
+            sys.exit(1)
         # MYSQL_HOST, MYSQL_PORT, MYSQL_DATABASE, MYSQL_USER, MYSQL_PASSWORD
         if not self.connection:
             print "[ERROR] MySQL connection string is required, use --connection=? to specify"
             sys.exit(1)
-        # assign dictionary of values instead of connection string
+        # Assign dictionary of values instead of connection string
         self.connection = utils.validateMySQLJDBC(self.connection)
 
     def run(self):
-        # overwrite parameters in configuration, so application will load it on the next step
+        # Overwrite parameters in configuration, so application will load it on the next step
         Options.HOST = str(self.host)
         Options.PORT = int(self.port)
         Options.SPARK_MASTER_ADDRESS = self.spark_master
         Options.SPARK_UI_ADDRESS = self.spark_ui
         Options.JAR_FOLDER = self.jar_folder
-        # assign MySQL settings
+        # Application Spark logs directory
+        Options.WORKING_DIR = self.work_dir
+        # Assign MySQL settings
         Options.MYSQL_HOST = self.connection["host"]
         Options.MYSQL_PORT = self.connection["port"]
         Options.MYSQL_DATABASE = self.connection["database"]
         Options.MYSQL_USER = self.connection["user"]
         Options.MYSQL_PASSWORD = self.connection["password"]
-        # start service
+        # Start service
         import src.octohaven as octohaven
         if self.test:
             octohaven.test()

@@ -26,7 +26,8 @@ RUN_TESTS = {
     "cron": True,
     "template": True,
     "job": True,
-    "timetable": True
+    "timetable": True,
+    "jobscheduler": True
 }
 
 # default empty test suite
@@ -56,6 +57,7 @@ def collectSystemTests(suites):
     addTests2("template")
     addTests2("job")
     addTests2("timetable")
+    addTests2("jobscheduler")
 
 def main(args=[]):
     print ""
