@@ -21,6 +21,7 @@ from flask import json
 from sqlalchemy import desc
 from types import LongType, DictType, ListType
 from octohaven import db, api
+from sparkmodule import SPARK_OCTOHAVEN_JOB_ID
 
 class Job(db.Model):
     uid = db.Column(db.Integer, primary_key=True, autoincrement=True)
@@ -209,17 +210,20 @@ class Job(db.Model):
         # shown in Octohaven UI, Spark UI might display different name
         name = ["--name", "%s" % self.name]
         master = ["--master", "%s" % sparkContext.getMasterAddress()]
-        # update options with `additionalOptions` argument
+        # Update options with `additionalOptions` argument
         confOptions = self.getSparkOptions().copy()
         confOptions.update(extraSparkOptions)
-        # create list of conf options, ready to be used in cmd, flatten conf
+        # We also append octohaven job id to the spark-submit, so we can later assign Spark app id,
+        # and find our job in processes
+        confOptions.update({SPARK_OCTOHAVEN_JOB_ID: self.uid})
+        # Create list of conf options, ready to be used in cmd, flatten conf
         conf = [["--conf", "%s=%s" % (key, value)] for key, value in confOptions.items()]
         conf = [num for elem in conf for num in elem]
         entrypoint = ["--class", "%s" % self.entrypoint]
         jar = ["%s" % self.jar]
-        # create list of job arguments, also append passed extra arguments
+        # Create list of job arguments, also append passed extra arguments
         jobConf = self.getJobConf() + extraArguments
         jobconf = ["%s" % elem for elem in jobConf]
-        # construct exec command for shell
+        # Construct exec command for shell
         cmd = sparkSubmit + name + master + conf + entrypoint + jar + jobconf
         return cmd
