@@ -18,7 +18,7 @@
 
 import utils, shlex
 from flask import json
-from sqlalchemy import desc
+from sqlalchemy import asc, desc, and_, or_
 from types import LongType, DictType, ListType
 from octohaven import db, api
 from sparkmodule import SPARK_OCTOHAVEN_JOB_ID
@@ -110,14 +110,6 @@ class Job(db.Model):
     def setAppId(self, appId):
         self.sparkappid = appId
 
-    def setStarttime(self, starttime):
-        utils.assertInstance(starttime, LongType)
-        self.starttime = starttime
-
-    def setFinishtime(self, finishtime):
-        utils.assertInstance(finishtime, LongType)
-        self.finishtime = finishtime
-
     # Return Spark options as dictionary
     def getSparkOptions(self):
         return json.loads(self.options)
@@ -168,8 +160,30 @@ class Job(db.Model):
         query = session.query(cls)
         if status in cls.STATUSES:
             query = query.filter_by(status = status)
-        limit = limit if limit > 0 else 1
-        return query.order_by(desc(cls.createtime)).limit(limit).all()
+        ordered = query.order_by(desc(cls.createtime))
+        # If limit is negative, return all records
+        return ordered.limit(limit).all() if limit > 0 else ordered.all()
+
+    # This method is used to fetch jobs for job scheduler. We look for any jobs that are ready to
+    # run, also fetching delayed jobs that are before time specified. `limit` allows to
+    # fetch jobs with size of the queue, and `delayedTime` (which is most of the time is now())
+    # is a upper bound on submit time. We also sort by priority in ascending order, since the
+    # higher priority has lower value.
+    # If `limit` is negative, we do not apply limit
+    @classmethod
+    @utils.sql
+    def listRunnable(cls, session, limit, delayedTime=utils.currentTimeMillis()):
+        query = session.query(cls)
+        filtered = query.filter(or_(cls.status == cls.READY,
+            and_(cls.status == cls.DELAYED, cls.submittime <= delayedTime)))
+        ordered = filtered.order_by(asc(cls.priority))
+        return ordered.limit(limit).all() if limit > 0 else ordered.all()
+
+    @classmethod
+    @utils.sql
+    def listRunning(cls, session):
+        # For running jobs ordering does not matter, and we return all records in database
+        return cls.list(session, cls.RUNNING, limit=-1)
 
     @classmethod
     @utils.sql
@@ -177,6 +191,26 @@ class Job(db.Model):
         if not job.canClose():
             raise StandardError("Cannot close job")
         job.status = cls.CLOSED
+        session.commit()
+
+    # Method to register job as finished by updating status and finish time
+    @classmethod
+    @utils.sql
+    def finish(cls, session, job):
+        if job.status != cls.RUNNING:
+            raise StandardError("Cannot finish not running job")
+        job.status = cls.FINISHED
+        job.finishtime = utils.currentTimeMillis()
+        session.commit()
+
+    # Method to register job as running by updating status and start time
+    @classmethod
+    @utils.sql
+    def run(cls, session, job):
+        if job.status != cls.READY and job.status != cls.DELAYED:
+            raise StandardError("Job must be READY or DELAYED to run")
+        job.status = cls.RUNNING
+        job.starttime = utils.currentTimeMillis()
         session.commit()
 
     def json(self):

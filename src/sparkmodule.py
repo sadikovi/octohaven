@@ -51,6 +51,10 @@ class SparkContext(Loggable, object):
     def getMasterAddress(self):
         return self.masterAddress
 
+    # Return current active Spark UI address
+    def getUiAddress(self):
+        return self.uiAddress
+
     def clusterInfo(self):
         # Returns applications info from Spark.
         # Example of response that we get with /api/v1/applications
@@ -99,7 +103,7 @@ class SparkContext(Loggable, object):
         if type(info) is ListType:
             running = [app for app in info if app["completed"] is False]
             return FREE if len(running) == 0 else BUSY
-        self.logger.warning("Spark cluster is not running - %s", str(info))
+        self.logger.warning("Spark cluster is not running - %s", info)
         return DOWN
 
     # Returns list of current apps running, each element of an array is a dictionary:

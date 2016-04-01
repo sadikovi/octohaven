@@ -82,6 +82,7 @@ db.create_all()
 
 # Timetable scheduler initialization
 from scheduler import tscheduler
+from scheduler import jobscheduler
 
 def run():
     @ee.on("timetable-created")
@@ -93,6 +94,7 @@ def run():
         tscheduler.removeFromPool(uid)
 
     tscheduler.start()
+    jobscheduler.start()
     app.run(debug=app.debug, host=app.config["HOST"], port=app.config["PORT"])
 
 def test():

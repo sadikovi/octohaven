@@ -52,7 +52,9 @@ class TimetableTestSuite(unittest.TestCase):
         }
 
     def tearDown(self):
-        pass
+        TimetableStats.query.delete()
+        Timetable.query.delete()
+        Job.query.delete()
 
     def test_create(self):
         timetable = Timetable(**self.opts)

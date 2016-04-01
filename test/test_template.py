@@ -28,7 +28,7 @@ class TemplateTestSuite(unittest.TestCase):
         self.opts = {"name": "test", "content": "{\"key\": \"value\"}"}
 
     def tearDown(self):
-        pass
+        Template.query.delete()
 
     def test_create(self):
         template = Template("name", 1L, "{\"key\": \"value\"}")

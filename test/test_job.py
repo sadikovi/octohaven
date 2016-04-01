@@ -50,7 +50,9 @@ class JobTestSuite(unittest.TestCase):
         }
 
     def tearDown(self):
-        pass
+        TimetableStats.query.delete()
+        Timetable.query.delete()
+        Job.query.delete()
 
     def test_create(self):
         job = Job(**self.opts)
@@ -160,8 +162,12 @@ class JobTestSuite(unittest.TestCase):
         # test selecting status
         arr = Job.list(db.session, Job.READY, limit=1)
         self.assertEquals(len(arr), 1)
+        arr = Job.list(db.session, Job.READY, limit=5)
+        self.assertEquals(len(arr), 5)
         arr = Job.list(db.session, Job.READY, limit=0)
-        self.assertEquals(len(arr), 1)
+        self.assertEquals(len(arr), 10)
+        arr = Job.list(db.session, Job.READY, limit=-1)
+        self.assertEquals(len(arr), 10)
 
     def test_close(self):
         job = Job.create(db.session, **self.opts)
@@ -177,6 +183,30 @@ class JobTestSuite(unittest.TestCase):
         with self.assertRaises(StandardError):
             job.status = Job.FINISHED
             Job.close(db.session, job)
+
+    def test_run(self):
+        job = Job.create(db.session, **self.opts)
+        Job.run(db.session, job)
+        self.assertEqual(job.status, Job.RUNNING)
+        # check that start time is close to current time
+        self.assertTrue(job.starttime > utils.currentTimeMillis() - 2000)
+        # should fail to run already running job
+        with self.assertRaises(StandardError):
+            Job.run(db.session, job)
+
+    def test_finish(self):
+        job = Job.create(db.session, **self.opts)
+        # should not be able to finish not running job
+        with self.assertRaises(StandardError):
+            Job.finish(db.session, job)
+        # Launch job and finish it
+        Job.run(db.session, job)
+        Job.finish(db.session, job)
+        self.assertEqual(job.status, Job.FINISHED)
+        self.assertTrue(job.finishtime > utils.currentTimeMillis() - 2000)
+        # should fail to finish already finished job
+        with self.assertRaises(StandardError):
+            Job.finish(db.session, job)
 
     def test_json(self):
         job = Job.create(db.session, **self.opts)
@@ -258,6 +288,34 @@ class JobTestSuite(unittest.TestCase):
             "--conf", "--conf", "--conf", "--class", "/tmp/file.jar"])
         self.assertEqual(len(cmd), 24)
         self.assertEqual(cmd[20:], ["a", "b", "c", "foo=bar"])
+
+    def test_listRunning(self):
+        arr = [("ready", Job.READY), ("running", Job.RUNNING), ("finished", Job.FINISHED),
+            ("running", Job.RUNNING)]
+        for name, status in arr:
+            job = Job.create(db.session, **self.opts)
+            job.name = name
+            job.status = status
+            db.session.commit()
+        jobs = Job.listRunning(db.session)
+        self.assertEqual(len(jobs), 2)
+        self.assertEqual([x.status for x in jobs], [Job.RUNNING, Job.RUNNING])
+
+    def test_listRunnable(self):
+        arr = [("ready", Job.READY), ("running", Job.RUNNING), ("finished", Job.FINISHED),
+            ("running", Job.RUNNING), ("delayed", Job.DELAYED)]
+        for name, status in arr:
+            job = Job.create(db.session, **self.opts)
+            job.name = name
+            job.status = status
+            if status is Job.DELAYED:
+                job.submittime = job.submittime - 10000
+                job.priority = job.submittime / 1000L
+            db.session.commit()
+        jobs = Job.listRunnable(db.session, 5, utils.currentTimeMillis())
+        self.assertEqual(len(jobs), 2)
+        self.assertEqual([x.name for x in jobs], ["delayed", "ready"])
+        self.assertEqual([x.status for x in jobs], [Job.DELAYED, Job.READY])
 
 # Load test suites
 def _suites():
