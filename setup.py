@@ -19,7 +19,7 @@
 import sys, os, src.utils as utils
 from distutils.core import setup
 from setuptools import Command
-from config import Options, VERSION, DEFAULT_WORKING_DIR
+from config import Options, LIB_PATH, VERSION, DEFAULT_WORKING_DIR, DEFAULT_SPARK_SUBMIT
 
 # Only Python 2.7 is supported
 PYTHON_VERSION_MAJOR = 2
@@ -33,6 +33,9 @@ if not (sys.platform.startswith("darwin") or sys.platform.startswith("linux")):
     print "[ERROR] Only OS X and Linux are supported"
     sys.exit(1)
 
+# Add dependencies to the path, could not figure out how to make setup.py load libraries
+sys.path.insert(1, LIB_PATH)
+
 # Additional custom commands
 class StartOctohaven(Command):
     description = "Start Octohaven server"
@@ -41,6 +44,7 @@ class StartOctohaven(Command):
         ("port=", "p", "port to start server"),
         ("spark-master=", "s", "Spark Master address, e.g. spark://..."),
         ("spark-ui=", "u", "Spark UI address, e.g. http://..."),
+        ("spark-submit=", "r", "Spark submit path, default is 'spark-submit'"),
         ("jar-folder=", "j", "Jar root folder, e.g. /tmp/jars"),
         ("working-dir=", "w", "Working directory, default is ./work/"),
         ("connection=", "c", "MySQL connection string, e.g. " +
@@ -53,12 +57,13 @@ class StartOctohaven(Command):
         self.port = None
         self.spark_master = None
         self.spark_ui = None
+        self.spark_submit = None
         self.jar_folder = None
         self.connection = None
         # Misc
         self.test = False
         # Working directory
-        self.work_dir = None
+        self.working_dir = None
 
     def finalize_options(self):
         # OCTOHAVEN_HOST
@@ -80,6 +85,10 @@ class StartOctohaven(Command):
         if not self.spark_ui:
             print "[ERROR] Spark UI address is required, use --spark-ui=? to specify"
             sys.exit(1)
+        # SPARK_SUBMIT (not a configuration option)
+        if not self.spark_submit:
+            print "[WARN] Submit is not specified, fall back to default 'spark-submit'"
+            self.spark_submit = DEFAULT_SPARK_SUBMIT
         # JAR_FOLDER
         if not self.jar_folder:
             print "[ERROR] Jar root folder is required, use --jar-folder=? to specify"
@@ -93,13 +102,13 @@ class StartOctohaven(Command):
             print "[ERROR] Permission READ_ONLY denied for %s" % self.jar_folder
             sys.exit(1)
         # Working directory, if not specified then default working directory is used
-        self.work_dir = os.path.realpath(os.path.abspath(str(self.work_dir))) if self.work_dir \
-            else DEFAULT_WORKING_DIR
-        if not os.path.isdir(self.work_dir):
-            print "[ERROR] Working directory must be a valid directory, got '%s'" % self.work_dir
+        self.working_dir = os.path.realpath(os.path.abspath(str(self.working_dir))) \
+            if self.working_dir else DEFAULT_WORKING_DIR
+        if not os.path.isdir(self.working_dir):
+            print "[ERROR] Working directory must be a valid directory, got '%s'" % self.working_dir
             sys.exit(1)
-        if not os.access(self.work_dir, os.R_OK) or not os.access(self.work_dir, os.W_OK):
-            print "[ERROR] Insufficient permissions, READ_WRITE denied for %s" % self.work_dir
+        if not os.access(self.working_dir, os.R_OK) or not os.access(self.working_dir, os.W_OK):
+            print "[ERROR] Insufficient permissions, READ_WRITE denied for %s" % self.working_dir
             sys.exit(1)
         # MYSQL_HOST, MYSQL_PORT, MYSQL_DATABASE, MYSQL_USER, MYSQL_PASSWORD
         if not self.connection:
@@ -114,9 +123,10 @@ class StartOctohaven(Command):
         Options.PORT = int(self.port)
         Options.SPARK_MASTER_ADDRESS = self.spark_master
         Options.SPARK_UI_ADDRESS = self.spark_ui
+        Options.SPARK_SUBMIT = self.spark_submit
         Options.JAR_FOLDER = self.jar_folder
         # Application Spark logs directory
-        Options.WORKING_DIR = self.work_dir
+        Options.WORKING_DIR = self.working_dir
         # Assign MySQL settings
         Options.MYSQL_HOST = self.connection["host"]
         Options.MYSQL_PORT = self.connection["port"]

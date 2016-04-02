@@ -45,7 +45,7 @@ To build the project you need to setup virtual environment and install dependenc
 $ git clone https://github.com/sadikovi/octohaven
 $ cd octohaven
 $ virtualenv venv
-$ bin/pip install -r requirements.txt
+$ bin/pip install -r requirements.txt --target lib/
 ```
 
 Use `bin/python` and `bin/pip` to use `python` and `pip` respectively, as it uses virtual

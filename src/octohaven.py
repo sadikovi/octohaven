@@ -16,7 +16,7 @@
 # limitations under the License.
 #
 
-import sys, os, utils
+import sys, os, utils, urllib2
 from flask import Flask, redirect, render_template, make_response, json, jsonify, abort, request, send_from_directory
 from sqlalchemy import desc
 from config import VERSION, API_VERSION
@@ -42,6 +42,7 @@ app_log.logger.info("Host - %s" % app.config["HOST"])
 app_log.logger.info("Port - %s" % app.config["PORT"])
 app_log.logger.info("Spark Master - %s" % app.config["SPARK_MASTER_ADDRESS"])
 app_log.logger.info("Spark UI - %s" % app.config["SPARK_UI_ADDRESS"])
+app_log.logger.info("Spark Submit - %s" % app.config["SPARK_SUBMIT"])
 app_log.logger.info("Jar folder - %s" % app.config["JAR_FOLDER"])
 app_log.logger.info("Working directory - %s" % app.config["WORKING_DIR"])
 app_log.logger.info("MySQL connection - host - %s" % app.config["MYSQL_HOST"])
@@ -53,7 +54,7 @@ app_log.logger.info("MySQL connection - password - %s" % "*******")
 # Spark module is one per application, currently UI Run address is not supported, so we pass UI
 # address as dummy value
 sparkContext = SparkContext(app.config["SPARK_MASTER_ADDRESS"], app.config["SPARK_UI_ADDRESS"],
-    app.config["SPARK_UI_ADDRESS"])
+    app.config["SPARK_UI_ADDRESS"], app.config["SPARK_SUBMIT"])
 # SQL context is one per application
 db = MySQLContext(application=app, host=app.config["MYSQL_HOST"],
     port=app.config["MYSQL_PORT"], database=app.config["MYSQL_DATABASE"],
@@ -101,11 +102,16 @@ def start():
 
 def stop():
     app_log.logger.info("Requested application shutdown...")
-    app_log.logger.info("Stop services...")
-    tscheduler.stop()
-    jobscheduler.stop()
-    print "Application exited successfully."
-    sys.exit(0)
+    try:
+        app_log.logger.info("Stop services...")
+        tscheduler.stop()
+        jobscheduler.stop()
+    except:
+        print "Application exited with error."
+        sys.exit(1)
+    else:
+        print "Application exited successfully."
+        sys.exit(0)
 
 def test():
     import test

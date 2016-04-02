@@ -1,4 +1,5 @@
 #!/bin/bash
+
 #################################################
 # Octohaven app settings
 #################################################
@@ -18,12 +19,29 @@ export OCTOHAVEN_SPARK_UI_ADDRESS="http://localhost:8080"
 # catalog starting from this folder specified. It takes some time to build directory, so please be
 # more specific rather than specifying root folder
 export JAR_FOLDER="/Users/sadikovi/developer/octohaven/test/resources/filelist"
+# Working directory (optional). Working directory is a directory where application stores logs for
+# each job and metadata, by default it is 'work/' in current directory. Note that this directory
+# must have read and write access by the application
+export WORKING_DIR="./work"
 
 #################################################
 # MySQL settings
 #################################################
+# If used with USE_DOCKER, container will be created with host, port, database and credentials
+# specified below. Otherwise application will try connecting to the settings directly
 export MYSQL_HOST="sandbox"
 export MYSQL_PORT="3306"
 export MYSQL_USER="user"
 export MYSQL_PASSWORD="12345"
 export MYSQL_DATABASE="octohaven"
+
+#################################################
+# Docker
+#################################################
+# This option indicates if you want MySQL container to be launched by docker as part of the
+# start-up process. Application will download image and launch container automatically, and stop it
+# as part of shutdown process. If set "NO" or unset, application will assume that MySQL is provided
+# externally, and will use settings above to connect to it.
+export USE_DOCKER="YES"
+# Name of the container to launch (takes effect only if USE_DOCKER is "YES")
+export OCTOHAVEN_CONTAINER_NAME="octohaven-mysql-container"

@@ -35,7 +35,7 @@ BUSY = -1
 DOWN = -2
 
 class SparkContext(Loggable, object):
-    def __init__(self, masterAddress, uiAddress, uiRunAddress):
+    def __init__(self, masterAddress, uiAddress, uiRunAddress, sparkSubmit="spark-submit"):
         super(SparkContext, self).__init__()
         # master address to launch applications using "spark-submit"
         self.masterAddress = utils.validateMasterUrl(masterAddress)
@@ -44,8 +44,10 @@ class SparkContext(Loggable, object):
         # address for a running application in Spark
         data = utils.validateUiUrl(uiRunAddress, as_uri_parts=True)
         self.uiRunAddress, self.uiRunHost, self.uiRunPort = data
-        self.logger.debug("Created Spark context with master '%s', UI '%s'",
-            masterAddress, uiAddress)
+        # spark-submit location, defaults to just link to spark-submit
+        self.sparkSubmit = sparkSubmit
+        self.logger.debug("Created Spark context with master '%s', UI '%s', submit: '%s'",
+            self.masterAddress, self.uiAddress, self.sparkSubmit)
 
     # Return current active master address
     def getMasterAddress(self):
@@ -54,6 +56,9 @@ class SparkContext(Loggable, object):
     # Return current active Spark UI address
     def getUiAddress(self):
         return self.uiAddress
+
+    def getSparkSubmit(self):
+        return self.sparkSubmit
 
     def clusterInfo(self):
         # Returns applications info from Spark.

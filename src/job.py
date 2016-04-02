@@ -243,7 +243,7 @@ class Job(db.Model):
     # options are transient, therefore are not saved for each job.
     def execCommand(self, sparkContext, extraArguments=[], extraSparkOptions={}):
         # `spark-submit --master sparkurl --conf "" --conf "" --class entrypoint jar`
-        sparkSubmit = ["spark-submit"]
+        sparkSubmit = [sparkContext.getSparkSubmit()]
         # Note that name can be overwritten in Spark job itself, so when this job name will be
         # shown in Octohaven UI, Spark UI might display different name
         name = ["--name", "%s" % self.name]

@@ -28,13 +28,15 @@ API_VERSION = "v1"
 
 # Root directory of the project
 ROOT_PATH = os.path.dirname(os.path.realpath(__file__))
-
+# Dependencies directory
+LIB_PATH = os.path.join(ROOT_PATH, "lib")
 # Path to the configuration
 CONF_PATH = os.path.join(ROOT_PATH, "conf")
 CONF_NAME = "log.conf"
-
 # Default application Spark logs directory
 DEFAULT_WORKING_DIR = os.path.join(ROOT_PATH, "work")
+# Default 'spark-submit' command
+DEFAULT_SPARK_SUBMIT = "spark-submit"
 
 # Global configuration that encapsulates all the main settings
 class Options(object):
@@ -45,6 +47,7 @@ class Options(object):
     PORT = None
     SPARK_MASTER_ADDRESS = None
     SPARK_UI_ADDRESS = None
+    SPARK_SUBMIT = None
     JAR_FOLDER = None
     # Working directory for Spark logs, and etc
     WORKING_DIR = None

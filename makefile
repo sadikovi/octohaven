@@ -7,7 +7,7 @@ CMD=bin/python setup.py start_octohaven --host=localhost --port=33900 \
 	--connection='jdbc:mysql://192.168.99.100:3306/octohaven?user=user&password=12345'
 
 clean:
-	bin/cleanup.sh
+	bin/make-clean.sh
 
 build:
 	bin/static.sh
