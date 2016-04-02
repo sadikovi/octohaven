@@ -153,7 +153,7 @@ def start():
 # Generic stop function, performs clean up of the pool
 def stop():
     for uid in scheduler.pool.keys():
-        removeFromPool(key)
+        removeFromPool(uid)
     # Reset pool
     scheduler.pool = {}
     scheduler.logger.info("Timetable scheduler is stopped")

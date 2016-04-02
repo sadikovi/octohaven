@@ -16,7 +16,7 @@
 # limitations under the License.
 #
 
-import os, utils
+import sys, os, utils
 from flask import Flask, redirect, render_template, make_response, json, jsonify, abort, request, send_from_directory
 from sqlalchemy import desc
 from config import VERSION, API_VERSION
@@ -26,6 +26,7 @@ from sqlmodule import MySQLContext
 from fs import FileManager, BlockReader
 from encoders import CustomJSONEncoder
 from pyee import EventEmitter
+from shutdown import GracefulShutdown
 
 ################################################################
 # Application setup
@@ -81,11 +82,11 @@ if app.config["MYSQL_SCHEMA_RESET"]:
     db.drop_all()
 db.create_all()
 
-# Timetable scheduler initialization
+# Scheduler initialization
 from scheduler import tscheduler
 from scheduler import jobscheduler
 
-def run():
+def start():
     @ee.on("timetable-created")
     def addRunner(uid):
         tscheduler.addToPool(uid)
@@ -94,13 +95,27 @@ def run():
     def removeRunner(uid):
         tscheduler.removeFromPool(uid)
 
-    # tscheduler.start()
-    # jobscheduler.start()
+    tscheduler.start()
+    jobscheduler.start()
     app.run(debug=app.debug, host=app.config["HOST"], port=app.config["PORT"])
+
+def stop():
+    app_log.logger.info("Requested application shutdown...")
+    app_log.logger.info("Stop services...")
+    tscheduler.stop()
+    jobscheduler.stop()
+    print "Application exited successfully."
+    sys.exit(0)
 
 def test():
     import test
     test.main()
+
+################################################################
+# Shutdown
+################################################################
+shutdownHook = GracefulShutdown()
+shutdownHook.registerCallback(stop)
 
 ################################################################
 # Pages routing

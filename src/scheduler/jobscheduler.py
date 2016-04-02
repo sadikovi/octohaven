@@ -28,6 +28,7 @@ from src.job import Job
 from src.octohaven import db, workingDirectory, sparkContext
 from src.sparkmodule import DOWN
 
+# Main scheduler object for logging
 scheduler = Loggable("job-scheduler")
 
 lock = Lock()
@@ -44,7 +45,8 @@ STDERR = "stderr"
 @utils.private
 def action(sampler):
     if not sampler:
-        raise RuntimeError("Sampler is undefined")
+        scheduler.logger.error("Sampler is undefined, exiting")
+        return
     session = SignallingSession(db)
     try:
         sampler.logger.info("Start refreshing application state")
@@ -208,6 +210,7 @@ def updateProcessStatus(pid):
     # successfully) for now
     return 0
 
+# Sampler object
 sampler = Sampler()
 
 # Generic start function, registers/cleans up jobs and adds them to the pool
@@ -231,4 +234,5 @@ def start():
 # Generic stop function, performs clean up of the pool and cancelling jobs in progress
 def stop():
     sampler.stop()
+    scheduler.logger.info("Sampler stopped")
     scheduler.logger.info("Job scheduler is stopped")

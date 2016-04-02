@@ -128,7 +128,7 @@ class StartOctohaven(Command):
         if self.test:
             octohaven.test()
         else:
-            octohaven.run()
+            octohaven.start()
 
 setup(
     name="octohaven",
