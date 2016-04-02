@@ -18,14 +18,13 @@
 
 import os, unittest
 from config import ROOT_PATH
-from src.fs import FileManager
+from src.fs import FileManager, BlockReader
 
 class FileManagerTestSuite(unittest.TestCase):
     def setUp(self):
         self.root = os.path.join(ROOT_PATH, "test")
         self.resources = os.path.join(self.root, "resources")
         self.file = os.path.join(self.resources, "scheduler.txt")
-        self.emptyFile = os.path.join(self.resources, "empty.txt")
 
     def tearDown(self):
         pass
@@ -127,19 +126,27 @@ class FileManagerTestSuite(unittest.TestCase):
                     "filelist", "dev", "dev-jar.jar")}
         ])
 
-    # File reading API
+# File reading API
+class BlockReaderTestSuite(unittest.TestCase):
+    def setUp(self):
+        self.file = os.path.join(ROOT_PATH, "test", "resources", "scheduler.txt")
+        self.emptyFile = os.path.join(ROOT_PATH, "test", "resources", "empty.txt")
+
+    def tearDown(self):
+        pass
+
     def test_endOfFile(self):
-        manager = FileManager(self.root)
+        manager = BlockReader()
         with open(self.file) as f:
             self.assertEqual(manager.endOfFile(f), 2249)
 
     def test_startOfFile(self):
-        manager = FileManager(self.root)
+        manager = BlockReader()
         with open(self.file) as f:
             self.assertEqual(manager.startOfFile(f), 0)
 
     def test_validation(self):
-        manager = FileManager(self.root)
+        manager = BlockReader()
         # file validation
         with self.assertRaises(StandardError):
             manager.validateFile(None)
@@ -163,14 +170,14 @@ class FileManagerTestSuite(unittest.TestCase):
         self.assertEqual(manager.validatePosition(100), 100)
 
     def test_numPages(self):
-        manager = FileManager(self.root)
+        manager = BlockReader()
         with open(self.file) as f:
             self.assertEqual(manager.numPages(f, chunk=1000), 3)
             self.assertEqual(manager.numPages(f, chunk=500), 5)
             self.assertEqual(manager.numPages(f, chunk=2249), 1)
 
     def test_read(self):
-        manager = FileManager(self.root)
+        manager = BlockReader()
         with open(self.file) as f:
             with self.assertRaises(StandardError):
                 manager.read(f, -1, 100)
@@ -180,7 +187,7 @@ class FileManagerTestSuite(unittest.TestCase):
             self.assertEqual(block, "t or add functionality\n- Some important configurat")
 
     def test_readFromPosition(self):
-        manager = FileManager(self.root)
+        manager = BlockReader()
         with self.assertRaises(StandardError):
             manager.readFromPosition(None, 100, offset=200)
         with open(self.file) as f:
@@ -194,7 +201,7 @@ class FileManagerTestSuite(unittest.TestCase):
                 "scheduler is more of combination of three mod")
 
     def test_readFromStart(self):
-        manager = FileManager(self.root)
+        manager = BlockReader()
         with open(self.file) as f:
             block = manager.readFromStart(f, 3, chunk=100, offset=0)
             self.assertEqual(block, "d to config.sh\n\nThe whole job of scheduler is checking " +
@@ -205,7 +212,7 @@ class FileManagerTestSuite(unittest.TestCase):
                 "whether cluster is available and running jobs, if it is,")
 
     def test_readFromEnd(self):
-        manager = FileManager(self.root)
+        manager = BlockReader()
         with open(self.file) as f:
             block = manager.readFromEnd(f, 2, chunk=100, offset=0)
             self.assertEqual(block, "g a link.\nWe maintain pool of links. Constantly we check " +
@@ -216,7 +223,7 @@ class FileManagerTestSuite(unittest.TestCase):
                 "Constantly we check status of those processes. Once process is finished")
 
     def crop(self):
-        manager = FileManager(self.root)
+        manager = BlockReader()
         with open(self.file) as f:
             block = manager.crop(f, 100, 50)
             self.assertEqual(block, "t or add functionality")
@@ -227,7 +234,7 @@ class FileManagerTestSuite(unittest.TestCase):
 
     # issue 25:
     def test_validatePageWhenReading(self):
-        manager = FileManager(self.root)
+        manager = BlockReader()
         with open(self.file) as f:
             numPages = manager.numPages(f, chunk=100)
             self.assertEqual(numPages, 23)
@@ -248,7 +255,7 @@ class FileManagerTestSuite(unittest.TestCase):
     def test_minNumPages(self):
         # number of pages should be at least 1, so empty file will say that it has 1 page, which is
         # empty
-        manager = FileManager(self.root)
+        manager = BlockReader()
         with open(self.emptyFile) as f:
             numPages = manager.numPages(f, chunk=200)
             self.assertEqual(numPages, 1)
@@ -259,7 +266,8 @@ class FileManagerTestSuite(unittest.TestCase):
 # Load test suites
 def _suites():
     return [
-        FileManagerTestSuite
+        FileManagerTestSuite,
+        BlockReaderTestSuite
     ]
 
 # Load tests

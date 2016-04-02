@@ -29,7 +29,6 @@ from src.octohaven import db, workingDirectory, sparkContext
 from src.sparkmodule import DOWN
 
 scheduler = Loggable("job-scheduler")
-sampler = Sampler()
 
 lock = Lock()
 # Number of slots, the maximum number of jobs to run at the same time
@@ -208,6 +207,8 @@ def updateProcessStatus(pid):
     # Otherwise we always return 0 for finished process (either killed or finished
     # successfully) for now
     return 0
+
+sampler = Sampler()
 
 # Generic start function, registers/cleans up jobs and adds them to the pool
 def start():

@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+
+{% block title %} Job {{ title }} {% endblock %}
+{% block nav %}
+    <div class="menu-heading">Actions</div>
+    <a class="menu-item" href="/create/job">Create new job</a>
+    <a class="menu-item" href="/jobs">View jobs</a>
+    <a class="menu-item" href="/job/{{ uid }}">Back to the job</a>
+{% endblock %}
+{% block header %} {{ title }} [{{ name }}] {% endblock %}
+{% block subheader %}
+    Note that if job is running, data (e.g. number of pages) might be updated,
+    it is recommended to refresh page in this case
+{% endblock %}
+{% block content %}
+    <div id="content-json" class="hidden">{{ job }}</div>
+    <div id="content-type" class="hidden">{{ title }}</div>
+{% endblock %}
+{% block scripts %}
+    <script type="text/javascript" src="/static/octohaven.joblog.min.js"></script>
+{% endblock %}

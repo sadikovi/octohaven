@@ -29,6 +29,10 @@ TIMETABLE_CREATE_CRON_CHANGED = "timetable-create-cron-changed"
 TIMETABLE_CREATE_SUBMIT = "timetable-create-submit"
 TIMETABLE_CANCELLED = "timetable-cancelled"
 
+BLOCK_ARRIVED = "block-arrived"
+BLOCK_URL_UPDATED = "block-url-updated"
+PAGE_INPUT_CHANGED = "page-input-changed"
+
 # React base class for CoffeeScript
 class Reactable extends React.Component
   constructor: (props) ->
@@ -51,6 +55,8 @@ class Reactable extends React.Component
   nav: (opts...) -> React.DOM.nav(opts...)
 
   p: (opts...) -> React.DOM.p(opts...)
+
+  pre: (opts...) -> React.DOM.pre(opts...)
 
   small: (opts...) -> React.DOM.small(opts...)
 

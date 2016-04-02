@@ -16,13 +16,14 @@
 # limitations under the License.
 #
 
+import os, utils
 from flask import Flask, redirect, render_template, make_response, json, jsonify, abort, request, send_from_directory
 from sqlalchemy import desc
 from config import VERSION, API_VERSION
 from loggable import Loggable
 from sparkmodule import SparkContext
 from sqlmodule import MySQLContext
-from fs import FileManager
+from fs import FileManager, BlockReader
 from encoders import CustomJSONEncoder
 from pyee import EventEmitter
 
@@ -93,8 +94,8 @@ def run():
     def removeRunner(uid):
         tscheduler.removeFromPool(uid)
 
-    tscheduler.start()
-    jobscheduler.start()
+    # tscheduler.start()
+    # jobscheduler.start()
     app.run(debug=app.debug, host=app.config["HOST"], port=app.config["PORT"])
 
 def test():
@@ -157,6 +158,16 @@ def timetable_for_uid(uid):
     dump = json.dumps(timetable.json()) if timetable else ""
     return render_page("timetable.html", timetable=dump)
 
+# Job actions (viewing stdout and stderr)
+@app.route("/job/<int:uid>/stdout")
+@app.route("/job/<int:uid>/stderr")
+def job_stdlogs(uid):
+    job = Job.get(db.session, uid)
+    dump = json.dumps(job.json()) if job else ""
+    jobName = job.name if job else ""
+    title = request.path.upper().split("/")[-1]
+    return render_page("job_console.html", title=title, uid=uid, name=jobName, job=dump)
+
 ################################################################
 # REST API
 ################################################################
@@ -213,8 +224,7 @@ def job_create():
 @app.route(api("/job/get/<int:uid>"), methods=["GET"])
 def job_get(uid):
     job = Job.get(db.session, uid)
-    if not job:
-        raise StandardError("No job for id '%s'" % uid)
+    if not job: raise StandardError("No job for id '%s'" % uid)
     return success(job.json())
 
 @app.route(api("/job/close/<int:uid>"), methods=["GET"])
@@ -224,6 +234,44 @@ def job_close(uid):
         raise StandardError("No job for id '%s'" % uid)
     Job.close(db.session, job)
     return success(job.json())
+
+# API to serve log files (stdout and stderr) for a job
+@app.route(api("/job/log/<int:uid>/<logtype>/page/<int:page>"), methods=["GET"])
+def job_log(uid, logtype, page):
+    logtype = logtype.upper()
+    if not logtype or (logtype != "STDOUT" and logtype != "STDERR"):
+        raise StandardError("Invalid log type, expected either 'stdout' or 'stderr'")
+    if not page:
+        raise StandardError("Unrecognized page number '%s'" % page)
+    # Fetch job for uid
+    job = Job.get(db.session, uid)
+    if not job:
+        raise StandardError("No job for id '%s'" % uid)
+    # Looking up file and creating output
+    suffix = jobscheduler.STDOUT if logtype == "STDOUT" else jobscheduler.STDERR
+    path = os.path.join(jobscheduler.jobWorkingDirectory(uid), suffix)
+    if not os.path.isfile(path):
+        raise StandardError("No logs found for job id '%s'" % uid)
+    block, numPages = "", -1
+    chunk, offset = 64*1024, 128
+    manager = BlockReader()
+    with open(path, "rb") as f:
+        numPages = manager.numPages(f, chunk)
+        block = manager.readFromStart(f, page, chunk, offset)
+    # Current page API url
+    current_page_url = api("/job/log/%s/%s/page/%s" % (job.uid, logtype, page))
+    # Next page API url
+    next_page_url = api("/job/log/%s/%s/page/%s" % (job.uid, logtype, page + 1)) \
+        if page < numPages else None
+    # Previous page API url
+    prev_page_url = api("/job/log/%s/%s/page/%s" % (job.uid, logtype, page - 1)) \
+        if page > 1 else None
+    # Jump-to-page url
+    jump_to_page_url = api("/job/log/%s/%s/page/_page_" % (job.uid, logtype))
+    return success({"uid": job.uid, "name": job.name, "type": logtype, "pages": numPages,
+        "page": page, "block": block, "size": chunk, "next_page_url": next_page_url,
+        "prev_page_url": prev_page_url, "current_page_url": current_page_url,
+        "jump_to_page_url": jump_to_page_url})
 
 ################################################################
 # Template API

@@ -22,6 +22,9 @@ class JobView extends Reactable
   convertTimestamp: (timestamp) ->
     if timestamp then Util.timestampToDate(timestamp) else ""
 
+  timeDiff: (start, finish) ->
+    if start and finish then Util.humanReadableDiff(finish - start) else ""
+
   render: ->
     if @props.data
       job = @props.data
@@ -33,7 +36,8 @@ class JobView extends Reactable
         JobOption.new(name: "Create time", value: "#{@convertTimestamp(job.createtime)}"),
         JobOption.new(name: "Submit time", value: "#{@convertTimestamp(job.submittime)}"),
         JobOption.new(name: "Start time", value: "#{@convertTimestamp(job.starttime)}"),
-        JobOption.new(name: "Finish time", value: "#{@convertTimestamp(job.finishtime)}"),
+        JobOption.new(name: "Finish time, approx.", value: "#{@convertTimestamp(job.finishtime)}"),
+        JobOption.new(name: "Elapsed time, approx.", value: "#{@timeDiff(job.starttime, job.finishtime)}"),
         JobOption.new(name: "Spark options", value: job.options, type: "dict"),
         JobOption.new(name: "Job options", value: job.jobconf, type: "array")
       )
@@ -98,10 +102,14 @@ class JobActions extends Reactable
   constructor: ->
     @state =
       create_timetable_html_url: "#"
+      view_stdout_html_url: "#"
+      view_stderr_html_url: "#"
 
   componentWillMount: ->
     emitter.on JOB_DATA_ARRIVED, (job) =>
       @setState(create_timetable_html_url: "#{job.create_timetable_html_url}")
+      @setState(view_stdout_html_url: "#{job.view_stdout_html_url}")
+      @setState(view_stderr_html_url: "#{job.view_stderr_html_url}")
 
   componentWillUnmount: ->
     emitter.off JOB_DATA_ARRIVED
@@ -110,7 +118,9 @@ class JobActions extends Reactable
     @nav({className: "menu"},
       @div({className: "menu-heading"}, "Job actions"),
       @a({className: "menu-item", href: "#{@state.create_timetable_html_url}"},
-        "Create timetable")
+        "Create timetable"),
+      @a({className: "menu-item", href: "#{@state.view_stdout_html_url}"}, "View STDOUT"),
+      @a({className: "menu-item", href: "#{@state.view_stderr_html_url}"}, "View STDERR"),
     )
 
 ReactDOM.render JobActions.new(), document.getElementById("job-actions")

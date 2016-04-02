@@ -26,7 +26,6 @@ from types import FileType, IntType
 # "extensions" is a list of allowed extensions to keep, directories are always kept
 # "showOneNode" flag to show Linux-like "." hard link
 # "showTwoNode" flag to show Linux-like ".." hard link
-#
 class FileManager(object):
     def __init__(self, path, alias="/home", extensions=[], showOneNode=True, showTwoNode=True):
         path = os.path.realpath(str(path).strip())
@@ -100,9 +99,13 @@ class FileManager(object):
         lstree = sorted(lstree, cmp=lscmp)
         return (tree, lstree)
 
-    ############################################################
-    ### Reading file API
-    ############################################################
+############################################################
+### Reading file API
+############################################################
+class BlockReader(object):
+    def __init__(self):
+        self.enabled = True
+
     # Return overall bytes in a file, also places cursor at the end of file, so you will have to
     # reposition it, if you want to read from arbitrary place
     def endOfFile(self, f):

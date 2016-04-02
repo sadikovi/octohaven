@@ -230,6 +230,10 @@ class Job(db.Model):
             "jobconf": self.getJobConf(),
             "html_url": "/job/%s" % self.uid,
             "create_timetable_html_url": "/create/timetable/job/%s" % self.uid,
+            "view_stdout_html_url": "/job/%s/stdout" % self.uid,
+            "view_stderr_html_url": "/job/%s/stderr" % self.uid,
+            "stdout_url": api("/job/log/%s/stdout/page/1" % self.uid),
+            "stderr_url": api("/job/log/%s/stderr/page/1" % self.uid),
             "url": api("/job/get/%s" % self.uid),
             "close_url": api("/job/close/%s" % self.uid) if self.canClose() else None
         }

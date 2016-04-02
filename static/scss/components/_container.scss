@@ -21,8 +21,9 @@ $container-horizontal-padding: 0px;
 /** container for code, logs and etc */
 pre.code-container {
     min-height: 34px;
+    max-height: 340px;
     padding: 7px 8px;
-    font-size: 12px;
+    font-size: 10px;
     color: #333;
     vertical-align: middle;
     background-color: #faf9fa;
