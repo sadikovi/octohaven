@@ -1,3 +1,26 @@
+# Include dependencies
+graft bower_components
+graft lib
+
+# Include user-facing configuration, and launch scripts
+graft conf
+graft sbin
+
+# Include source files
+recursive-include src *.py
+recursive-include static *.min.js
+recursive-include static *.min.css
+include static/img/favicon.ico
+graft templates
+
+# Include README and license information
 include README.md
-include sbin/*
-include conf/*
+include LICENSE
+
+# Include internal configuration, version and setup
+include internal.py
+include version.py
+include setup.py
+
+# Remove test folder from distribution
+prune test

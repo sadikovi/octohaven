@@ -18,7 +18,7 @@
 
 import os, unittest, src.utils as utils
 from types import IntType, LongType, StringType
-from config import ROOT_PATH
+from internal import ROOT_PATH
 
 class UtilsTestSuite(unittest.TestCase):
     def setUp(self):

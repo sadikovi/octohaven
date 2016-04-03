@@ -22,6 +22,9 @@ import os
 # Internal configuration
 ################################################################
 
+# This is an internal configuration. If you want to modify configuration to run service, please
+# look for "octohaven-env.sh" and "log.conf" in "conf" folder.
+
 # Root directory of the project
 ROOT_PATH = os.path.dirname(os.path.realpath(__file__))
 # Dependencies directory

@@ -17,7 +17,7 @@
 #
 
 import os, unittest
-from config import ROOT_PATH
+from internal import ROOT_PATH
 from src.fs import FileManager, BlockReader
 
 class FileManagerTestSuite(unittest.TestCase):

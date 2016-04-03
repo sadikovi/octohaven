@@ -32,7 +32,7 @@ from shutdown import GracefulShutdown
 # Application setup
 ################################################################
 app = Flask("octohaven")
-app.config.from_object("config.Options")
+app.config.from_object("internal.Options")
 app.json_encoder = CustomJSONEncoder
 # prepare logger for application
 app_log = Loggable("octohaven")

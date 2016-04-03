@@ -1,4 +1,4 @@
-.PHONY: build clean start test docker-start docker-stop
+.PHONY: build clean start test docker-start docker-stop dist
 
 # Current project directory
 ROOT_DIR:=$(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
@@ -43,6 +43,7 @@ clean:
 	find $(ROOT_DIR) -name ".DS_Store" -type f | xargs rm -f
 	# delete distribution files (directory and generated MANIFEST)
 	rm -rf $(ROOT_DIR)/dist
+	rm -rf $(ROOT_DIR)/octohaven.egg-info
 	rm -f $(ROOT_DIR)/MANIFEST
 
 build:
@@ -68,3 +69,6 @@ docker-start:
 
 docker-stop:
 	. bin/docker.sh; docker_interface stop default octohaven-test-mysql-container
+
+dist:
+	@ echo "Hello"
