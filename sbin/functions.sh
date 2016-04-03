@@ -29,10 +29,10 @@ function get_service_pids() {
 function show_start_help() {
 cat <<EOM
 Usage: $0 [options]
-  --daemon, -d      launches service as daemon process, e.g. --daemon=true/false
-  --help            displayes usage of the script
-  --test, -t        launches service in test mode, e.g. --test
-
+  --daemon, -d      launch service as daemon process, e.g. --daemon=true/false
+  --help            display usage of the script
+  --test, -t        launch service in test mode, e.g. --test
+  --python          provide different location of PYTHON_EXE, default is /usr/bin/python
 EOM
 }
 
@@ -46,11 +46,7 @@ function resolve_daemon_opt() {
   elif [[ "$OPTION_USE_DAEMON" == "false" ]]; then
     echo ""
   else
-cat <<EOM
-[WARN] Unrecognized value $OPTION_USE_DAEMON for '--daemon' option
-Run '--help' to display possible options, default (false) is used
-EOM
-    echo ""
+    echo "ERROR"
   fi
 }
 
@@ -63,5 +59,15 @@ function resolve_test_opt() {
     echo "true"
   else
     echo ""
+  fi
+}
+
+# Function to resolve python executable
+function resolve_python() {
+  OPTION_PYTHON="${i#*=}"
+  if [ -f $OPTION_PYTHON ]; then
+    echo "$OPTION_PYTHON"
+  else
+    echo "ERROR"
   fi
 }

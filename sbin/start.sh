@@ -12,6 +12,13 @@ for i in "$@"; do
     # Daemon process (true/false)
     -d|--daemon=*)
       OPTION_USE_DAEMON=$(resolve_daemon_opt)
+      if [[ "$OPTION_USE_DAEMON" == "ERROR" ]]; then
+cat <<EOM
+[WARN] Unrecognized value $OPTION_USE_DAEMON for '--daemon' option
+Run '--help' to display possible options, default false is used
+EOM
+        OPTION_USE_DAEMON=""
+      fi
     shift ;;
     # Display help
     --help)
@@ -22,12 +29,28 @@ for i in "$@"; do
     -t|--test)
       OPTION_TEST_MODE=$(resolve_test_opt)
     shift ;;
-    *) ;;
+    # The Python interpreter to use, e.g. --python=python2.7 will use the python2.7 interpreter to
+    # launch application. The default is $(which python), usually resolved to /usr/bin/python
+    --python=*)
+      OPTION_PYTHON=$(resolve_python)
+      if [[ "$OPTION_PYTHON" == "ERROR" ]]; then
+cat <<EOM
+[ERROR] Unrecognized value $OPTION_PYTHON for '--python' option
+Run '--help' to display possible options, default $(which python) is used
+EOM
+        exit 1
+      fi
+    shift ;;
   esac
 done
 
 # Find Python
 PYTHON27=$(which python)
+if [[ -n "$OPTION_PYTHON" ]]; then
+  echo "PYTHON_EXE provided, using it instead of default"
+  PYTHON27=$OPTION_PYTHON
+fi
+
 if [[ -z "$PYTHON27" ]]; then
   echo "[ERROR] Python is not found. Cannot work without python"
   exit 1
@@ -68,30 +91,7 @@ fi
 
 # If docker is used check docker, launch VM, pull image and start container
 if [[ -n "$USE_DOCKER" ]]; then
-  if [[ -z "$OCTOHAVEN_CONTAINER_NAME" ]]; then
-    echo "[ERROR] Container name is not set, please set OCTOHAVEN_CONTAINER_NAME"
-    exit 1
-  fi
-
-  DOCKER_AGENT=$(which docker)
-  if [[ -z "$DOCKER_AGENT" ]]; then
-    echo "[ERROR] Docker is not found. Cannot launch container"
-    exit 1
-  fi
-
-  DOCKER_VM=$(which docker-machine)
-  if [[ -n "$DOCKER_VM" ]]; then
-    echo "[INFO] Running on non-Linux environment. Will check if docker daemon is running"
-  fi
-
-  IS_DOCKER_OK="$($DOCKER_AGENT version | grep Server)"
-  if [[ -z "$IS_DOCKER_OK" ]]; then
-    echo "[ERROR] Problems with Docker daemon. Try restarting docker, or vm"
-    exit 1
-  fi
-
-  IS_DOCKER_CONTAINER_EXISTS=$($DOCKER_AGENT ps -a | grep -e "\\s\+$OCTOHAVEN_CONTAINER_NAME$")
-  IS_DOCKER_CONTAINER_RUNNING=$($DOCKER_AGENT ps | grep -e "\\s\+$OCTOHAVEN_CONTAINER_NAME$")
+  . "$ROOT_DIR/sbin/docker-env.sh"
 
   # Check that container exists and running and apply appropriate actions
   if [[ -z "$IS_DOCKER_CONTAINER_RUNNING" ]]; then
@@ -107,7 +107,7 @@ if [[ -n "$USE_DOCKER" ]]; then
         -e MYSQL_DATABASE=$MYSQL_DATABASE \
         -d mysql:5.7"
       eval "$LAUNCH_CMD" || (echo "[ERROR] Failed to run new container. Try again later" && exit 1)
-      echo "[INFO] Docker (<1.5.0) sometimes takes time to make container ready to connect."
+      echo "[INFO] Docker (<1.5.0) sometimes takes a lot of time to make container ready to connect."
       echo "  So MySQL might fail with ConnectionError. In this case try upgrading Docker to"
       echo "  latest version, or just relaunch service script (sbin/start.sh)"
     else
@@ -115,8 +115,6 @@ if [[ -n "$USE_DOCKER" ]]; then
       eval "$DOCKER_AGENT start $OCTOHAVEN_CONTAINER_NAME" || \
         (echo "[ERROR] Failed to start container. Try again later." && exit 1)
     fi
-    # Sleep for some time until container is ready
-    sleep 3
   else
     echo "[INFO] Container $OCTOHAVEN_CONTAINER_NAME is already running"
   fi
@@ -130,6 +128,19 @@ if [[ -n "$USE_DOCKER" ]]; then
     MYSQL_HOST="localhost"
   fi
   echo "[INFO] Updated host to connect $MYSQL_HOST"
+
+  # Also when used docker container with -d option, daemon mode does not block shell until
+  # container is up, so we have to try connecting to it for a limited time
+  CONN_ATTEMPT=1
+  while [[ -z $(curl -s -I -m 3 $MYSQL_HOST:$MYSQL_PORT) ]]; do
+    echo "Trying to connect to container on $MYSQL_HOST:$MYSQL_PORT..."
+    if [[ "$CONN_ATTEMPT" -ge 30 ]]; then
+      echo "[WARN] Maximum number of attempts is reached"
+      break
+    fi
+    ((attempt++))
+    sleep 1
+  done
 fi
 
 # Start service
