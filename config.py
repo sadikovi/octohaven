@@ -22,10 +22,6 @@ import os
 # Internal configuration
 ################################################################
 
-# Application version
-VERSION = "1.0.0"
-API_VERSION = "v1"
-
 # Root directory of the project
 ROOT_PATH = os.path.dirname(os.path.realpath(__file__))
 # Dependencies directory
@@ -60,6 +56,9 @@ class Options(object):
     # MySQL schema reset (if True then drops and recreates table every time service is launched)
     MYSQL_SCHEMA_RESET = False
 
-    # Turn options off for distribution
+    # Turn options off for distribution, DEBUG option results in reloading server, which sqlalchemy
+    # does not like and freezes occasionally, and it is not that useful anyway, so we keep it False
     DEBUG = False
+    # Testing results in verbose log output from flask and sqlalchemy, so it is recommended to
+    # turn them off when creating distribution
     TESTING = True

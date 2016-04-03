@@ -19,7 +19,8 @@
 import sys, os, src.utils as utils
 from distutils.core import setup
 from setuptools import Command
-from config import Options, LIB_PATH, VERSION, DEFAULT_WORKING_DIR, DEFAULT_SPARK_SUBMIT
+from version import VERSION
+from config import Options, LIB_PATH, DEFAULT_WORKING_DIR, DEFAULT_SPARK_SUBMIT
 
 # Only Python 2.7 is supported
 PYTHON_VERSION_MAJOR = 2
