@@ -70,5 +70,5 @@ docker-start:
 docker-stop:
 	. bin/docker.sh; docker_interface stop default octohaven-test-mysql-container
 
-dist:
-	@ echo "Hello"
+dist: clean build test
+	bin/python setup.py sdist --formats=gztar,zip

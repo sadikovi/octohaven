@@ -13,6 +13,13 @@ recursive-include static *.min.css
 include static/img/favicon.ico
 graft templates
 
+# Remove test folder from distribution
+prune test
+
+# Include default directories (default working directory, temp folder with jars)
+recursive-include work __default__
+include test/resources/filelist/prod/start-sbt-app_2.10-0.0.1.jar
+
 # Include README and license information
 include README.md
 include LICENSE
@@ -21,6 +28,3 @@ include LICENSE
 include internal.py
 include version.py
 include setup.py
-
-# Remove test folder from distribution
-prune test
