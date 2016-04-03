@@ -17,12 +17,12 @@ export OCTOHAVEN_SPARK_MASTER_ADDRESS="spark://jony-local.lan:7077"
 export OCTOHAVEN_SPARK_UI_ADDRESS="http://localhost:8080"
 # Root folder as starting point to show .jar files, can have nested folders, this will show file
 # catalog starting from this folder specified. It takes some time to build directory, so please be
-# more specific rather than specifying root folder
-export JAR_FOLDER="/Users/sadikovi/developer/octohaven/test/resources/filelist"
+# more specific rather than specifying root folder, e.g. /home
+export JAR_FOLDER="test/resources/filelist"
 # Working directory (optional). Working directory is a directory where application stores logs for
 # each job and metadata, by default it is 'work/' in current directory. Note that this directory
 # must have read and write access by the application
-export WORKING_DIR="./work"
+# export WORKING_DIR="./work"
 
 #################################################
 # MySQL settings
