@@ -25,10 +25,12 @@ from src.template import Template
 class TemplateTestSuite(unittest.TestCase):
     def setUp(self):
         Template.query.delete()
+        db.session.commit()
         self.opts = {"name": "test", "content": "{\"key\": \"value\"}"}
 
     def tearDown(self):
         Template.query.delete()
+        db.session.commit()
 
     def test_create(self):
         template = Template("name", 1L, "{\"key\": \"value\"}")

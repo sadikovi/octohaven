@@ -28,6 +28,7 @@ class TimetableTestSuite(unittest.TestCase):
         TimetableStats.query.delete()
         Timetable.query.delete()
         Job.query.delete()
+        db.session.commit()
 
         self.opts = {
             "name": "test-name",
@@ -55,6 +56,7 @@ class TimetableTestSuite(unittest.TestCase):
         TimetableStats.query.delete()
         Timetable.query.delete()
         Job.query.delete()
+        db.session.commit()
 
     def test_create(self):
         timetable = Timetable(**self.opts)

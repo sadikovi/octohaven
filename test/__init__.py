@@ -50,14 +50,14 @@ def addTests(name, moduleName):
 
 # collect all the tests in the system
 def collectSystemTests(suites):
-    addTests2("utils")
-    addTests2("sparkmodule")
-    addTests2("fs")
     addTests2("cron")
-    addTests2("template")
+    addTests2("fs")
     addTests2("job")
-    addTests2("timetable")
     addTests2("jobscheduler")
+    addTests2("sparkmodule")
+    addTests2("template")
+    addTests2("timetable")
+    addTests2("utils")
 
 def main(args=[]):
     print ""

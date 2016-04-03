@@ -20,7 +20,7 @@ CMD:=$(ROOT_DIR)/bin/python setup.py start_octohaven \
 
 clean:
 	# delete .pyc files from project folder
-	for f in $(find $(ROOT_DIR) -name "*.pyc" -type f -not -path "venv/*"); do rm "$f"; done
+	find $(ROOT_DIR) -name "*.pyc" -type f -not -path "$(ROOT_DIR)/venv/*" | xargs rm -f
 	# delete sass cache
 	rm -rf "$(ROOT_DIR)/.sass-cache"
 	# delete target directory
@@ -40,7 +40,7 @@ clean:
 	# clean up lib folder with dependencies
 	find $(ROOT_DIR)/lib/* -not -name "__init__.py" | xargs rm -rf
 	# delete .DS_Store files
-	for f in $(find $(ROOT_DIR) -name ".DS_Store" -type f); do rm $f; done
+	find $(ROOT_DIR) -name ".DS_Store" -type f | xargs rm -f
 	# delete distribution files (directory and generated MANIFEST)
 	rm -rf $(ROOT_DIR)/dist
 	rm -f $(ROOT_DIR)/MANIFEST
