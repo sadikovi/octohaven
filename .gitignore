@@ -63,7 +63,9 @@ target/
 # temp folders
 temp/
 apache/
-work/
+!work/
+work/*
+!work/__default__
 
 # lib dependencies that are not permanent
 !lib/
