@@ -59,7 +59,7 @@ sparkContext = SparkContext(app.config["SPARK_MASTER_ADDRESS"], app.config["SPAR
 db = MySQLContext(application=app, host=app.config["MYSQL_HOST"],
     port=app.config["MYSQL_PORT"], database=app.config["MYSQL_DATABASE"],
     user=app.config["MYSQL_USER"], password=app.config["MYSQL_PASSWORD"],
-    pool_size=5)
+    pool_size=15)
 # Global event emitter
 ee = EventEmitter()
 # Working directory for application

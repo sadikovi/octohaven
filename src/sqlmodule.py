@@ -35,7 +35,7 @@ def MySQLContext(**config):
     app.config["SQLALCHEMY_ECHO"] = debug
     app.config["SQLALCHEMY_POOL_SIZE"] = min_pool_size
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = True
-    app.config["SQLALCHEMY_MAX_OVERFLOW"] = 5
+    app.config["SQLALCHEMY_MAX_OVERFLOW"] = 10
     # initialize db for application
     return SQLAlchemy(app)
 
