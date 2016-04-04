@@ -287,12 +287,14 @@ def job_log(uid, logtype, page):
     # Previous page API url
     prev_page_url = api("/job/log/%s/%s/page/%s" % (job.uid, logtype, page - 1)) \
         if page > 1 else None
+    last_page_url = api("/job/log/%s/%s/page/%s" % (job.uid, logtype, numPages)) \
+        if numPages > 1 else None
     # Jump-to-page url
     jump_to_page_url = api("/job/log/%s/%s/page/_page_" % (job.uid, logtype))
     return success({"uid": job.uid, "name": job.name, "type": logtype, "pages": numPages,
         "page": page, "block": block, "size": chunk, "next_page_url": next_page_url,
         "prev_page_url": prev_page_url, "current_page_url": current_page_url,
-        "jump_to_page_url": jump_to_page_url})
+        "jump_to_page_url": jump_to_page_url, "last_page_url": last_page_url})
 
 ################################################################
 # Template API

@@ -16,7 +16,7 @@ class LogController extends Reactable
       if ok
         @setState(block: json.block, page: json.page, pages: json.pages, size: json.size
           , prev_page_url: json.prev_page_url, next_page_url: json.next_page_url
-          , jump_to_page_url: json.jump_to_page_url, status: ok)
+          , jump_to_page_url: json.jump_to_page_url, last_page_url: json.last_page_url, status: ok)
       else
         @setState(error: json?.msg, status: ok)
 
@@ -42,7 +42,7 @@ class LogController extends Reactable
       @div({className: "segments"},
         ControlPanel.new({prev_page_url: @state.prev_page_url, next_page_url: @state.next_page_url
           , jump_to_page_url: @state.jump_to_page_url, page: @state.page, pages: @state.pages
-          , size: @state.size}
+          , size: @state.size, last_page_url: @state.last_page_url}
         ),
         Container.new(block: @state.block)
       )
@@ -80,6 +80,12 @@ class ControlPanel extends Reactable
             @div({className: "btn btn-compact", onClick: => @load(@props.next_page_url)}, "Next")
           else
             @div({className: "btn btn-compact btn-disabled"}, "Next")
+        ),
+        @div({className: "section"},
+          if @props.last_page_url
+            @div({className: "btn btn-compact", onClick: => @load(@props.last_page_url)}, "Last")
+          else
+            @div({className: "btn btn-compact btn-disabled"}, "Last")
         ),
         @div({className: "separator"}, "|"),
         @div({className: "section"},
