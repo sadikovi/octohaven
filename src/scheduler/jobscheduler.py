@@ -33,7 +33,7 @@ scheduler = Loggable("job-scheduler")
 
 lock = Lock()
 # Number of slots, the maximum number of jobs to run at the same time
-NUM_SLOTS = 3
+NUM_SLOTS = 1
 # Interval to update current running state and poll jobs in seconds
 REFRESH_INTERVAL = 5.0
 
@@ -61,7 +61,7 @@ def action(sampler):
                     Job.finish(session, job)
                 sampler.removeFromPool(uid)
             else:
-                sampler.logger.info("Process '%s' is still running, job uid: '%s'", uid, pid)
+                sampler.logger.info("Process '%s' is still running, job uid: '%s'", pid, uid)
         # Check how many pids are left. Compare against NUM_SLOTS, if comparison yields false,
         # skip execution, otherwise it yields true, and we proceed with number of free slots
         freeSlots = NUM_SLOTS - len(sampler.pool)
@@ -88,7 +88,10 @@ def action(sampler):
                 else:
                     # Fetch jobs active (runnable) jobs using Job API based on number of free slots,
                     # acquired earlier. Start jobs in the list, if any. Report when no jobs found.
-                    runnableJobs = Job.listRunnable(session, freeSlots)
+                    currentTime = utils.currentTimeMillis()
+                    sampler.logger.debug("Fetch jobs with session %s, free slots %s, time %s",
+                        session, freeSlots, currentTime)
+                    runnableJobs = Job.listRunnable(session, freeSlots, currentTime)
                     sampler.logger.info("Registering %s jobs", len(runnableJobs))
                     for job in runnableJobs:
                         pid = launchSparkJob(job)

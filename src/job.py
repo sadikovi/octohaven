@@ -177,6 +177,8 @@ class Job(db.Model):
         filtered = query.filter(or_(cls.status == cls.READY,
             and_(cls.status == cls.DELAYED, cls.submittime <= delayedTime)))
         ordered = filtered.order_by(asc(cls.priority))
+        if limit == 0:
+            return []
         return ordered.limit(limit).all() if limit > 0 else ordered.all()
 
     @classmethod
