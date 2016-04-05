@@ -23,6 +23,11 @@ export JAR_FOLDER="test/resources/filelist"
 # each job and metadata, by default it is 'work/' in current directory. Note that this directory
 # must have read and write access by the application
 # export WORKING_DIR="./work"
+#
+# Number of slots, defines number of jobs allowed to be launched or running at the same time. This
+# includes all jobs launched by application as well as Spark cluster. Default is 1, application will
+# launch only one job at a time
+# export NUM_SLOTS=1
 
 #################################################
 # MySQL settings

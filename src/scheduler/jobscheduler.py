@@ -25,7 +25,7 @@ from threading import Timer, Lock
 from subprocess import Popen, PIPE
 from src.loggable import Loggable
 from src.job import Job
-from src.octohaven import db, workingDirectory, sparkContext
+from src.octohaven import db, workingDirectory, sparkContext, numSlots
 from src.sparkmodule import DOWN
 
 # Main scheduler object for logging
@@ -33,7 +33,7 @@ scheduler = Loggable("job-scheduler")
 
 lock = Lock()
 # Number of slots, the maximum number of jobs to run at the same time
-NUM_SLOTS = 1
+NUM_SLOTS = numSlots
 # Interval to update current running state and poll jobs in seconds
 REFRESH_INTERVAL = 5.0
 
@@ -232,7 +232,8 @@ def start():
     session.close()
     # Start sampler
     sampler.start()
-    scheduler.logger.info("Job scheduler is started")
+    scheduler.logger.info("Job scheduler is started, refresh interval = %s, number of slots = %s",
+        REFRESH_INTERVAL, NUM_SLOTS)
 
 # Generic stop function, performs clean up of the pool and cancelling jobs in progress
 def stop():

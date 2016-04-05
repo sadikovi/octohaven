@@ -152,6 +152,7 @@ SERVICE_COMMAND="$PYTHON27 $ROOT_DIR/setup.py start_octohaven \
   --spark-submit=$SPARK_SUBMIT \
   --jar-folder=$JAR_FOLDER \
   --working-dir=$WORKING_DIR \
+  --num-slots=$NUM_SLOTS \
   --connection='jdbc:mysql://$MYSQL_HOST:$MYSQL_PORT/$MYSQL_DATABASE?user=$MYSQL_USER&password=$MYSQL_PASSWORD'"
 
 if [[ -n "$OPTION_USE_DAEMON" ]]; then

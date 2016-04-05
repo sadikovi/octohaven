@@ -20,7 +20,7 @@ import sys, os, src.utils as utils
 from distutils.core import setup
 from setuptools import Command
 from version import VERSION
-from internal import Options, LIB_PATH, DEFAULT_WORKING_DIR, DEFAULT_SPARK_SUBMIT
+from internal import Options, LIB_PATH, DEFAULT_WORKING_DIR, DEFAULT_SPARK_SUBMIT, DEFAULT_NUM_SLOTS
 
 # Only Python 2.7 is supported
 PYTHON_VERSION_MAJOR = 2
@@ -48,6 +48,7 @@ class StartOctohaven(Command):
         ("spark-submit=", "r", "Spark submit path, default is 'spark-submit'"),
         ("jar-folder=", "j", "Jar root folder, e.g. /tmp/jars"),
         ("working-dir=", "w", "Working directory, default is ./work/"),
+        ("num-slots=", "n", "Number of slots, default is 1"),
         ("connection=", "c", "MySQL connection string, e.g. " +
             "jdbc:mysql://HOST:PORT/DATABASE?user=USER&password=PASSWORD"),
         ("test", "t", "Test mode, runs unit-tests for the application")
@@ -65,6 +66,8 @@ class StartOctohaven(Command):
         self.test = False
         # Working directory
         self.working_dir = None
+        # Number of slots
+        self.num_slots = None
 
     def finalize_options(self):
         # OCTOHAVEN_HOST
@@ -111,6 +114,8 @@ class StartOctohaven(Command):
         if not os.access(self.working_dir, os.R_OK) or not os.access(self.working_dir, os.W_OK):
             print "[ERROR] Insufficient permissions, READ_WRITE denied for %s" % self.working_dir
             sys.exit(1)
+        # Number of slots
+        self.num_slots = utils.intOrElse(self.num_slots, DEFAULT_NUM_SLOTS)
         # MYSQL_HOST, MYSQL_PORT, MYSQL_DATABASE, MYSQL_USER, MYSQL_PASSWORD
         if not self.connection:
             print "[ERROR] MySQL connection string is required, use --connection=? to specify"
@@ -128,6 +133,8 @@ class StartOctohaven(Command):
         Options.JAR_FOLDER = self.jar_folder
         # Application Spark logs directory
         Options.WORKING_DIR = self.working_dir
+        # Number of slots
+        Options.NUM_SLOTS = int(self.num_slots)
         # Assign MySQL settings
         Options.MYSQL_HOST = self.connection["host"]
         Options.MYSQL_PORT = self.connection["port"]

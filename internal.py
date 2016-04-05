@@ -36,6 +36,8 @@ CONF_NAME = "log.conf"
 DEFAULT_WORKING_DIR = os.path.join(ROOT_PATH, "work")
 # Default 'spark-submit' command
 DEFAULT_SPARK_SUBMIT = "spark-submit"
+# Default number of slots
+DEFAULT_NUM_SLOTS = 1
 
 # Global configuration that encapsulates all the main settings
 class Options(object):
@@ -58,6 +60,9 @@ class Options(object):
     MYSQL_PASSWORD = None
     # MySQL schema reset (if True then drops and recreates table every time service is launched)
     MYSQL_SCHEMA_RESET = False
+
+    # Number of slots, maximum number of jobs running at the same time, default is usually 1
+    NUM_SLOTS = None
 
     # Turn options off for distribution, DEBUG option results in reloading server, which sqlalchemy
     # does not like and freezes occasionally, and it is not that useful anyway, so we keep it False

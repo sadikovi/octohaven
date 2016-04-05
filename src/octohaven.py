@@ -45,6 +45,7 @@ app_log.logger.info("Spark UI - %s" % app.config["SPARK_UI_ADDRESS"])
 app_log.logger.info("Spark Submit - %s" % app.config["SPARK_SUBMIT"])
 app_log.logger.info("Jar folder - %s" % app.config["JAR_FOLDER"])
 app_log.logger.info("Working directory - %s" % app.config["WORKING_DIR"])
+app_log.logger.info("Number of slots - %s" % app.config["NUM_SLOTS"])
 app_log.logger.info("MySQL connection - host - %s" % app.config["MYSQL_HOST"])
 app_log.logger.info("MySQL connection - port - %s" % app.config["MYSQL_PORT"])
 app_log.logger.info("MySQL connection - database - %s" % app.config["MYSQL_DATABASE"])
@@ -64,6 +65,8 @@ db = MySQLContext(application=app, host=app.config["MYSQL_HOST"],
 ee = EventEmitter()
 # Working directory for application
 workingDirectory = app.config["WORKING_DIR"]
+# Variable to keep number of slots as import
+numSlots = app.config["NUM_SLOTS"]
 
 # Method to return API endpoint (prefix)
 def api(suffix):
