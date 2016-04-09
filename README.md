@@ -83,12 +83,13 @@ working directory, which defaults to `work/` in project directory. You can confi
 
 ## Configuration
 All configuration is in `conf/octohaven-env.sh`. Available options are listed below
-(also well-documented in the file):
+(also well-documented in the configuration file):
 - `OCTOHAVEN_HOST`, `OCTOHAVEN_PORT` host and port for the service
-- `OCTOHAVEN_SPARK_MASTER_ADDRESS`, `OCTOHAVEN_SPARK_UI_ADDRESS` Spark master address `spark://`,
-  and Spark UI address for job monitoring
+- `OCTOHAVEN_SPARK_MASTER_ADDRESS`, `OCTOHAVEN_SPARK_UI_ADDRESS`
 - `JAR_FOLDER` starting folder/root, it will traverse directory to look for jar files
 - `WORKING_DIR` working directory, where job logs are stored, defaults to `work/`
+- `NUM_SLOTS` number of slots, defines number of jobs allowed to be launched or running at the same
+  time. This includes all jobs launched by application as well as Spark cluster, defaults to `1`
 - `MYSQL_HOST`, `MYSQL_PORT`, `MYSQL_USER`, `MYSQL_PASSWORD`, `MYSQL_DATABASE` MySQL settings to
   access provided database. Note that if you choose to use docker, you do not need to change
   parameters, it will work out of the box (unless you want to change passwords, etc.)
