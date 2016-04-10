@@ -1,7 +1,7 @@
 # octohaven
 Super simple Apache Spark job server.
 
-Latest release: [v1.0.0](https://github.com/sadikovi/octohaven/releases/latest)
+Latest release: [v1.1.0](https://github.com/sadikovi/octohaven/releases/latest)
 
 - [Overview](#overview)
 - [Dependencies](#dependencies)
@@ -160,19 +160,22 @@ $ make docker-start
 
 # 3. Change logging and debugging mode in 'log.conf', 'internal.py', if necessary
 
-# 4. Make distribution:
+# 4. Change README latest release link
+
+# 5. Make distribution:
 # Clean project directory, download dependencies, build source files, run unit-tests,
 # create zip and tar archives
 $ make dist
 
-# 5. Commit changes into GitHub
+# 6. Commit changes into GitHub
+$ git add --all
 $ git commit -m "release version x.y.z"
 $ git push
 
-# 6. Create release/tag on GitHub
-# Also update archives from 'dist' folder
+# 7. Create release/tag on GitHub
+# Also upload archives from 'dist' folder as binaries for new release/tag
 
-# 7. Pull changes, and turn dev mode on:
+# 8. Pull changes, and turn dev mode on:
 # update next version in 'version.py', 'package.json', 'bower.json'
 # update logging and debugging in 'log.conf', 'internal.py' if applicable
 $ git pull
