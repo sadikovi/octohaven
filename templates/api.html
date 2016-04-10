@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+
+{% block title %} API {% endblock %}
+{% block nav %}
+    <div class="menu-heading">Actions</div>
+    <a class="menu-item" href="/jobs">View jobs</a>
+    <a class="menu-item" href="/timetables">View timetables</a>
+{% endblock %}
+{% block menu %}
+    <div id="api-links"></div>
+{% endblock %}
+{% block header %} API {% endblock %}
+{% block subheader %} Root endpoint <code>host:port{{ api_endpoint }}</code> {% endblock %}
+{% block content %}{% endblock %}
+{% block scripts %}
+    <script type="text/javascript" src="/static/octohaven.api.min.js"></script>
+{% endblock %}

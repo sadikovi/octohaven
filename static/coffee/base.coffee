@@ -48,6 +48,8 @@ class Reactable extends React.Component
 
   h2: (opts...) -> React.DOM.h2(opts...)
 
+  h3: (opts...) -> React.DOM.h3(opts...)
+
   input: (opts...) -> React.DOM.input(opts...)
 
   li: (opts...) -> React.DOM.li(opts...)

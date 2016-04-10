@@ -192,6 +192,10 @@ def job_stdlogs(uid):
     title = request.path.upper().split("/")[-1]
     return render_page("job_console.html", title=title, uid=uid, name=jobName, job=dump)
 
+@app.route("/api")
+def view_api():
+    return render_page("api.html", api_endpoint=api(""))
+
 ################################################################
 # REST API
 ################################################################

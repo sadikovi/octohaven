@@ -66,3 +66,7 @@ cat $UTIL_CMD $STATIC_DIR/coffee/create_timetable.coffee | \
 echo "Compile 'timetable' scripts"
 cat $UTIL_CMD $STATIC_DIR/coffee/timetable.coffee | \
   coffee --bare --no-header --compile --stdio | uglifyjs - -o "$STATIC_DIR/octohaven.timetable.min.js" -c -m
+
+echo "Compile 'api' scripts"
+cat $UTIL_CMD $STATIC_DIR/coffee/api.coffee | \
+  coffee --bare --no-header --compile --stdio | uglifyjs - -o "$STATIC_DIR/octohaven.api.min.js" -c -m
