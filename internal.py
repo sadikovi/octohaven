@@ -69,4 +69,4 @@ class Options(object):
     DEBUG = False
     # Testing results in verbose log output from flask and sqlalchemy, so it is recommended to
     # turn them off when creating distribution
-    TESTING = False
+    TESTING = True
