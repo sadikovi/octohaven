@@ -27,6 +27,8 @@ Features:
   you can easily turn on/off any time)
 - Tested only with Spark standalone cluster, not sure if it will work with Yarn or Mesos
 
+![octohaven-screen](./static/img/octohaven-screen.png)
+
 ## Dependencies
 - OS X or Linux, **octohaven** does not support Windows, yet
 - Python 2.7, technically it can run on any `>2.3` distributions, but `2.7` is forced currently
