@@ -16,7 +16,7 @@
 # limitations under the License.
 #
 
-import sys, os, src.utils as utils
+import re, sys, os, src.utils as utils
 from distutils.core import setup
 from setuptools import Command
 from version import VERSION
@@ -148,6 +148,64 @@ class StartOctohaven(Command):
         else:
             octohaven.start()
 
+class UpdateVersion(Command):
+    description = "BUILD update Octohaven version"
+    user_options = [
+        ("version=", "v", "new version")
+    ]
+
+    # Parse version of major.minor.patch format
+    def parseVersion(self, version):
+        mtch = re.match("^(\d+)\.(\d+)\.(\d+)$", version)
+        if not mtch:
+            raise StandardError("Invalid version %s, cannot parse" % version)
+        major = int(mtch.group(1))
+        minor = int(mtch.group(2))
+        patch = int(mtch.group(3))
+        # return tuple
+        return (major, minor, patch)
+
+    # Find `orig` in a file and replace it with `updated` in place
+    def findAndReplace(self, path, orig, updated):
+        arr = []
+        with open(path, 'r') as f:
+            for line in f:
+                line = line.replace(orig, updated) if orig in line else line
+                arr.append(line)
+        # write it back into file
+        with open(path, 'w') as f:
+            for line in arr:
+                f.write(line)
+
+
+    def initialize_options(self):
+        self.version = "x.y.z"
+        self.major = None
+        self.minor = None
+        self.patch = None
+
+    def finalize_options(self):
+        res = self.parseVersion(self.version)
+        (self.major, self.minor, self.patch) = res
+
+    def run(self):
+        result = self.parseVersion(VERSION)
+        (major, minor, patch) = result
+        major = self.major if self.major >= 0 else major
+        minor = self.minor if self.minor >= 0 else minor
+        patch = self.patch if self.patch >= 0 else patch
+        UPDATED_VERSION = "%s.%s.%s" % (major, minor, patch)
+        if VERSION == UPDATED_VERSION:
+            print "No update for %s" % VERSION
+            return
+        print "Updating version %s to %s" % (VERSION, UPDATED_VERSION)
+        # We need to substitute version in 3 files: version.py, package.json, bower.json
+        self.findAndReplace("version.py", VERSION, UPDATED_VERSION)
+        self.findAndReplace("package.json", "\"version\": \"%s\"" % VERSION,
+            "\"version\": \"%s\"" % UPDATED_VERSION)
+        self.findAndReplace("bower.json", "\"version\": \"%s\"" % VERSION,
+            "\"version\": \"%s\"" % UPDATED_VERSION)
+
 setup(
     name="octohaven",
     version=VERSION,
@@ -159,6 +217,7 @@ setup(
     platforms=["OS X", "Linux"],
     license="Apache License 2.0",
     cmdclass={
-        "start_octohaven": StartOctohaven
+        "start_octohaven": StartOctohaven,
+        "update_version": UpdateVersion
     }
 )
