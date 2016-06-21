@@ -158,7 +158,8 @@ automate it as much as I can later.
 # 1. Launch docker container
 $ make docker-start
 
-# 2. Change version in 'version.py', 'package.json', 'bower.json'
+# 2. Update version in 'version.py', 'package.json', 'bower.json'
+$ bin/update-version --version=x.y.z
 
 # 3. Change logging and debugging mode in 'log.conf', 'internal.py', if necessary
 
@@ -179,6 +180,8 @@ $ git push
 
 # 8. Pull changes, and turn dev mode on:
 # update next version in 'version.py', 'package.json', 'bower.json'
+$ bin/update-version --version=x.y.z
+
 # update logging and debugging in 'log.conf', 'internal.py' if applicable
 $ git pull
 $ git commit -m "set up next version dev mode"
