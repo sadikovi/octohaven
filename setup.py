@@ -165,19 +165,6 @@ class UpdateVersion(Command):
         # return tuple
         return (major, minor, patch)
 
-    # Find `orig` in a file and replace it with `updated` in place
-    def findAndReplace(self, path, orig, updated):
-        arr = []
-        with open(path, 'r') as f:
-            for line in f:
-                line = line.replace(orig, updated) if orig in line else line
-                arr.append(line)
-        # write it back into file
-        with open(path, 'w') as f:
-            for line in arr:
-                f.write(line)
-
-
     def initialize_options(self):
         self.version = "x.y.z"
         self.major = None
@@ -200,11 +187,33 @@ class UpdateVersion(Command):
             return
         print "Updating version %s to %s" % (VERSION, UPDATED_VERSION)
         # We need to substitute version in 3 files: version.py, package.json, bower.json
-        self.findAndReplace("version.py", VERSION, UPDATED_VERSION)
-        self.findAndReplace("package.json", "\"version\": \"%s\"" % VERSION,
+        utils.findAndReplace("version.py", VERSION, UPDATED_VERSION)
+        utils.findAndReplace("package.json", "\"version\": \"%s\"" % VERSION,
             "\"version\": \"%s\"" % UPDATED_VERSION)
-        self.findAndReplace("bower.json", "\"version\": \"%s\"" % VERSION,
+        utils.findAndReplace("bower.json", "\"version\": \"%s\"" % VERSION,
             "\"version\": \"%s\"" % UPDATED_VERSION)
+
+class SetTestingMode(Command):
+    description = "BUILD set testing mode (true/false)"
+    user_options = [
+        ("testing=", "t", "set true to enable testing mode, false otherwise")
+    ]
+
+    def initialize_options(self):
+        self.testing = "placeholder"
+
+    def finalize_options(self):
+        self.testing = utils.boolOrElse(self.testing, None)
+
+    def run(self):
+        print "Seting testing mode as %s" % self.testing
+        # We need to replace lines according to the mode
+        if self.testing:
+            utils.findAndReplace("internal.py", "TESTING = False", "TESTING = True")
+            utils.findAndReplace("conf/log.conf", "level=INFO", "level=DEBUG")
+        else:
+            utils.findAndReplace("internal.py", "TESTING = True", "TESTING = False")
+            utils.findAndReplace("conf/log.conf", "level=DEBUG", "level=INFO")
 
 setup(
     name="octohaven",
@@ -218,6 +227,7 @@ setup(
     license="Apache License 2.0",
     cmdclass={
         "start_octohaven": StartOctohaven,
-        "update_version": UpdateVersion
+        "update_version": UpdateVersion,
+        "set_testing_mode": SetTestingMode
     }
 )
