@@ -65,7 +65,7 @@ temp/
 apache/
 !work/
 work/*
-!work/__default__
+!work/.placeholder
 
 # lib dependencies that are not permanent
 !lib/
