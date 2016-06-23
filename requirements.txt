@@ -6,3 +6,6 @@ https://pypi.python.org/packages/source/m/mysql-connector-python-rf/mysql-connec
 Flask-SQLAlchemy == 2.1
 # Event emitter
 pyee >= 1.0.2
+# build and test
+coverage == 4.1
+mock == 2.0.0
