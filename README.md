@@ -162,6 +162,7 @@ $ make docker-start
 $ bin/update-version --version=x.y.z
 
 # 3. Change logging and debugging mode in 'log.conf', 'internal.py', if necessary
+$ bin/set-testing-mode --testing=false
 
 # 4. Change README latest release link
 
@@ -183,6 +184,8 @@ $ git push
 $ bin/update-version --version=x.y.z
 
 # update logging and debugging in 'log.conf', 'internal.py' if applicable
+$ bin/set-testing-mode --testing=true
+
 $ git pull
 $ git commit -m "set up next version dev mode"
 $ git push

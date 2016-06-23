@@ -1,0 +1,1 @@
+bin/python setup.py set_testing_mode $@

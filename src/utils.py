@@ -239,3 +239,15 @@ def heroku(hex=False):
 def getCanonicalName(name):
     prep = name.strip() if isinstance(name, StringType) or isinstance(name, UnicodeType) else ""
     return heroku() if len(prep) == 0 else prep
+
+# Find `orig` in a file and replace it with `updated` in place
+def findAndReplace(path, orig, updated):
+    arr = []
+    with open(path, 'r') as f:
+        for line in f:
+            line = line.replace(orig, updated) if orig in line else line
+            arr.append(line)
+    # Write array back into file line by line
+    with open(path, 'w') as f:
+        for line in arr:
+            f.write(line)
