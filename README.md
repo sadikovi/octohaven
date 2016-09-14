@@ -192,4 +192,4 @@ $ git push
 ```
 
 ## Contribute
-All suggestions, features, issues and PRs are very welcome:)
+Any suggestions, features, issues and PRs are very welcome.
